@@ -17,7 +17,7 @@ export default {
     	extend: {
     		fontFamily: {
     			sans: [
-    				'Figtree',
+    				'Geist',
                     ...defaultTheme.fontFamily.sans
                 ]
     		},
@@ -66,6 +66,20 @@ export default {
     				'3': 'hsl(var(--chart-3))',
     				'4': 'hsl(var(--chart-4))',
     				'5': 'hsl(var(--chart-5))'
+    			},
+    			// Custom color palette from the design
+    			forest: {
+    				dark: '#162d25',
+    				light: '#5d775f'
+    			},
+    			gold: '#bc9c5f',
+    			cream: '#eae1d0',
+    			accent: {
+    				red: '#d4423f',
+    				orange: '#e07b39',
+    				green: '#7a9b7d',
+    				blue: '#4a6b73',
+    				gray: '#8a9ba8'
     			}
     		}
     	}
