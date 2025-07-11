@@ -345,18 +345,18 @@
               >
                 Back
               </Button>
-              <Button
+            <Button
                 type="button"
                 @click="submitApplication"
                 :disabled="!canSubmit"
                 class="bg-gold hover:bg-amber-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
-              >
-                <span v-if="isLoading" class="flex items-center">
-                  <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            >
+              <span v-if="isLoading" class="flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Submitting...
-                </span>
+              </span>
                 <span v-else>Submit Agent Application</span>
-              </Button>
+            </Button>
             </div>
           </div>
 

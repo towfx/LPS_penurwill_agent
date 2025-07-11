@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Agent;
+use App\Models\ReferralCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class AgentRegistrationController extends Controller
@@ -81,6 +83,21 @@ class AgentRegistrationController extends Controller
         }
 
         $agent = Agent::create($agentData);
+
+        // Create referral code for this agent
+        $systemSetting = \App\Models\SystemSetting::first();
+        $referralCode = ReferralCode::create([
+            'agent_id' => $agent->id,
+            'code' => $systemSetting->referral_code_prefix . strtoupper(Str::random(8)),
+            'is_active' => true,
+            'commission_rate' => $systemSetting->commission_default_rate,
+            'usage_limit' => $systemSetting->global_referral_usage_limit,
+            'used_count' => 0,
+            'expires_at' => now()->addYears(5),
+        ]);
+
+        // Update agent with referral code
+        $agent->update(['referral_code_id' => $referralCode->id]);
 
         // Link user to agent
         $user->agents()->attach($agent->id);

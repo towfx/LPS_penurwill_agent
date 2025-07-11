@@ -29,10 +29,10 @@
           </span>
         </Button>
 
-        <Button variant="secondary">
+        <!-- <Button variant="secondary">
           <Plus size="16" class="mr-2" />
           New Project
-        </Button>
+        </Button> -->
 
         <!-- User Dropdown -->
         <div class="relative" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
@@ -50,6 +50,12 @@
                 <div class="text-xs text-stone-500">{{ userEmail }}</div>
               </div>
               <div class="py-2">
+                <Link :href="getDashboardLink" class="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors">
+                  {{ getDashboardText }}
+                </Link>
+                <Link href="/profile" class="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors">
+                  Profile Settings
+                </Link>
                 <Link href="/logout" method="post" as="button" class="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors">
                   Logout
                 </Link>
@@ -80,8 +86,26 @@ defineEmits(['toggle'])
 const showDropdown = ref(false)
 const page = usePage()
 const user = computed(() => page.props.auth?.user || {})
+const userRoles = computed(() => page.props.auth?.roles || [])
 const userName = computed(() => user.value.name || 'User')
 const userEmail = computed(() => user.value.email || '')
+
+// Role checks
+const isAdmin = computed(() => userRoles.value.includes('admin'))
+const isAgent = computed(() => userRoles.value.includes('agent'))
+
+// Navigation based on role
+const getDashboardLink = computed(() => {
+  if (isAdmin.value) return '/admin/dashboard'
+  if (isAgent.value) return '/agent/dashboard'
+  return '/dashboard'
+})
+
+const getDashboardText = computed(() => {
+  if (isAdmin.value) return 'Admin Dashboard'
+  if (isAgent.value) return 'Agent Dashboard'
+  return 'Dashboard'
+})
 </script>
 
 <style scoped>

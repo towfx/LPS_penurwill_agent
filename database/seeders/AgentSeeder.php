@@ -4,8 +4,11 @@ namespace Database\Seeders;
 
 use App\Models\Agent;
 use App\Models\User;
+use App\Models\ReferralCode;
+use App\Models\BankAccount;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AgentSeeder extends Seeder
 {
@@ -122,6 +125,20 @@ class AgentSeeder extends Seeder
             ],
         ];
 
+        // Bank names for random assignment
+        $bankNames = [
+            'Chase Bank',
+            'Bank of America',
+            'Wells Fargo',
+            'Citibank',
+            'US Bank',
+            'PNC Bank',
+            'Capital One',
+            'TD Bank',
+            'Goldman Sachs',
+            'Morgan Stanley'
+        ];
+
         // Create individual agents
         foreach ($individualAgents as $agentData) {
             $userEmail = $agentData['user_email'];
@@ -142,6 +159,31 @@ class AgentSeeder extends Seeder
 
             // Link user to agent
             $user->agents()->attach($agent->id);
+
+            // Create referral code for this agent
+            $systemSetting = \App\Models\SystemSetting::first();
+            $referralCode = ReferralCode::create([
+                'agent_id' => $agent->id,
+                'code' => $systemSetting->referral_code_prefix . strtoupper(Str::random(8)),
+                'is_active' => true,
+                'commission_rate' => $systemSetting->commission_default_rate,
+                'usage_limit' => $systemSetting->global_referral_usage_limit,
+                'used_count' => 0,
+                'expires_at' => now()->addYears(5),
+            ]);
+
+            // Update agent with referral code
+            $agent->update(['referral_code_id' => $referralCode->id]);
+
+            // Create bank account for this agent
+            BankAccount::create([
+                'agent_id' => $agent->id,
+                'account_name' => $agent->individual_name,
+                'account_number' => rand(100000000, 999999999),
+                'bank_name' => $bankNames[array_rand($bankNames)],
+                'iban' => 'US' . strtoupper(Str::random(18)),
+                'swift_code' => strtoupper(Str::random(8)),
+            ]);
         }
 
         // Create company agents
@@ -164,9 +206,36 @@ class AgentSeeder extends Seeder
 
             // Link user to agent
             $user->agents()->attach($agent->id);
+
+            // Create referral code for this agent
+            $systemSetting = \App\Models\SystemSetting::first();
+            $referralCode = ReferralCode::create([
+                'agent_id' => $agent->id,
+                'code' => $systemSetting->referral_code_prefix . strtoupper(Str::random(8)),
+                'is_active' => true,
+                'commission_rate' => $systemSetting->commission_default_rate,
+                'usage_limit' => $systemSetting->global_referral_usage_limit,
+                'used_count' => 0,
+                'expires_at' => now()->addYears(5),
+            ]);
+
+            // Update agent with referral code
+            $agent->update(['referral_code_id' => $referralCode->id]);
+
+            // Create bank account for this agent
+            BankAccount::create([
+                'agent_id' => $agent->id,
+                'account_name' => $agent->company_name,
+                'account_number' => rand(100000000, 999999999),
+                'bank_name' => $bankNames[array_rand($bankNames)],
+                'iban' => 'US' . strtoupper(Str::random(18)),
+                'swift_code' => strtoupper(Str::random(8)),
+            ]);
         }
 
         $this->command->info('10 agents created successfully (5 individual, 5 company)');
         $this->command->info('User accounts created with default password: passw123');
+        $this->command->info('Referral codes created for each agent');
+        $this->command->info('Bank accounts created for each agent');
     }
 }

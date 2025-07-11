@@ -1,237 +1,183 @@
 <template>
   <div>
     <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Agents</span> / <span class="text-stone-900 font-medium">Update</span>
+      <span>Admin</span> / <span>Agents</span> / <span class="text-stone-900 font-medium">Edit Agent</span>
     </nav>
-
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-forest-dark">Update Agent</h1>
-      <Button variant="outline" @click="goBack">
-        <ArrowLeft size="16" class="mr-2" />
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold text-forest-dark">Edit Agent</h1>
+      <button @click="goBack" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors">
         Back to List
-      </Button>
+      </button>
     </div>
 
-    <div v-if="isLoading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gold"></div>
-    </div>
+    <form @submit.prevent="saveAgent" class="space-y-6">
+      <!-- Agent Information -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">Agent Information</h3>
 
-    <Card v-else>
-      <CardHeader>
-        <CardTitle>Agent Information</CardTitle>
-      </CardHeader>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Agent Type</label>
+          <div class="flex space-x-4">
+            <label class="flex items-center">
+              <input type="radio" value="individual" v-model="form.profile_type" class="mr-2" /> Individual
+            </label>
+            <label class="flex items-center">
+              <input type="radio" value="company" v-model="form.profile_type" class="mr-2" /> Company
+            </label>
+          </div>
+        </div>
 
-      <CardContent>
-        <form @submit.prevent="submitForm" class="space-y-6">
-          <!-- Agent Type Selection -->
+        <div v-if="isIndividual" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Agent Type *</label>
-            <div class="flex space-x-4">
-              <label class="flex items-center">
-                <input
-                  v-model="form.profile_type"
-                  type="radio"
-                  value="individual"
-                  class="mr-2"
-                />
-                Individual
-              </label>
-              <label class="flex items-center">
-                <input
-                  v-model="form.profile_type"
-                  type="radio"
-                  value="company"
-                  class="mr-2"
-                />
-                Company
-              </label>
-            </div>
-            <p v-if="errors.profile_type" class="text-red-500 text-sm mt-1">{{ errors.profile_type }}</p>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+            <input v-model="form.individual_name" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.individual_name" class="text-accent-red text-sm mt-1">{{ errors.individual_name }}</p>
           </div>
-
-          <!-- Individual Fields -->
-          <div v-if="form.profile_type === 'individual'" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Individual Name *</label>
-              <input
-                v-model="form.individual_name"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter individual name"
-              />
-              <p v-if="errors.individual_name" class="text-red-500 text-sm mt-1">{{ errors.individual_name }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-              <input
-                v-model="form.individual_phone"
-                type="tel"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter phone number"
-              />
-              <p v-if="errors.individual_phone" class="text-red-500 text-sm mt-1">{{ errors.individual_phone }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Address *</label>
-              <textarea
-                v-model="form.individual_address"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter address"
-              ></textarea>
-              <p v-if="errors.individual_address" class="text-red-500 text-sm mt-1">{{ errors.individual_address }}</p>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+            <input v-model="form.individual_phone" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.individual_phone" class="text-accent-red text-sm mt-1">{{ errors.individual_phone }}</p>
           </div>
-
-          <!-- Company Fields -->
-          <div v-if="form.profile_type === 'company'" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative Name *</label>
-              <input
-                v-model="form.company_representative_name"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter representative name"
-              />
-              <p v-if="errors.company_representative_name" class="text-red-500 text-sm mt-1">{{ errors.company_representative_name }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-              <input
-                v-model="form.company_name"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter company name"
-              />
-              <p v-if="errors.company_name" class="text-red-500 text-sm mt-1">{{ errors.company_name }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Registration Number *</label>
-              <input
-                v-model="form.company_registration_number"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter registration number"
-              />
-              <p v-if="errors.company_registration_number" class="text-red-500 text-sm mt-1">{{ errors.company_registration_number }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Address *</label>
-              <textarea
-                v-model="form.company_address"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter company address"
-              ></textarea>
-              <p v-if="errors.company_address" class="text-red-500 text-sm mt-1">{{ errors.company_address }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone *</label>
-              <input
-                v-model="form.company_phone"
-                type="tel"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter company phone"
-              />
-              <p v-if="errors.company_phone" class="text-red-500 text-sm mt-1">{{ errors.company_phone }}</p>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+            <textarea v-model="form.individual_address" class="w-full px-3 py-2 border rounded"></textarea>
+            <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
           </div>
+        </div>
 
-          <!-- User Account Information -->
-          <div class="border-t pt-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">User Account Information</h3>
-
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input
-                  v-model="form.user_email"
-                  type="email"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-                  placeholder="Enter email address"
-                  readonly
-                />
-                <p class="text-sm text-gray-500 mt-1">Email cannot be changed</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">New Password (leave blank to keep current)</label>
-                <input
-                  v-model="form.user_password"
-                  type="password"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                  placeholder="Enter new password"
-                />
-                <p v-if="errors.user_password" class="text-red-500 text-sm mt-1">{{ errors.user_password }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                <input
-                  v-model="form.user_password_confirmation"
-                  type="password"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                  placeholder="Confirm new password"
-                />
-                <p v-if="errors.user_password_confirmation" class="text-red-500 text-sm mt-1">{{ errors.user_password_confirmation }}</p>
-              </div>
-            </div>
+        <div v-if="isCompany" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+            <input v-model="form.company_name" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.company_name" class="text-accent-red text-sm mt-1">{{ errors.company_name }}</p>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Representative</label>
+            <input v-model="form.company_representative_name" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.company_representative_name" class="text-accent-red text-sm mt-1">{{ errors.company_representative_name }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Registration Number</label>
+            <input v-model="form.company_registration_number" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.company_registration_number" class="text-accent-red text-sm mt-1">{{ errors.company_registration_number }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Company Address</label>
+            <textarea v-model="form.company_address" class="w-full px-3 py-2 border rounded"></textarea>
+            <p v-if="errors.company_address" class="text-accent-red text-sm mt-1">{{ errors.company_address }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
+            <input v-model="form.company_phone" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
+          </div>
+        </div>
 
-          <!-- Status -->
+        <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select
-              v-model="form.status"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-            >
+            <select v-model="form.status" class="w-full px-3 py-2 border rounded">
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
               <option value="banned">Banned</option>
             </select>
-            <p v-if="errors.status" class="text-red-500 text-sm mt-1">{{ errors.status }}</p>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">New Password (leave blank to keep current)</label>
+            <input v-model="form.user_password" type="password" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.user_password" class="text-accent-red text-sm mt-1">{{ errors.user_password }}</p>
+          </div>
+          <div v-if="form.user_password">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+            <input v-model="form.user_password_confirmation" type="password" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.user_password_confirmation" class="text-accent-red text-sm mt-1">{{ errors.user_password_confirmation }}</p>
+          </div>
+        </div>
+      </div>
 
-          <!-- Form Actions -->
-          <div class="flex justify-end space-x-4 pt-6 border-t">
-            <Button type="button" variant="outline" @click="goBack">
-              Cancel
-            </Button>
-            <Button type="submit" :disabled="isSubmitting">
-              <span v-if="isSubmitting" class="flex items-center">
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Updating...
-              </span>
-              <span v-else>Update Agent</span>
-            </Button>
+      <!-- Bank Account Information -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">Bank Account Information</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Account Name</label>
+            <input v-model="form.bank_account_name" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.bank_account_name" class="text-accent-red text-sm mt-1">{{ errors.bank_account_name }}</p>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+            <input v-model="form.bank_account_number" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.bank_account_number" class="text-accent-red text-sm mt-1">{{ errors.bank_account_number }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+            <input v-model="form.bank_name" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.bank_name" class="text-accent-red text-sm mt-1">{{ errors.bank_name }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
+            <input v-model="form.iban" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.iban" class="text-accent-red text-sm mt-1">{{ errors.iban }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">SWIFT Code</label>
+            <input v-model="form.swift_code" type="text" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.swift_code" class="text-accent-red text-sm mt-1">{{ errors.swift_code }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Referral Code Information -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">Referral Code Information</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Referral Code</label>
+            <input v-model="form.referral_code" type="text" class="w-full px-3 py-2 border rounded font-mono" placeholder="Enter unique referral code" />
+            <p v-if="errors.referral_code" class="text-accent-red text-sm mt-1">{{ errors.referral_code }}</p>
+            <p class="text-sm text-gray-500 mt-1">Referral code must be unique across all agents</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Commission Rate (%)</label>
+            <input v-model="form.referral_commission_rate" type="number" step="0.01" min="0" max="100" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.referral_commission_rate" class="text-accent-red text-sm mt-1">{{ errors.referral_commission_rate }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Usage Limit</label>
+            <input v-model="form.referral_usage_limit" type="number" min="1" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.referral_usage_limit" class="text-accent-red text-sm mt-1">{{ errors.referral_usage_limit }}</p>
+          </div>
+          <div>
+            <label class="flex items-center">
+              <input v-model="form.referral_is_active" type="checkbox" class="mr-2" />
+              <span class="text-sm font-medium text-gray-700">Active</span>
+            </label>
+            <p v-if="errors.referral_is_active" class="text-accent-red text-sm mt-1">{{ errors.referral_is_active }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex justify-end">
+        <button type="submit" :disabled="isSaving" class="bg-gold hover:bg-amber-700 text-white px-6 py-2 rounded font-medium transition-colors">
+          <span v-if="isSaving">Saving...</span>
+          <span v-else>Save Changes</span>
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { ArrowLeft } from 'lucide-vue-next'
 import AdminLayout from '../Design/AdminLayout.vue'
-import Card from '../Design/Components/Card.vue'
-import CardHeader from '../Design/Components/CardHeader.vue'
-import CardContent from '../Design/Components/CardContent.vue'
-import CardTitle from '../Design/Components/CardTitle.vue'
-import Button from '../Design/Components/Button.vue'
 
 defineOptions({ layout: AdminLayout })
 
-// Props
 const props = defineProps({
   id: {
     type: [String, Number],
@@ -239,79 +185,55 @@ const props = defineProps({
   },
   agent: {
     type: Object,
-    default: () => ({})
-  },
-  errors: {
-    type: Object,
-    default: () => ({})
+    default: null
   }
 })
 
-// Reactive data
-const isLoading = ref(true)
-const isSubmitting = ref(false)
-
-const form = reactive({
-  profile_type: 'individual',
-  individual_name: '',
-  individual_phone: '',
-  individual_address: '',
-  company_representative_name: '',
-  company_name: '',
-  company_registration_number: '',
-  company_address: '',
-  company_phone: '',
-  user_email: '',
+const form = ref({
+  profile_type: props.agent?.profile_type || 'individual',
+  individual_name: props.agent?.individual_name || '',
+  individual_phone: props.agent?.individual_phone || '',
+  individual_address: props.agent?.individual_address || '',
+  company_representative_name: props.agent?.company_representative_name || '',
+  company_name: props.agent?.company_name || '',
+  company_registration_number: props.agent?.company_registration_number || '',
+  company_address: props.agent?.company_address || '',
+  company_phone: props.agent?.company_phone || '',
   user_password: '',
   user_password_confirmation: '',
-  status: 'active'
+  status: props.agent?.status || 'active',
+  // Bank account fields
+  bank_account_name: props.agent?.bank_account?.account_name || '',
+  bank_account_number: props.agent?.bank_account?.account_number || '',
+  bank_name: props.agent?.bank_account?.bank_name || '',
+  iban: props.agent?.bank_account?.iban || '',
+  swift_code: props.agent?.bank_account?.swift_code || '',
+  // Referral code fields
+  referral_code: props.agent?.referral_code?.code || '',
+  referral_commission_rate: props.agent?.referral_code?.commission_rate || '',
+  referral_usage_limit: props.agent?.referral_code?.usage_limit || '',
+  referral_is_active: props.agent?.referral_code?.is_active || true,
 })
 
-// Methods
-const populateForm = () => {
-  if (props.agent && Object.keys(props.agent).length > 0) {
-    Object.assign(form, {
-      profile_type: props.agent.profile_type,
-      individual_name: props.agent.individual_name || '',
-      individual_phone: props.agent.individual_phone || '',
-      individual_address: props.agent.individual_address || '',
-      company_representative_name: props.agent.company_representative_name || '',
-      company_name: props.agent.company_name || '',
-      company_registration_number: props.agent.company_registration_number || '',
-      company_address: props.agent.company_address || '',
-      company_phone: props.agent.company_phone || '',
-      user_email: props.agent.user_email || '',
-      status: props.agent.status
-    })
-  }
-}
+const isIndividual = computed(() => form.value.profile_type === 'individual')
+const isCompany = computed(() => form.value.profile_type === 'company')
 
-const submitForm = async () => {
-  isSubmitting.value = true
+const isSaving = ref(false)
+const errors = ref({})
 
+const saveAgent = async () => {
+  isSaving.value = true
+  errors.value = {}
   try {
-    await router.put(`/admin/agents/${props.id}/update`, form, {
-      onSuccess: () => {
-        router.visit('/admin/agents/list')
-      },
-      onError: (errors) => {
-        console.error('Form errors:', errors)
-      }
+    await router.put(`/admin/agents/${props.id}/update`, form.value, {
+      onError: (e) => { errors.value = e },
     })
-  } catch (error) {
-    console.error('Submission error:', error)
   } finally {
-    isSubmitting.value = false
+    isSaving.value = false
   }
 }
 
 const goBack = () => {
-  router.visit('/admin/agents/list')
+  router.visit('/admin/agents')
 }
-
-// Lifecycle
-onMounted(() => {
-  populateForm()
-  isLoading.value = false
-})
 </script>

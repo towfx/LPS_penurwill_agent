@@ -47,4 +47,22 @@ class HandleInertiaRequests extends Middleware
         ]);
     }
 
+    /**
+     * Handle the response for the given request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return \Illuminate\Http\Response
+     */
+    public function handle(Request $request, \Closure $next)
+    {
+        $response = parent::handle($request, $next);
+
+        // Handle 403 errors
+        if ($response->getStatusCode() === 403) {
+            return \Inertia\Inertia::render('Error/403');
+        }
+
+        return $response;
+    }
 }

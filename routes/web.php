@@ -23,6 +23,16 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
+        $user = auth()->user();
+
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($user->hasRole('agent')) {
+            return redirect()->route('agent.dashboard');
+        }
+
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
@@ -30,28 +40,46 @@ Route::middleware([
         return Inertia::render('Design/Design01');
     })->name('design.design01');
 
-    Route::get('/admin/dashboard', function () {
-        return Inertia::render('Admin/Dashboard', [
-            'layout' => 'Design/AdminLayout',
-        ]);
-    })->name('admin.dashboard');
+    // Profile routes (accessible to all authenticated users)
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 
-    // Agents
-    Route::get('/admin/agents/list', fn() => Inertia::render('Admin/AgentsList'))->name('admin.agents.list');
-    Route::get('/admin/agents/add', fn() => Inertia::render('Admin/AgentsAdd'))->name('admin.agents.add');
-    Route::post('/admin/agents/store', [AgentController::class, 'store'])->name('admin.agents.store');
-    Route::get('/admin/agents/{id}/view', [AgentController::class, 'show'])->name('admin.agents.view');
-    Route::get('/admin/agents/{id}/update', [AgentController::class, 'edit'])->name('admin.agents.update');
-    Route::put('/admin/agents/{id}/update', [AgentController::class, 'update'])->name('admin.agents.update.store');
+    // Admin routes (require admin role)
+    Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', function () {
+            return redirect()->route('admin.dashboard');
+        })->name('index');
 
-    // Commissions
-    Route::get('/admin/commissions/list', fn() => Inertia::render('Admin/CommissionsList'))->name('admin.commissions.list');
-    Route::get('/admin/commissions/{id}/view', fn($id) => Inertia::render('Admin/CommissionView', ['id' => $id]))->name('admin.commissions.view');
+        Route::get('/dashboard', function () {
+            return Inertia::render('Admin/Dashboard', [
+                'layout' => 'Design/AdminLayout',
+            ]);
+        })->name('dashboard');
 
-    // Agent routes
-    Route::get('/agent/dashboard', fn() => Inertia::render('Agent/Dashboard'))->name('agent.dashboard');
-    Route::get('/agent/profile', [AgentProfileController::class, 'show'])->name('agent.profile');
-    Route::get('/agent/profile/edit', [AgentProfileController::class, 'edit'])->name('agent.profile.edit');
-    Route::put('/agent/profile/edit', [AgentProfileController::class, 'update'])->name('agent.profile.update');
-    Route::get('/agent/commissions', fn() => Inertia::render('Agent/Commissions'))->name('agent.commissions');
+        // Agents
+        Route::get('/agents/list', fn() => Inertia::render('Admin/AgentsList'))->name('agents.list');
+        Route::get('/agents/add', fn() => Inertia::render('Admin/AgentsAdd'))->name('agents.add');
+        Route::post('/agents/store', [AgentController::class, 'store'])->name('agents.store');
+        Route::get('/agents/{id}/view', [AgentController::class, 'show'])->name('agents.view');
+        Route::get('/agents/{id}/update', [AgentController::class, 'edit'])->name('agents.update');
+        Route::put('/agents/{id}/update', [AgentController::class, 'update'])->name('agents.update.store');
+
+        // Commissions
+        Route::get('/commissions/list', fn() => Inertia::render('Admin/CommissionsList'))->name('commissions.list');
+        Route::get('/commissions/{id}/view', fn($id) => Inertia::render('Admin/CommissionView', ['id' => $id]))->name('commissions.view');
+    });
+
+    // Agent routes (require agent role)
+    Route::middleware(['agent'])->prefix('agent')->name('agent.')->group(function () {
+        Route::get('/', function () {
+            return redirect()->route('agent.dashboard');
+        })->name('index');
+
+        Route::get('/dashboard', fn() => Inertia::render('Agent/Dashboard'))->name('dashboard');
+        Route::get('/profile', [AgentProfileController::class, 'show'])->name('profile');
+        Route::get('/profile/edit', [AgentProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile/edit', [AgentProfileController::class, 'update'])->name('profile.update');
+        Route::get('/commissions', fn() => Inertia::render('Agent/Commissions'))->name('commissions');
+    });
 });

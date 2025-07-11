@@ -11,20 +11,22 @@ class AgentProfileController extends Controller
     public function show(Request $request)
     {
         $user = Auth::user();
-        $agent = $user->agents()->first();
+        $agent = $user->agents()->with(['bankAccount', 'referralCode'])->first();
 
         return Inertia::render('Agent/Profile', [
-            'agent' => $agent
+            'agent' => $agent,
+            'penurwillWebsiteUrl' => config('app.penurwill-website-url')
         ]);
     }
 
     public function edit(Request $request)
     {
         $user = Auth::user();
-        $agent = $user->agents()->first();
+        $agent = $user->agents()->with(['bankAccount', 'referralCode'])->first();
 
         return Inertia::render('Agent/ProfileEdit', [
-            'agent' => $agent
+            'agent' => $agent,
+            'penurwillWebsiteUrl' => config('app.penurwill-website-url')
         ]);
     }
 
@@ -47,6 +49,14 @@ class AgentProfileController extends Controller
             'company_address' => 'nullable|string',
             'company_phone' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive,suspended,banned',
+            // Bank account fields
+            'bank_account_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:255',
+            'bank_name' => 'nullable|string|max:255',
+            'iban' => 'nullable|string|max:255',
+            'swift_code' => 'nullable|string|max:255',
+            // Referral code fields
+            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,' . ($agent->referralCode->id ?? 'NULL') . ',id',
         ]);
 
         if ($data['profile_type'] === 'individual') {
@@ -62,6 +72,45 @@ class AgentProfileController extends Controller
         }
 
         $agent->update($data);
+
+        // Update or create bank account
+        if ($agent->bankAccount) {
+            $agent->bankAccount->update([
+                'account_name' => $data['bank_account_name'],
+                'account_number' => $data['bank_account_number'],
+                'bank_name' => $data['bank_name'],
+                'iban' => $data['iban'],
+                'swift_code' => $data['swift_code'],
+            ]);
+        } else {
+            $agent->bankAccount()->create([
+                'account_name' => $data['bank_account_name'],
+                'account_number' => $data['bank_account_number'],
+                'bank_name' => $data['bank_name'],
+                'iban' => $data['iban'],
+                'swift_code' => $data['swift_code'],
+            ]);
+        }
+
+        // Update referral code
+        if ($agent->referralCode && $data['referral_code']) {
+            $agent->referralCode->update([
+                'code' => $data['referral_code'],
+            ]);
+        } elseif ($data['referral_code'] && !$agent->referralCode) {
+            // Create new referral code if agent doesn't have one
+            $systemSetting = \App\Models\SystemSetting::first();
+            $referralCode = \App\Models\ReferralCode::create([
+                'agent_id' => $agent->id,
+                'code' => $data['referral_code'],
+                'is_active' => true,
+                'commission_rate' => $systemSetting->commission_default_rate,
+                'usage_limit' => $systemSetting->global_referral_usage_limit,
+                'used_count' => 0,
+                'expires_at' => now()->addYears(5),
+            ]);
+            $agent->update(['referral_code_id' => $referralCode->id]);
+        }
 
         return redirect()->route('agent.profile')->with('success', 'Profile updated successfully!');
     }

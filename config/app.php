@@ -7,13 +7,26 @@ return [
     | Application Name
     |--------------------------------------------------------------------------
     |
-    | This value is the name of your application, which will be used when the
+    | This value is the name of your application. This value is used when the
     | framework needs to place the application's name in a notification or
-    | other UI elements where an application name needs to be displayed.
+    | any other location as required by the application or its packages.
     |
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Penurwill Website URL
+    |--------------------------------------------------------------------------
+    |
+    | This value is the base URL of the Penurwill website where referral
+    | links will direct users. This is used for generating shareable
+    | referral URLs for agents.
+    |
+    */
+
+    'penurwill-website-url' => env('PENURWILL_WEBSITE_URL', 'https://penurwill.com'),
 
     /*
     |--------------------------------------------------------------------------

@@ -77,7 +77,7 @@ class AgentController extends Controller
      */
     public function show($id)
     {
-        $agent = Agent::with('users')->findOrFail($id);
+        $agent = Agent::with(['users', 'bankAccount', 'referralCode'])->findOrFail($id);
 
         return Inertia::render('Admin/AgentView', [
             'agent' => [
@@ -94,6 +94,8 @@ class AgentController extends Controller
                 'status' => $agent->status,
                 'created_at' => $agent->created_at->format('Y-m-d H:i:s'),
                 'user_email' => $agent->users->first()?->email,
+                'bank_account' => $agent->bankAccount,
+                'referral_code' => $agent->referralCode,
             ]
         ]);
     }
@@ -103,7 +105,7 @@ class AgentController extends Controller
      */
     public function edit($id)
     {
-        $agent = Agent::with('users')->findOrFail($id);
+        $agent = Agent::with(['users', 'bankAccount', 'referralCode'])->findOrFail($id);
 
         return Inertia::render('Admin/AgentUpdate', [
             'id' => $id,
@@ -120,6 +122,8 @@ class AgentController extends Controller
                 'company_phone' => $agent->company_phone,
                 'status' => $agent->status,
                 'user_email' => $agent->users->first()?->email,
+                'bank_account' => $agent->bankAccount,
+                'referral_code' => $agent->referralCode,
             ]
         ]);
     }
@@ -144,6 +148,17 @@ class AgentController extends Controller
             'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
             'user_password' => 'nullable|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
+            // Bank account fields
+            'bank_account_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:255',
+            'bank_name' => 'nullable|string|max:255',
+            'iban' => 'nullable|string|max:255',
+            'swift_code' => 'nullable|string|max:255',
+            // Referral code fields
+            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,' . ($agent->referralCode->id ?? 'NULL') . ',id',
+            'referral_commission_rate' => 'nullable|numeric|min:0|max:100',
+            'referral_usage_limit' => 'nullable|integer|min:1',
+            'referral_is_active' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -185,6 +200,48 @@ class AgentController extends Controller
             $user->update([
                 'password' => Hash::make($request->user_password),
             ]);
+        }
+
+        // Update or create bank account
+        if ($agent->bankAccount) {
+            $agent->bankAccount->update([
+                'account_name' => $request->bank_account_name,
+                'account_number' => $request->bank_account_number,
+                'bank_name' => $request->bank_name,
+                'iban' => $request->iban,
+                'swift_code' => $request->swift_code,
+            ]);
+        } else {
+            $agent->bankAccount()->create([
+                'account_name' => $request->bank_account_name,
+                'account_number' => $request->bank_account_number,
+                'bank_name' => $request->bank_name,
+                'iban' => $request->iban,
+                'swift_code' => $request->swift_code,
+            ]);
+        }
+
+        // Update referral code
+        if ($agent->referralCode) {
+            $agent->referralCode->update([
+                'code' => $request->referral_code,
+                'commission_rate' => $request->referral_commission_rate,
+                'usage_limit' => $request->referral_usage_limit,
+                'is_active' => $request->referral_is_active,
+            ]);
+        } elseif ($request->referral_code) {
+            // Create new referral code if agent doesn't have one
+            $systemSetting = \App\Models\SystemSetting::first();
+            $referralCode = \App\Models\ReferralCode::create([
+                'agent_id' => $agent->id,
+                'code' => $request->referral_code,
+                'is_active' => $request->referral_is_active ?? true,
+                'commission_rate' => $request->referral_commission_rate ?? $systemSetting->commission_default_rate,
+                'usage_limit' => $request->referral_usage_limit ?? $systemSetting->global_referral_usage_limit,
+                'used_count' => 0,
+                'expires_at' => now()->addYears(5),
+            ]);
+            $agent->update(['referral_code_id' => $referralCode->id]);
         }
 
         return redirect()->route('admin.agents.list')->with('success', 'Agent updated successfully!');
