@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
+use App\Http\Controllers\Api\AgentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,4 +31,10 @@ Route::post('/check-email', function (Request $request) {
     return response()->json([
         'exists' => $exists
     ]);
+});
+
+// Admin API routes
+Route::prefix('admin')->group(function () {
+    Route::get('/agents/query', [AgentController::class, 'query']);
+    Route::get('/agents/{id}', [AgentController::class, 'show']);
 });

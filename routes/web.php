@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Admin\AgentController;
+use App\Http\Controllers\AgentProfileController;
 
 Route::get('/', function () {
     return redirect('/get-started');
@@ -37,8 +39,10 @@ Route::middleware([
     // Agents
     Route::get('/admin/agents/list', fn() => Inertia::render('Admin/AgentsList'))->name('admin.agents.list');
     Route::get('/admin/agents/add', fn() => Inertia::render('Admin/AgentsAdd'))->name('admin.agents.add');
-    Route::get('/admin/agents/{id}/view', fn($id) => Inertia::render('Admin/AgentView', ['id' => $id]))->name('admin.agents.view');
-    Route::get('/admin/agents/{id}/update', fn($id) => Inertia::render('Admin/AgentUpdate', ['id' => $id]))->name('admin.agents.update');
+    Route::post('/admin/agents/store', [AgentController::class, 'store'])->name('admin.agents.store');
+    Route::get('/admin/agents/{id}/view', [AgentController::class, 'show'])->name('admin.agents.view');
+    Route::get('/admin/agents/{id}/update', [AgentController::class, 'edit'])->name('admin.agents.update');
+    Route::put('/admin/agents/{id}/update', [AgentController::class, 'update'])->name('admin.agents.update.store');
 
     // Commissions
     Route::get('/admin/commissions/list', fn() => Inertia::render('Admin/CommissionsList'))->name('admin.commissions.list');
@@ -46,6 +50,8 @@ Route::middleware([
 
     // Agent routes
     Route::get('/agent/dashboard', fn() => Inertia::render('Agent/Dashboard'))->name('agent.dashboard');
-    Route::get('/agent/profile', fn() => Inertia::render('Agent/Profile'))->name('agent.profile');
+    Route::get('/agent/profile', [AgentProfileController::class, 'show'])->name('agent.profile');
+    Route::get('/agent/profile/edit', [AgentProfileController::class, 'edit'])->name('agent.profile.edit');
+    Route::put('/agent/profile/edit', [AgentProfileController::class, 'update'])->name('agent.profile.update');
     Route::get('/agent/commissions', fn() => Inertia::render('Agent/Commissions'))->name('agent.commissions');
 });

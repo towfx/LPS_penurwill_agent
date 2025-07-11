@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Agent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -21,27 +22,69 @@ class AgentRegistrationController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:users,email',
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'password' => 'required|string|min:8|confirmed',
+            'profile_type' => 'required|in:individual,company',
+            'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
+            'individual_phone' => 'required_if:profile_type,individual|nullable|string|max:255',
+            'individual_address' => 'required_if:profile_type,individual|nullable|string',
+            'company_representative_name' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_name' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_registration_number' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_address' => 'required_if:profile_type,company|nullable|string',
+            'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
+            'password' => [
+                'required',
+                'string',
+                'min:12',
+                'confirmed',
+                //'regex:#^(?=.*[0-9])(?=.*[!@#\\$%^&*()_+\-=\[\]{}|;:,.<>?])#'
+            ],
             'terms' => 'required|accepted'
+        ], [
+            'password.regex' => 'Password must contain at least one number and one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)',
+            'password.min' => 'Password must be at least 12 characters long',
+            'email.unique' => 'This email address is already registered. Please use a different email or try logging in.',
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
 
-        // Create new user
+        // Create user
         $user = User::create([
-            'name' => $request->first_name . ' ' . $request->last_name,
+            'name' => $request->profile_type === 'individual'
+                ? $request->individual_name
+                : $request->company_representative_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'email_verified_at' => now(),
         ]);
 
-        // Log the user in
-        \Illuminate\Support\Facades\Auth::login($user);
+        // Assign 'agent' role to user
+        $user->assignRole('agent');
 
-        // Redirect to agent dashboard
-        return redirect()->route('agent.dashboard')->with('success', 'Account created successfully! Welcome to Penurwill Agent System.');
+        // Create agent
+        $agentData = [
+            'profile_type' => $request->profile_type,
+            'status' => 'active',
+        ];
+
+        if ($request->profile_type === 'individual') {
+            $agentData['individual_name'] = $request->individual_name;
+            $agentData['individual_phone'] = $request->individual_phone;
+            $agentData['individual_address'] = $request->individual_address;
+        } else {
+            $agentData['company_representative_name'] = $request->company_representative_name;
+            $agentData['company_name'] = $request->company_name;
+            $agentData['company_registration_number'] = $request->company_registration_number;
+            $agentData['company_address'] = $request->company_address;
+            $agentData['company_phone'] = $request->company_phone;
+        }
+
+        $agent = Agent::create($agentData);
+
+        // Link user to agent
+        $user->agents()->attach($agent->id);
+
+        return back()->with('success', 'Agent registration completed successfully!');
     }
 }
