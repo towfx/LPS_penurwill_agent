@@ -31,6 +31,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'created_by',
+        'updated_by',
     ];
 
     /**
@@ -65,5 +67,53 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the agents associated with this user.
+     */
+    public function agents()
+    {
+        return $this->belongsToMany(Agent::class, 'agents_users');
+    }
+
+    /**
+     * Get the activity logs for this user.
+     */
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
+    /**
+     * Get the user who created this user.
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the user who last updated this user.
+     */
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Get the payouts created by this user.
+     */
+    public function createdPayouts()
+    {
+        return $this->hasMany(Payout::class, 'created_by');
+    }
+
+    /**
+     * Get the commissions paid by this user.
+     */
+    public function paidCommissions()
+    {
+        return $this->hasMany(Commission::class, 'paid_by');
     }
 }
