@@ -13,6 +13,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Http\Responses\LoginResponse;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,14 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
+        // Custom login view with email parameter support
+        Fortify::loginView(function (Request $request) {
+            return \Inertia\Inertia::render('Auth/Login', [
+                'canResetPassword' => config('fortify.features')['reset-passwords'] ?? false,
+                'email' => $request->query('email'),
+            ]);
+        });
+
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
@@ -43,6 +52,23 @@ class FortifyServiceProvider extends ServiceProvider
 
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
+        });
+
+        // Role-based login redirect using custom LoginResponse
+        $this->app->singleton(\Laravel\Fortify\Contracts\LoginResponse::class, function () {
+            return new class implements \Laravel\Fortify\Contracts\LoginResponse {
+                public function toResponse($request)
+                {
+                    $user = $request->user();
+                    if ($user && $user->hasRole('admin')) {
+                        return redirect('/admin/dashboard');
+                    }
+                    if ($user && $user->hasRole('agent')) {
+                        return redirect('/agent/dashboard');
+                    }
+                    return redirect('/dashboard');
+                }
+            };
         });
     }
 }

@@ -5,13 +5,15 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect('/get-started');
 });
+
+Route::get('/get-started', function () {
+    return Inertia::render('GetStarted');
+})->name('get-started');
+
+Route::get('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'show'])->name('register-as-agent');
+Route::post('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'store'])->name('register-as-agent.store');
 
 Route::middleware([
     'auth:sanctum',
