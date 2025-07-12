@@ -66,8 +66,14 @@ Route::middleware([
         Route::put('/agents/{id}/update', [AgentController::class, 'update'])->name('agents.update.store');
 
         // Commissions
-        Route::get('/commissions/list', fn() => Inertia::render('Admin/CommissionsList'))->name('commissions.list');
-        Route::get('/commissions/{id}/view', fn($id) => Inertia::render('Admin/CommissionView', ['id' => $id]))->name('commissions.view');
+        Route::get('/commissions/list', [App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('commissions.list');
+        Route::get('/commission/detail', [App\Http\Controllers\Admin\CommissionController::class, 'detail'])->name('commission.detail');
+
+        // Payouts
+        Route::get('/payout/create', [App\Http\Controllers\Admin\PayoutController::class, 'create'])->name('payout.create');
+        Route::post('/payout/store', [App\Http\Controllers\Admin\PayoutController::class, 'store'])->name('payout.store');
+        Route::get('/payout/{id}/update', [App\Http\Controllers\Admin\PayoutController::class, 'edit'])->name('payout.update');
+        Route::put('/payout/{id}/update', [App\Http\Controllers\Admin\PayoutController::class, 'update'])->name('payout.update.store');
 
         // System Settings
         Route::get('/system-settings', [App\Http\Controllers\Admin\SystemSettingController::class, 'index'])->name('system-settings');
@@ -85,6 +91,8 @@ Route::middleware([
         Route::get('/profile', [AgentProfileController::class, 'show'])->name('profile');
         Route::get('/profile/edit', [AgentProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile/edit', [AgentProfileController::class, 'update'])->name('profile.update');
-        Route::get('/commissions', fn() => Inertia::render('Agent/Commissions'))->name('commissions');
+        Route::get('/commissions', [App\Http\Controllers\Agent\CommissionController::class, 'index'])->name('commissions');
+        Route::get('/commissions/detail', [App\Http\Controllers\Agent\CommissionController::class, 'detail'])->name('commissions.detail');
+        Route::get('/payout/{id}/detail', [App\Http\Controllers\Agent\PayoutController::class, 'show'])->name('payout.detail');
     });
 });

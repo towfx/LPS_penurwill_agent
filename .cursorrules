@@ -42,6 +42,31 @@ Use the established color palette:
 - Accent Blue: #4a6b73
 - Accent Gray: #8a9ba8
 
+## CLI
+ - must be compatibe with Windows 10, powershell
+
+## Currency Formatting
+
+**ALWAYS use the global formatCurrency helper for displaying currency values.**
+
+**Usage:**
+```javascript
+import { formatCurrency } from '../../lib/utils.js'
+
+// In template
+{{ formatCurrency('RM', amount) }}
+
+// In script
+const formattedAmount = formatCurrency('RM', 1234.56) // Returns "RM 1,234.56"
+```
+
+**Features:**
+- Prefix is always 'RM' (Malaysian Ringgit)
+- Formats with commas for thousands: 1,234,567.89
+- Always shows 2 decimal places
+- Handles null/undefined values gracefully
+- Uses Malaysian locale formatting
+
 ## Controller Activity Logging
 
 When creating or updating a controller, make sure activity logging is implemented for all create, update, and delete actions.

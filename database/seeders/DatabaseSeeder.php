@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             SystemSettingsSeeder::class,
             UserSeeder::class,
             AgentSeeder::class,
+            TestDataSeeder::class, // Generate sales data for agents
         ]);
     }
 }

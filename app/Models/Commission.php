@@ -10,6 +10,13 @@ class Commission extends Model
     use HasFactory;
 
     /**
+     * Commission source types
+     */
+    const SOURCE_REFERRAL_CODE = 'referral_code';
+    const SOURCE_AGENT_RATE = 'agent_rate';
+    const SOURCE_SYSTEM_DEFAULT = 'system_default';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -38,6 +45,21 @@ class Commission extends Model
             'commission_rate' => 'decimal:2',
             'amount' => 'decimal:2',
             'paid_at' => 'datetime',
+            'commission_source' => 'string', // Enum: 'referral_code', 'agent_rate', 'system_default'
+        ];
+    }
+
+    /**
+     * Get all available commission source types
+     *
+     * @return array
+     */
+    public static function getCommissionSources(): array
+    {
+        return [
+            self::SOURCE_REFERRAL_CODE,
+            self::SOURCE_AGENT_RATE,
+            self::SOURCE_SYSTEM_DEFAULT,
         ];
     }
 
