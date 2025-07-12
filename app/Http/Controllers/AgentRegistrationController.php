@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Agent;
 use App\Models\ReferralCode;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -61,8 +62,14 @@ class AgentRegistrationController extends Controller
             'email_verified_at' => now(),
         ]);
 
+        // Log user creation (using system user or null for registration)
+        ActivityLog::logCreate($user, $user, $user->toArray());
+
         // Assign 'agent' role to user
         $user->assignRole('agent');
+
+        // Log role assignment
+        ActivityLog::logCustom($user, 'role_assigned', "Assigned 'agent' role to user {$user->email}");
 
         // Create agent
         $agentData = [
@@ -84,6 +91,9 @@ class AgentRegistrationController extends Controller
 
         $agent = Agent::create($agentData);
 
+        // Log agent creation
+        ActivityLog::logCreate($user, $agent, $agent->toArray());
+
         // Create referral code for this agent
         $systemSetting = \App\Models\SystemSetting::first();
         $referralCode = ReferralCode::create([
@@ -96,11 +106,20 @@ class AgentRegistrationController extends Controller
             'expires_at' => now()->addYears(5),
         ]);
 
+        // Log referral code creation
+        ActivityLog::logCreate($user, $referralCode, $referralCode->toArray());
+
         // Update agent with referral code
         $agent->update(['referral_code_id' => $referralCode->id]);
 
+        // Log agent referral code assignment
+        ActivityLog::logCustom($user, 'referral_code_assigned', "Assigned referral code {$referralCode->code} to agent {$agent->id}");
+
         // Link user to agent
         $user->agents()->attach($agent->id);
+
+        // Log user-agent relationship creation
+        ActivityLog::logCustom($user, 'user_agent_linked', "Linked user {$user->email} to agent {$agent->id}");
 
         return back()->with('success', 'Agent registration completed successfully!');
     }

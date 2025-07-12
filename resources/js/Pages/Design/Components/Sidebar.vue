@@ -90,6 +90,7 @@ const defaultAdminMenus = [
   { icon: Home, label: 'Dashboard', href: '/admin/dashboard' },
   { icon: UsersIcon, label: 'Agents', href: '/admin/agents/list' },
   { icon: DollarSign, label: 'Commissions', href: '/admin/commissions/list' },
+  { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
 ]
 
 const menuItems = computed(() => {

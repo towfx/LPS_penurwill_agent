@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\User;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
@@ -17,6 +19,8 @@ class AgentController extends Controller
      */
     public function store(Request $request)
     {
+        $adminUser = Auth::user();
+
         $validator = Validator::make($request->all(), [
             'profile_type' => 'required|in:individual,company',
             'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
@@ -46,6 +50,15 @@ class AgentController extends Controller
             'email_verified_at' => now(),
         ]);
 
+        // Log user creation
+        ActivityLog::logCreate($adminUser, $user, $user->toArray());
+
+        // Assign agent role
+        $user->assignRole('agent');
+
+        // Log role assignment
+        ActivityLog::logCustom($adminUser, 'role_assigned', "Admin assigned 'agent' role to user {$user->email}", $user);
+
         // Create agent
         $agentData = [
             'profile_type' => $request->profile_type,
@@ -66,8 +79,35 @@ class AgentController extends Controller
 
         $agent = Agent::create($agentData);
 
+        // Log agent creation
+        ActivityLog::logCreate($adminUser, $agent, $agent->toArray());
+
+        // Create referral code for this agent using system settings default values
+        $systemSetting = \App\Models\SystemSetting::first();
+        $referralCode = \App\Models\ReferralCode::create([
+            'agent_id' => $agent->id,
+            'code' => $systemSetting->referral_code_prefix . strtoupper(\Illuminate\Support\Str::random(8)),
+            'is_active' => true,
+            'commission_rate' => $systemSetting->commission_default_rate,
+            'usage_limit' => $systemSetting->global_referral_usage_limit,
+            'used_count' => 0,
+            'expires_at' => now()->addYears(5),
+        ]);
+
+        // Log referral code creation
+        ActivityLog::logCreate($adminUser, $referralCode, $referralCode->toArray());
+
+        // Update agent with referral code
+        $agent->update(['referral_code_id' => $referralCode->id]);
+
+        // Log agent referral code assignment
+        ActivityLog::logCustom($adminUser, 'referral_code_assigned', "Admin assigned referral code {$referralCode->code} to agent {$agent->id}", $agent);
+
         // Link user to agent
         $user->agents()->attach($agent->id);
+
+        // Log user-agent relationship creation
+        ActivityLog::logCustom($adminUser, 'user_agent_linked', "Admin linked user {$user->email} to agent {$agent->id}", $agent);
 
         return redirect()->route('admin.agents.list')->with('success', 'Agent created successfully!');
     }
@@ -133,8 +173,18 @@ class AgentController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $adminUser = Auth::user();
         $agent = Agent::findOrFail($id);
         $user = $agent->users->first();
+
+        // Capture before data for activity logging
+        $beforeData = $agent->toArray();
+        if ($agent->bankAccount) {
+            $beforeData['bank_account'] = $agent->bankAccount->toArray();
+        }
+        if ($agent->referralCode) {
+            $beforeData['referral_code'] = $agent->referralCode->toArray();
+        }
 
         $validator = Validator::make($request->all(), [
             'profile_type' => 'required|in:individual,company',
@@ -200,6 +250,9 @@ class AgentController extends Controller
             $user->update([
                 'password' => Hash::make($request->user_password),
             ]);
+
+            // Log password update
+            ActivityLog::logCustom($adminUser, 'password_updated', "Admin updated password for user {$user->email}", $user);
         }
 
         // Update or create bank account
@@ -212,13 +265,16 @@ class AgentController extends Controller
                 'swift_code' => $request->swift_code,
             ]);
         } else {
-            $agent->bankAccount()->create([
+            $bankAccount = $agent->bankAccount()->create([
                 'account_name' => $request->bank_account_name,
                 'account_number' => $request->bank_account_number,
                 'bank_name' => $request->bank_name,
                 'iban' => $request->iban,
                 'swift_code' => $request->swift_code,
             ]);
+
+            // Log bank account creation
+            ActivityLog::logCreate($adminUser, $bankAccount, $bankAccount->toArray());
         }
 
         // Update referral code
@@ -242,7 +298,26 @@ class AgentController extends Controller
                 'expires_at' => now()->addYears(5),
             ]);
             $agent->update(['referral_code_id' => $referralCode->id]);
+
+            // Log referral code creation
+            ActivityLog::logCreate($adminUser, $referralCode, $referralCode->toArray());
         }
+
+        // Refresh agent data to get updated relationships
+        $agent->refresh();
+        $agent->load(['bankAccount', 'referralCode']);
+
+        // Capture after data for activity logging
+        $afterData = $agent->toArray();
+        if ($agent->bankAccount) {
+            $afterData['bank_account'] = $agent->bankAccount->toArray();
+        }
+        if ($agent->referralCode) {
+            $afterData['referral_code'] = $agent->referralCode->toArray();
+        }
+
+        // Log the agent update activity
+        ActivityLog::logUpdate($adminUser, $agent, $beforeData, $afterData);
 
         return redirect()->route('admin.agents.list')->with('success', 'Agent updated successfully!');
     }

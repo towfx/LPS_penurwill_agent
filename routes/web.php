@@ -68,6 +68,11 @@ Route::middleware([
         // Commissions
         Route::get('/commissions/list', fn() => Inertia::render('Admin/CommissionsList'))->name('commissions.list');
         Route::get('/commissions/{id}/view', fn($id) => Inertia::render('Admin/CommissionView', ['id' => $id]))->name('commissions.view');
+
+        // System Settings
+        Route::get('/system-settings', [App\Http\Controllers\Admin\SystemSettingController::class, 'index'])->name('system-settings');
+        Route::get('/system-settings/update', [App\Http\Controllers\Admin\SystemSettingController::class, 'edit'])->name('system-settings.edit');
+        Route::put('/system-settings/update', [App\Http\Controllers\Admin\SystemSettingController::class, 'update'])->name('system-settings.update');
     });
 
     // Agent routes (require agent role)

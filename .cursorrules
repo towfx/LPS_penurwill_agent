@@ -1,0 +1,75 @@
+# Cursor Rules for Penurwill Agent Project
+
+## Page Creation Standards
+
+When asked to create/update a page, make sure the page has:
+
+1. **Breadcrumbs** - Link Back to... (when applicable)
+2. **Title** - Clear page title
+3. **Description** - Brief description of the page content
+4. **Content** - Main page content
+5. **Visual Polish** - After creating a page, polish elements with additional colors in app.css
+6. **Contextual Icons** - Add contextual icons where necessary for visual guidance
+
+## Code Style Guidelines
+
+- Use consistent indentation (2 spaces for Vue/JS, 4 spaces for PHP)
+- Follow Laravel naming conventions for PHP files
+- Use Vue 3 Composition API with `<script setup>`
+- Implement proper error handling and validation
+- Use semantic HTML elements
+- Ensure responsive design for all components
+- Ensure using laravel jetstram features in components
+
+## File Organization
+
+- Vue components in `resources/js/Pages/`
+- Controllers in `app/Http/Controllers/`
+- Models in `app/Models/`
+- Migrations in `database/migrations/`
+- Routes in `routes/web.php` or `routes/api.php`
+
+## Color Palette
+
+Use the established color palette:
+- Forest Dark: #162d25
+- Forest Light: #5d775f
+- Gold: #bc9c5f
+- Cream: #eae1d0
+- Accent Red: #d4423f
+- Accent Orange: #e07b39
+- Accent Green: #7a9b7d
+- Accent Blue: #4a6b73
+- Accent Gray: #8a9ba8
+
+## Controller Activity Logging
+
+When creating or updating a controller, make sure activity logging is implemented for all create, update, and delete actions.
+
+**IMPORTANT: User must be supplied by the controller - no automatic user detection.**
+
+**Sample activity log usage:**
+```php
+// Get current user in controller method
+$user = auth()->user();
+
+// After creating a model
+ActivityLog::logCreate($user, $model, $model->toArray());
+
+// After updating a model
+ActivityLog::logUpdate($user, $model, $before, $model->toArray());
+
+// After deleting a model
+ActivityLog::logDelete($user, $model, $before);
+```
+
+You may also use the fluent interface for custom actions:
+```php
+$user = auth()->user();
+$log = ActivityLog::createInstance()
+    ->setUser($user)  // REQUIRED: Controller must supply user
+    ->setAction('custom_action')
+    ->setTarget($model)
+    ->setDescription('Custom log message');
+// Log will be auto-saved at the end of the request.
+```

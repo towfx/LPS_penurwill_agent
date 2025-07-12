@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -18,6 +20,11 @@ class AuthenticatedSessionController extends FortifyAuthenticatedSessionControll
      */
     protected function authenticated(Request $request, $user)
     {
+        // Log successful login
+        if ($user instanceof User) {
+            ActivityLog::logCustom($user, 'login', "User logged in successfully", $user);
+        }
+
         if ($user->hasRole('admin')) {
             return redirect('/admin/dashboard');
         }

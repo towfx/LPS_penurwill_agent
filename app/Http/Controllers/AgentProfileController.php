@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Models\ActivityLog;
 
 class AgentProfileController extends Controller
 {
@@ -36,6 +37,15 @@ class AgentProfileController extends Controller
         $agent = $user->agents()->first();
         if (!$agent) {
             abort(404);
+        }
+
+        // Capture before data for activity logging
+        $beforeData = $agent->toArray();
+        if ($agent->bankAccount) {
+            $beforeData['bank_account'] = $agent->bankAccount->toArray();
+        }
+        if ($agent->referralCode) {
+            $beforeData['referral_code'] = $agent->referralCode->toArray();
         }
 
         $data = $request->validate([
@@ -111,6 +121,22 @@ class AgentProfileController extends Controller
             ]);
             $agent->update(['referral_code_id' => $referralCode->id]);
         }
+
+        // Refresh agent data to get updated relationships
+        $agent->refresh();
+        $agent->load(['bankAccount', 'referralCode']);
+
+        // Capture after data for activity logging
+        $afterData = $agent->toArray();
+        if ($agent->bankAccount) {
+            $afterData['bank_account'] = $agent->bankAccount->toArray();
+        }
+        if ($agent->referralCode) {
+            $afterData['referral_code'] = $agent->referralCode->toArray();
+        }
+
+        // Log the profile update activity
+        ActivityLog::logUpdate($user, $agent, $beforeData, $afterData);
 
         return redirect()->route('agent.profile')->with('success', 'Profile updated successfully!');
     }

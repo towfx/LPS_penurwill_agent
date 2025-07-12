@@ -52,6 +52,18 @@
         --accent-green: #7a9b7d;
         --accent-blue: #4a6b73;
         --accent-gray: #8a9ba8;
+
+        /* Additional contextual colors for enhanced UI */
+        --success-light: #d1fae5;
+        --success-dark: #065f46;
+        --warning-light: #fef3c7;
+        --warning-dark: #92400e;
+        --error-light: #fee2e2;
+        --error-dark: #991b1b;
+        --info-light: #dbeafe;
+        --info-dark: #1e40af;
+        --neutral-light: #f3f4f6;
+        --neutral-dark: #374151;
     }
   .dark {
         --background: 0 0% 3.9%;
@@ -78,6 +90,18 @@
         --chart-3: 30 80% 55%;
         --chart-4: 280 65% 60%;
         --chart-5: 340 75% 55%;
+
+        /* Additional contextual colors for enhanced UI - Dark Mode */
+        --success-light: #064e3b;
+        --success-dark: #6ee7b7;
+        --warning-light: #78350f;
+        --warning-dark: #fbbf24;
+        --error-light: #7f1d1d;
+        --error-dark: #fca5a5;
+        --info-light: #1e3a8a;
+        --info-dark: #93c5fd;
+        --neutral-light: #374151;
+        --neutral-dark: #d1d5db;
     }
 }
 
@@ -88,4 +112,53 @@
   body {
     @apply bg-background text-foreground;
     }
+}
+
+@layer utilities {
+  /* Custom color utilities */
+  .text-forest-dark { color: var(--forest-dark); }
+  .text-forest-light { color: var(--forest-light); }
+  .text-gold { color: var(--gold); }
+  .text-cream { color: var(--cream); }
+  .text-accent-red { color: var(--accent-red); }
+  .text-accent-orange { color: var(--accent-orange); }
+  .text-accent-green { color: var(--accent-green); }
+  .text-accent-blue { color: var(--accent-blue); }
+  .text-accent-gray { color: var(--accent-gray); }
+
+  .bg-forest-dark { background-color: var(--forest-dark); }
+  .bg-forest-light { background-color: var(--forest-light); }
+  .bg-gold { background-color: var(--gold); }
+  .bg-cream { background-color: var(--cream); }
+  .bg-accent-red { background-color: var(--accent-red); }
+  .bg-accent-orange { background-color: var(--accent-orange); }
+  .bg-accent-green { background-color: var(--accent-green); }
+  .bg-accent-blue { background-color: var(--accent-blue); }
+  .bg-accent-gray { background-color: var(--accent-gray); }
+
+  .border-forest-dark { border-color: var(--forest-dark); }
+  .border-forest-light { border-color: var(--forest-light); }
+  .border-gold { border-color: var(--gold); }
+  .border-cream { border-color: var(--cream); }
+  .border-accent-red { border-color: var(--accent-red); }
+  .border-accent-orange { border-color: var(--accent-orange); }
+  .border-accent-green { border-color: var(--accent-green); }
+  .border-accent-blue { border-color: var(--accent-blue); }
+  .border-accent-gray { border-color: var(--accent-gray); }
+
+  /* Contextual color utilities */
+  .text-success { color: var(--success-dark); }
+  .text-warning { color: var(--warning-dark); }
+  .text-error { color: var(--error-dark); }
+  .text-info { color: var(--info-dark); }
+
+  .bg-success { background-color: var(--success-light); }
+  .bg-warning { background-color: var(--warning-light); }
+  .bg-error { background-color: var(--error-light); }
+  .bg-info { background-color: var(--info-light); }
+
+  .border-success { border-color: var(--success-dark); }
+  .border-warning { border-color: var(--warning-dark); }
+  .border-error { border-color: var(--error-dark); }
+  .border-info { border-color: var(--info-dark); }
 }
