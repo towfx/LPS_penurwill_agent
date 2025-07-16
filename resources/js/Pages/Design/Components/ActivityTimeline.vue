@@ -1,66 +1,117 @@
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle>Recent Activity</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div class="space-y-4">
-        <div v-for="activity in activities" :key="activity.id" class="flex items-start space-x-3">
-          <div
-            class="w-8 h-8 rounded-full flex items-center justify-center text-white"
-            :style="{ backgroundColor: getActivityColor(activity.type) }"
-          >
-            <component :is="getActivityIcon(activity.type)" size="16" />
-          </div>
-          <div class="flex-1">
-            <p class="text-sm text-gray-900">
-              <span class="font-medium">{{ activity.user }}</span> {{ activity.action }}
-            </p>
-            <p class="text-xs text-gray-500">{{ activity.time }}</p>
-          </div>
+  <div class="space-y-4">
+    <div v-for="activity in activities" :key="activity.id" class="flex items-start space-x-3">
+      <!-- Activity Icon -->
+      <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+           :class="getActivityIconClass(activity.action)">
+        <component :is="getActivityIcon(activity.action)" size="16" class="text-white" />
+      </div>
+
+      <!-- Activity Content -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-medium text-forest-dark">
+            {{ activity.user_name }}
+          </p>
+          <p class="text-xs text-stone-500">
+            {{ activity.created_at }}
+          </p>
+        </div>
+        <p class="text-sm text-stone-700 mt-1">
+          {{ activity.description }}
+        </p>
+        <div class="flex items-center mt-1">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                :class="getActivityBadgeClass(activity.action)">
+            {{ formatAction(activity.action) }}
+          </span>
+          <span v-if="activity.target_type" class="ml-2 text-xs text-stone-500">
+            {{ formatTargetType(activity.target_type) }}
+          </span>
         </div>
       </div>
-    </CardContent>
-  </Card>
+    </div>
+
+    <!-- Empty State -->
+    <div v-if="!activities.length" class="text-center py-8">
+      <div class="w-12 h-12 mx-auto rounded-full bg-cream flex items-center justify-center mb-3">
+        <Activity size="24" class="text-gold" />
+      </div>
+      <p class="text-stone-500 text-sm">No recent activity</p>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import {
+  User,
+  DollarSign,
+  ShoppingCart,
+  Settings,
   Plus,
-  Clock,
-  XCircle,
-  CheckCircle,
+  Edit,
+  Trash2,
   Activity
 } from 'lucide-vue-next'
-import Card from './Card.vue'
-import CardHeader from './CardHeader.vue'
-import CardContent from './CardContent.vue'
-import CardTitle from './CardTitle.vue'
 
-const activities = [
-  { id: 1, user: 'Alice Johnson', action: 'created new project', time: '2 minutes ago', type: 'create' },
-  { id: 2, user: 'Bob Smith', action: 'updated user profile', time: '15 minutes ago', type: 'update' },
-  { id: 3, user: 'Carol Davis', action: 'deleted old reports', time: '1 hour ago', type: 'delete' },
-  { id: 4, user: 'David Wilson', action: 'completed task review', time: '2 hours ago', type: 'complete' },
-]
-
-const getActivityIcon = (type) => {
-  switch(type) {
-    case 'create': return Plus
-    case 'update': return Clock
-    case 'delete': return XCircle
-    case 'complete': return CheckCircle
-    default: return Activity
+const props = defineProps({
+  activities: {
+    type: Array,
+    default: () => []
   }
+})
+
+function getActivityIcon(action) {
+  const icons = {
+    'create': Plus,
+    'update': Edit,
+    'delete': Trash2,
+    'login': User,
+    'sale': ShoppingCart,
+    'commission': DollarSign,
+    'payout': DollarSign,
+    'settings': Settings,
+    'default': Activity
+  }
+  return icons[action] || icons.default
 }
 
-const getActivityColor = (type) => {
-  switch(type) {
-    case 'create': return '#7a9b7d'
-    case 'update': return '#4a6b73'
-    case 'delete': return '#d4423f'
-    case 'complete': return '#bc9c5f'
-    default: return '#8a9ba8'
+function getActivityIconClass(action) {
+  const classes = {
+    'create': 'bg-accent-green',
+    'update': 'bg-accent-blue',
+    'delete': 'bg-accent-red',
+    'login': 'bg-accent-gray',
+    'sale': 'bg-gold',
+    'commission': 'bg-accent-green',
+    'payout': 'bg-accent-blue',
+    'settings': 'bg-accent-orange',
+    'default': 'bg-accent-gray'
   }
+  return classes[action] || classes.default
+}
+
+function getActivityBadgeClass(action) {
+  const classes = {
+    'create': 'bg-accent-green/20 text-accent-green',
+    'update': 'bg-accent-blue/20 text-accent-blue',
+    'delete': 'bg-accent-red/20 text-accent-red',
+    'login': 'bg-accent-gray/20 text-accent-gray',
+    'sale': 'bg-gold/20 text-gold',
+    'commission': 'bg-accent-green/20 text-accent-green',
+    'payout': 'bg-accent-blue/20 text-accent-blue',
+    'settings': 'bg-accent-orange/20 text-accent-orange',
+    'default': 'bg-accent-gray/20 text-accent-gray'
+  }
+  return classes[action] || classes.default
+}
+
+function formatAction(action) {
+  return action.charAt(0).toUpperCase() + action.slice(1)
+}
+
+function formatTargetType(targetType) {
+  if (!targetType) return ''
+  return targetType.split('\\').pop()
 }
 </script>

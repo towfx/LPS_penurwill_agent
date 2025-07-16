@@ -51,11 +51,7 @@ Route::middleware([
             return redirect()->route('admin.dashboard');
         })->name('index');
 
-        Route::get('/dashboard', function () {
-            return Inertia::render('Admin/Dashboard', [
-                'layout' => 'Design/AdminLayout',
-            ]);
-        })->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
         // Agents
         Route::get('/agents/list', fn() => Inertia::render('Admin/AgentsList'))->name('agents.list');
@@ -87,7 +83,7 @@ Route::middleware([
             return redirect()->route('agent.dashboard');
         })->name('index');
 
-        Route::get('/dashboard', fn() => Inertia::render('Agent/Dashboard'))->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Agent\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/profile', [AgentProfileController::class, 'show'])->name('profile');
         Route::get('/profile/edit', [AgentProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile/edit', [AgentProfileController::class, 'update'])->name('profile.update');

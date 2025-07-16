@@ -14,7 +14,10 @@
   `" style="background-color: #162d25">
     <div class="p-6">
       <div class="flex items-center justify-between mb-8">
-        <h1 class="text-xl font-bold" style="color: #bc9c5f">AdminPanel</h1>
+        <h1 class="text-xl font-bold" style="color: #bc9c5f">
+          <span style="color: #eae1d0">Pen'urWill</span>
+          <span style="color: #bc9c5f">{{ adminMenu ? 'Admin' : 'Agent' }}</span>
+        </h1>
         <button
           @click="$emit('toggle')"
           class="lg:hidden text-white transition-colors hover:text-amber-400"

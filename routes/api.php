@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
 use App\Http\Controllers\Api\AgentController;
+use App\Http\Controllers\Api\AgentTrackingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,4 +38,11 @@ Route::post('/check-email', function (Request $request) {
 Route::prefix('admin')->group(function () {
     Route::get('/agents/query', [AgentController::class, 'query']);
     Route::get('/agents/{id}', [AgentController::class, 'show']);
+});
+
+// Public Agent Tracking API routes
+Route::prefix('agents')->group(function () {
+    Route::post('/track/referral', [AgentTrackingController::class, 'trackReferral']);
+    Route::post('/track/sale', [AgentTrackingController::class, 'trackSale']);
+    Route::get('/track/code/{code}', [AgentTrackingController::class, 'getReferralCodeInfo']);
 });

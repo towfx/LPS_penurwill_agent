@@ -18,7 +18,7 @@ class SystemSettingsSeeder extends Seeder
             [
                 'commission_default_rate' => 10.00, // 10%
                 'referral_code_prefix' => 'WILL-WRITE-',
-                'global_referral_usage_limit' => 100,
+                'global_referral_usage_limit' => 10000,
             ]
         );
 

@@ -44,6 +44,7 @@ Use the established color palette:
 
 ## CLI
  - must be compatibe with Windows 10, powershell
+ - use pnpm (instead of npm)
 
 ## Currency Formatting
 
