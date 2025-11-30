@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\User;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\AgentTrackingController;
+use App\Http\Controllers\Api\TrackingPixelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,5 +45,13 @@ Route::prefix('admin')->group(function () {
 Route::prefix('agents')->group(function () {
     Route::post('/track/referral', [AgentTrackingController::class, 'trackReferral']);
     Route::post('/track/sale', [AgentTrackingController::class, 'trackSale']);
+    Route::post('/track/visit', [AgentTrackingController::class, 'trackVisit']);
     Route::get('/track/code/{code}', [AgentTrackingController::class, 'getReferralCodeInfo']);
+    Route::get('/track/version', [AgentTrackingController::class, 'getVersion']);
+});
+
+// Tracking Pixel routes for cross-domain tracking
+Route::prefix('pixel')->group(function () {
+    Route::get('/track', [TrackingPixelController::class, 'track']);
+    Route::options('/track', [TrackingPixelController::class, 'preflight']);
 });

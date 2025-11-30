@@ -426,4 +426,209 @@ class AgentTrackingTest extends TestCase
                 'message' => 'Agent not found or inactive'
             ]);
     }
+
+    public function test_can_track_visit()
+    {
+        // Create an agent with referral code
+        $agent = Agent::factory()->create(['status' => 'active']);
+        $referralCode = ReferralCode::factory()->create([
+            'agent_id' => $agent->id,
+            'code' => 'TEST123',
+            'is_active' => true
+        ]);
+
+        $visitData = [
+            'referral_code' => 'TEST123',
+            'visit_url' => 'https://example.com/product/123',
+            'visit_time' => now()->toISOString(),
+            'referral_page' => 'https://example.com/landing',
+            'session_id' => 'session_123',
+            'page_title' => 'Product Page',
+            'screen_resolution' => '1920x1080',
+            'language' => 'en-US',
+            'timezone' => 'America/New_York'
+        ];
+
+        $response = $this->postJson('/api/agents/track/visit', $visitData);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Visit tracked successfully'
+            ])
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'visit_id',
+                    'agent_name',
+                    'referral_code',
+                    'visit_url',
+                    'visit_time',
+                    'referral_page',
+                    'tracked_at'
+                ]
+            ]);
+
+        // Verify the visit was created in database
+        $this->assertDatabaseHas('agent_visits', [
+            'agent_id' => $agent->id,
+            'referral_code' => 'TEST123',
+            'visit_url' => 'https://example.com/product/123',
+            'referral_page' => 'https://example.com/landing',
+            'session_id' => 'session_123',
+            'page_title' => 'Product Page'
+        ]);
+    }
+
+    public function test_track_visit_with_invalid_referral_code()
+    {
+        $visitData = [
+            'referral_code' => 'INVALID',
+            'visit_url' => 'https://example.com/product/123',
+            'visit_time' => now()->toISOString(),
+        ];
+
+        $response = $this->postJson('/api/agents/track/visit', $visitData);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Invalid or inactive referral code'
+            ]);
+    }
+
+    public function test_track_visit_with_inactive_agent()
+    {
+        // Create an agent with inactive status
+        $agent = Agent::factory()->create(['status' => 'inactive']);
+        $referralCode = ReferralCode::factory()->create([
+            'agent_id' => $agent->id,
+            'code' => 'TEST123',
+            'is_active' => true
+        ]);
+
+        $visitData = [
+            'referral_code' => 'TEST123',
+            'visit_url' => 'https://example.com/product/123',
+            'visit_time' => now()->toISOString(),
+        ];
+
+        $response = $this->postJson('/api/agents/track/visit', $visitData);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Agent not found or inactive'
+            ]);
+    }
+
+    /** @test */
+    public function it_can_get_api_version()
+    {
+        $response = $this->getJson('/api/agents/track/version');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => '1.0.0',
+                    'name' => 'Penurwill Agent Tracking API',
+                    'description' => 'API for tracking agent referrals, visits, and sales'
+                ]
+            ])
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    'version',
+                    'name',
+                    'description',
+                    'endpoints',
+                    'features',
+                    'timestamp'
+                ]
+            ]);
+    }
+
+    /** @test */
+    public function it_can_track_visit_via_pixel()
+    {
+        // Create an agent with referral code
+        $agent = Agent::factory()->create(['status' => 'active']);
+        $referralCode = ReferralCode::factory()->create([
+            'agent_id' => $agent->id,
+            'code' => 'TEST123',
+            'is_active' => true
+        ]);
+
+        $response = $this->get('/api/pixel/track?' . http_build_query([
+            'rc' => 'TEST123',
+            'url' => 'https://example.com/product/123',
+            't' => now()->toISOString(),
+            'ref' => 'https://example.com/landing',
+            'title' => 'Product Page'
+        ]));
+
+        $response->assertStatus(200)
+            ->assertHeader('Content-Type', 'image/gif')
+            ->assertHeader('Access-Control-Allow-Origin', '*');
+
+        // Verify the visit was created in database
+        $this->assertDatabaseHas('agent_visits', [
+            'agent_id' => $agent->id,
+            'referral_code' => 'TEST123',
+            'visit_url' => 'https://example.com/product/123',
+            'page_title' => 'Product Page'
+        ]);
+    }
+
+    /** @test */
+    public function it_handles_pixel_tracking_with_minimal_data()
+    {
+        // Create an agent with referral code
+        $agent = Agent::factory()->create(['status' => 'active']);
+        $referralCode = ReferralCode::factory()->create([
+            'agent_id' => $agent->id,
+            'code' => 'TEST123',
+            'is_active' => true
+        ]);
+
+        $response = $this->get('/api/pixel/track?' . http_build_query([
+            'rc' => 'TEST123',
+            'url' => 'https://example.com/product/123'
+        ]));
+
+        $response->assertStatus(200)
+            ->assertHeader('Content-Type', 'image/gif');
+
+        // Verify the visit was created in database
+        $this->assertDatabaseHas('agent_visits', [
+            'agent_id' => $agent->id,
+            'referral_code' => 'TEST123',
+            'visit_url' => 'https://example.com/product/123'
+        ]);
+    }
+
+    /** @test */
+    public function it_handles_pixel_tracking_with_invalid_data()
+    {
+        $response = $this->get('/api/pixel/track?' . http_build_query([
+            'rc' => 'INVALID',
+            'url' => 'https://example.com/product/123'
+        ]));
+
+        // Should still return pixel even with invalid data
+        $response->assertStatus(200)
+            ->assertHeader('Content-Type', 'image/gif');
+    }
+
+    /** @test */
+    public function it_handles_pixel_cors_preflight()
+    {
+        $response = $this->call('OPTIONS', '/api/pixel/track');
+
+        $response->assertStatus(200)
+            ->assertHeader('Access-Control-Allow-Origin', '*')
+            ->assertHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    }
 }

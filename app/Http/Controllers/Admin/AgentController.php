@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AgentController extends Controller
@@ -40,76 +41,83 @@ class AgentController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        // Create user
-        $user = User::create([
-            'name' => $request->profile_type === 'individual'
-                ? $request->individual_name
-                : $request->company_representative_name,
-            'email' => $request->user_email,
-            'password' => Hash::make($request->user_password),
-            'email_verified_at' => now(),
-        ]);
+        DB::beginTransaction();
+        try {
+            // Create user
+            $user = User::create([
+                'name' => $request->profile_type === 'individual'
+                    ? $request->individual_name
+                    : $request->company_representative_name,
+                'email' => $request->user_email,
+                'password' => Hash::make($request->user_password),
+                'email_verified_at' => now(),
+            ]);
 
-        // Log user creation
-        ActivityLog::logCreate($adminUser, $user, $user->toArray());
+            // Log user creation
+            ActivityLog::logCreate($adminUser, $user, $user->toArray());
 
-        // Assign agent role
-        $user->assignRole('agent');
+            // Assign agent role
+            $user->assignRole('agent');
 
-        // Log role assignment
-        ActivityLog::logCustom($adminUser, 'role_assigned', "Admin assigned 'agent' role to user {$user->email}", $user);
+            // Log role assignment
+            ActivityLog::logCustom($adminUser, 'role_assigned', "Admin assigned 'agent' role to user {$user->email}", $user);
 
-        // Create agent
-        $agentData = [
-            'profile_type' => $request->profile_type,
-            'status' => $request->status,
-        ];
+            // Create agent
+            $agentData = [
+                'profile_type' => $request->profile_type,
+                'status' => $request->status,
+            ];
 
-        if ($request->profile_type === 'individual') {
-            $agentData['individual_name'] = $request->individual_name;
-            $agentData['individual_phone'] = $request->individual_phone;
-            $agentData['individual_address'] = $request->individual_address;
-        } else {
-            $agentData['company_representative_name'] = $request->company_representative_name;
-            $agentData['company_name'] = $request->company_name;
-            $agentData['company_registration_number'] = $request->company_registration_number;
-            $agentData['company_address'] = $request->company_address;
-            $agentData['company_phone'] = $request->company_phone;
+            if ($request->profile_type === 'individual') {
+                $agentData['individual_name'] = $request->individual_name;
+                $agentData['individual_phone'] = $request->individual_phone;
+                $agentData['individual_address'] = $request->individual_address;
+            } else {
+                $agentData['company_representative_name'] = $request->company_representative_name;
+                $agentData['company_name'] = $request->company_name;
+                $agentData['company_registration_number'] = $request->company_registration_number;
+                $agentData['company_address'] = $request->company_address;
+                $agentData['company_phone'] = $request->company_phone;
+            }
+
+            $agent = Agent::create($agentData);
+
+            // Log agent creation
+            ActivityLog::logCreate($adminUser, $agent, $agent->toArray());
+
+            // Create referral code for this agent using system settings default values
+            $systemSetting = \App\Models\SystemSetting::first();
+            $referralCode = \App\Models\ReferralCode::create([
+                'agent_id' => $agent->id,
+                'code' => $systemSetting->referral_code_prefix . strtoupper(\Illuminate\Support\Str::random(8)),
+                'is_active' => true,
+                'commission_rate' => $systemSetting->commission_default_rate,
+                'usage_limit' => $systemSetting->global_referral_usage_limit,
+                'used_count' => 0,
+                'expires_at' => now()->addYears(5),
+            ]);
+
+            // Log referral code creation
+            ActivityLog::logCreate($adminUser, $referralCode, $referralCode->toArray());
+
+            // Update agent with referral code
+            $agent->update(['referral_code_id' => $referralCode->id]);
+
+            // Log agent referral code assignment
+            ActivityLog::logCustom($adminUser, 'referral_code_assigned', "Admin assigned referral code {$referralCode->code} to agent {$agent->id}", $agent);
+
+            // Link user to agent
+            $user->agents()->attach($agent->id);
+
+            // Log user-agent relationship creation
+            ActivityLog::logCustom($adminUser, 'user_agent_linked', "Admin linked user {$user->email} to agent {$agent->id}", $agent);
+
+            DB::commit();
+            return redirect()->route('admin.agents.list')->with('success', 'Agent created successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to create agent. ' . $e->getMessage()])->withInput();
         }
-
-        $agent = Agent::create($agentData);
-
-        // Log agent creation
-        ActivityLog::logCreate($adminUser, $agent, $agent->toArray());
-
-        // Create referral code for this agent using system settings default values
-        $systemSetting = \App\Models\SystemSetting::first();
-        $referralCode = \App\Models\ReferralCode::create([
-            'agent_id' => $agent->id,
-            'code' => $systemSetting->referral_code_prefix . strtoupper(\Illuminate\Support\Str::random(8)),
-            'is_active' => true,
-            'commission_rate' => $systemSetting->commission_default_rate,
-            'usage_limit' => $systemSetting->global_referral_usage_limit,
-            'used_count' => 0,
-            'expires_at' => now()->addYears(5),
-        ]);
-
-        // Log referral code creation
-        ActivityLog::logCreate($adminUser, $referralCode, $referralCode->toArray());
-
-        // Update agent with referral code
-        $agent->update(['referral_code_id' => $referralCode->id]);
-
-        // Log agent referral code assignment
-        ActivityLog::logCustom($adminUser, 'referral_code_assigned', "Admin assigned referral code {$referralCode->code} to agent {$agent->id}", $agent);
-
-        // Link user to agent
-        $user->agents()->attach($agent->id);
-
-        // Log user-agent relationship creation
-        ActivityLog::logCustom($adminUser, 'user_agent_linked', "Admin linked user {$user->email} to agent {$agent->id}", $agent);
-
-        return redirect()->route('admin.agents.list')->with('success', 'Agent created successfully!');
     }
 
     /**
@@ -215,110 +223,117 @@ class AgentController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        // Update agent
-        $agentData = [
-            'profile_type' => $request->profile_type,
-            'status' => $request->status,
-        ];
+        DB::beginTransaction();
+        try {
+            // Update agent
+            $agentData = [
+                'profile_type' => $request->profile_type,
+                'status' => $request->status,
+            ];
 
-        if ($request->profile_type === 'individual') {
-            $agentData['individual_name'] = $request->individual_name;
-            $agentData['individual_phone'] = $request->individual_phone;
-            $agentData['individual_address'] = $request->individual_address;
-            // Clear company fields
-            $agentData['company_representative_name'] = null;
-            $agentData['company_name'] = null;
-            $agentData['company_registration_number'] = null;
-            $agentData['company_address'] = null;
-            $agentData['company_phone'] = null;
-        } else {
-            $agentData['company_representative_name'] = $request->company_representative_name;
-            $agentData['company_name'] = $request->company_name;
-            $agentData['company_registration_number'] = $request->company_registration_number;
-            $agentData['company_address'] = $request->company_address;
-            $agentData['company_phone'] = $request->company_phone;
-            // Clear individual fields
-            $agentData['individual_name'] = null;
-            $agentData['individual_phone'] = null;
-            $agentData['individual_address'] = null;
+            if ($request->profile_type === 'individual') {
+                $agentData['individual_name'] = $request->individual_name;
+                $agentData['individual_phone'] = $request->individual_phone;
+                $agentData['individual_address'] = $request->individual_address;
+                // Clear company fields
+                $agentData['company_representative_name'] = null;
+                $agentData['company_name'] = null;
+                $agentData['company_registration_number'] = null;
+                $agentData['company_address'] = null;
+                $agentData['company_phone'] = null;
+            } else {
+                $agentData['company_representative_name'] = $request->company_representative_name;
+                $agentData['company_name'] = $request->company_name;
+                $agentData['company_registration_number'] = $request->company_registration_number;
+                $agentData['company_address'] = $request->company_address;
+                $agentData['company_phone'] = $request->company_phone;
+                // Clear individual fields
+                $agentData['individual_name'] = null;
+                $agentData['individual_phone'] = null;
+                $agentData['individual_address'] = null;
+            }
+
+            $agent->update($agentData);
+
+            // Update user if password is provided
+            if ($request->filled('user_password')) {
+                $user->update([
+                    'password' => Hash::make($request->user_password),
+                ]);
+
+                // Log password update
+                ActivityLog::logCustom($adminUser, 'password_updated', "Admin updated password for user {$user->email}", $user);
+            }
+
+            // Update or create bank account
+            if ($agent->bankAccount) {
+                $agent->bankAccount->update([
+                    'account_name' => $request->bank_account_name,
+                    'account_number' => $request->bank_account_number,
+                    'bank_name' => $request->bank_name,
+                    'iban' => $request->iban,
+                    'swift_code' => $request->swift_code,
+                ]);
+            } else {
+                $bankAccount = $agent->bankAccount()->create([
+                    'account_name' => $request->bank_account_name,
+                    'account_number' => $request->bank_account_number,
+                    'bank_name' => $request->bank_name,
+                    'iban' => $request->iban,
+                    'swift_code' => $request->swift_code,
+                ]);
+
+                // Log bank account creation
+                ActivityLog::logCreate($adminUser, $bankAccount, $bankAccount->toArray());
+            }
+
+            // Update referral code
+            if ($agent->referralCode) {
+                $agent->referralCode->update([
+                    'code' => $request->referral_code,
+                    'commission_rate' => $request->referral_commission_rate,
+                    'usage_limit' => $request->referral_usage_limit,
+                    'is_active' => $request->referral_is_active,
+                ]);
+            } elseif ($request->referral_code) {
+                // Create new referral code if agent doesn't have one
+                $systemSetting = \App\Models\SystemSetting::first();
+                $referralCode = \App\Models\ReferralCode::create([
+                    'agent_id' => $agent->id,
+                    'code' => $request->referral_code,
+                    'is_active' => $request->referral_is_active ?? true,
+                    'commission_rate' => $request->referral_commission_rate ?? $systemSetting->commission_default_rate,
+                    'usage_limit' => $request->referral_usage_limit ?? $systemSetting->global_referral_usage_limit,
+                    'used_count' => 0,
+                    'expires_at' => now()->addYears(5),
+                ]);
+                $agent->update(['referral_code_id' => $referralCode->id]);
+
+                // Log referral code creation
+                ActivityLog::logCreate($adminUser, $referralCode, $referralCode->toArray());
+            }
+
+            // Refresh agent data to get updated relationships
+            $agent->refresh();
+            $agent->load(['bankAccount', 'referralCode']);
+
+            // Capture after data for activity logging
+            $afterData = $agent->toArray();
+            if ($agent->bankAccount) {
+                $afterData['bank_account'] = $agent->bankAccount->toArray();
+            }
+            if ($agent->referralCode) {
+                $afterData['referral_code'] = $agent->referralCode->toArray();
+            }
+
+            // Log the agent update activity
+            ActivityLog::logUpdate($adminUser, $agent, $beforeData, $afterData);
+
+            DB::commit();
+            return redirect()->route('admin.agents.list')->with('success', 'Agent updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to update agent. ' . $e->getMessage()])->withInput();
         }
-
-        $agent->update($agentData);
-
-        // Update user if password is provided
-        if ($request->filled('user_password')) {
-            $user->update([
-                'password' => Hash::make($request->user_password),
-            ]);
-
-            // Log password update
-            ActivityLog::logCustom($adminUser, 'password_updated', "Admin updated password for user {$user->email}", $user);
-        }
-
-        // Update or create bank account
-        if ($agent->bankAccount) {
-            $agent->bankAccount->update([
-                'account_name' => $request->bank_account_name,
-                'account_number' => $request->bank_account_number,
-                'bank_name' => $request->bank_name,
-                'iban' => $request->iban,
-                'swift_code' => $request->swift_code,
-            ]);
-        } else {
-            $bankAccount = $agent->bankAccount()->create([
-                'account_name' => $request->bank_account_name,
-                'account_number' => $request->bank_account_number,
-                'bank_name' => $request->bank_name,
-                'iban' => $request->iban,
-                'swift_code' => $request->swift_code,
-            ]);
-
-            // Log bank account creation
-            ActivityLog::logCreate($adminUser, $bankAccount, $bankAccount->toArray());
-        }
-
-        // Update referral code
-        if ($agent->referralCode) {
-            $agent->referralCode->update([
-                'code' => $request->referral_code,
-                'commission_rate' => $request->referral_commission_rate,
-                'usage_limit' => $request->referral_usage_limit,
-                'is_active' => $request->referral_is_active,
-            ]);
-        } elseif ($request->referral_code) {
-            // Create new referral code if agent doesn't have one
-            $systemSetting = \App\Models\SystemSetting::first();
-            $referralCode = \App\Models\ReferralCode::create([
-                'agent_id' => $agent->id,
-                'code' => $request->referral_code,
-                'is_active' => $request->referral_is_active ?? true,
-                'commission_rate' => $request->referral_commission_rate ?? $systemSetting->commission_default_rate,
-                'usage_limit' => $request->referral_usage_limit ?? $systemSetting->global_referral_usage_limit,
-                'used_count' => 0,
-                'expires_at' => now()->addYears(5),
-            ]);
-            $agent->update(['referral_code_id' => $referralCode->id]);
-
-            // Log referral code creation
-            ActivityLog::logCreate($adminUser, $referralCode, $referralCode->toArray());
-        }
-
-        // Refresh agent data to get updated relationships
-        $agent->refresh();
-        $agent->load(['bankAccount', 'referralCode']);
-
-        // Capture after data for activity logging
-        $afterData = $agent->toArray();
-        if ($agent->bankAccount) {
-            $afterData['bank_account'] = $agent->bankAccount->toArray();
-        }
-        if ($agent->referralCode) {
-            $afterData['referral_code'] = $agent->referralCode->toArray();
-        }
-
-        // Log the agent update activity
-        ActivityLog::logUpdate($adminUser, $agent, $beforeData, $afterData);
-
-        return redirect()->route('admin.agents.list')->with('success', 'Agent updated successfully!');
     }
 }

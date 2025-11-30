@@ -120,4 +120,30 @@ class Agent extends Model
     {
         return $this->hasMany(Agent::class, 'referral_code_id');
     }
+
+    /**
+     * Get the visits tracked for this agent.
+     */
+    public function visits()
+    {
+        return $this->hasMany(AgentVisit::class);
+    }
+
+    /**
+     * Get the agent's display name
+     */
+    public function getNameAttribute()
+    {
+        return $this->profile_type === 'company' 
+            ? $this->company_name 
+            : $this->individual_name;
+    }
+
+    /**
+     * Get the agent's type
+     */
+    public function getTypeAttribute()
+    {
+        return $this->profile_type;
+    }
 }

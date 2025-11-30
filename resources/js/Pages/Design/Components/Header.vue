@@ -46,18 +46,23 @@
           <transition name="fade">
             <div v-if="showDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-stone-200 rounded-lg shadow-lg z-50">
               <div class="px-4 py-3 border-b border-stone-100">
-                <div class="font-medium text-stone-900">{{ userName }}</div>
-                <div class="text-xs text-stone-500">{{ userEmail }}</div>
+                <div class="flex flex-col">
+                  <div class="font-medium text-stone-900">{{ userName }}</div>
+                  <div class="text-xs text-stone-500">{{ userEmail }}</div>
+                </div>
               </div>
-              <div class="py-2">
-                <Link :href="getDashboardLink" class="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors">
-                  {{ getDashboardText }}
+              <div class="py-2 space-y-1">
+                <Link :href="getDashboardLink" class="flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors">
+                  <LayoutDashboard size="20" class="flex-shrink-0 text-stone-600" />
+                  <span class="font-medium">{{ getDashboardText }}</span>
                 </Link>
-                <Link href="/profile" class="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors">
-                  Profile Settings
+                <Link href="/profile" class="flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors">
+                  <Settings size="20" class="flex-shrink-0 text-stone-600" />
+                  <span class="font-medium">Profile Settings</span>
                 </Link>
-                <Link href="/logout" method="post" as="button" class="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors">
-                  Logout
+                <Link href="/logout" method="post" as="button" class="flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors">
+                  <LogOut size="20" class="flex-shrink-0 text-stone-600" />
+                  <span class="font-medium">Logout</span>
                 </Link>
               </div>
             </div>
@@ -75,7 +80,10 @@ import {
   Bell,
   Plus,
   User,
-  ChevronDown
+  ChevronDown,
+  LayoutDashboard,
+  Settings,
+  LogOut
 } from 'lucide-vue-next'
 import Button from './Button.vue'
 import { Link, usePage } from '@inertiajs/vue3'
