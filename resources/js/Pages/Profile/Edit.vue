@@ -143,6 +143,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
+import AgentLayout from '../Design/AgentLayout.vue'
+
+defineOptions({ layout: AgentLayout })
 
 // Props
 const props = defineProps({
