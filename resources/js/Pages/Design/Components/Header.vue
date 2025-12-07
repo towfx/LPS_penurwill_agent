@@ -11,7 +11,7 @@
           <Menu size="24" />
         </Button>
 
-        <div class="relative">
+        <div class="relative" style="display: none;">
           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size="20" />
           <input
             type="text"

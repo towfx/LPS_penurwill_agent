@@ -265,26 +265,28 @@ class AgentController extends Controller
                 ActivityLog::logCustom($adminUser, 'password_updated', "Admin updated password for user {$user->email}", $user);
             }
 
-            // Update or create bank account
-            if ($agent->bankAccount) {
-                $agent->bankAccount->update([
-                    'account_name' => $request->bank_account_name,
-                    'account_number' => $request->bank_account_number,
-                    'bank_name' => $request->bank_name,
-                    'iban' => $request->iban,
-                    'swift_code' => $request->swift_code,
-                ]);
-            } else {
-                $bankAccount = $agent->bankAccount()->create([
-                    'account_name' => $request->bank_account_name,
-                    'account_number' => $request->bank_account_number,
-                    'bank_name' => $request->bank_name,
-                    'iban' => $request->iban,
-                    'swift_code' => $request->swift_code,
-                ]);
+            // Update or create bank account only if account number is provided
+            if ($request->filled('bank_account_number')) {
+                if ($agent->bankAccount) {
+                    $agent->bankAccount->update([
+                        'account_name' => $request->bank_account_name,
+                        'account_number' => $request->bank_account_number,
+                        'bank_name' => $request->bank_name,
+                        'iban' => $request->iban,
+                        'swift_code' => $request->swift_code,
+                    ]);
+                } else {
+                    $bankAccount = $agent->bankAccount()->create([
+                        'account_name' => $request->bank_account_name,
+                        'account_number' => $request->bank_account_number,
+                        'bank_name' => $request->bank_name,
+                        'iban' => $request->iban,
+                        'swift_code' => $request->swift_code,
+                    ]);
 
-                // Log bank account creation
-                ActivityLog::logCreate($adminUser, $bankAccount, $bankAccount->toArray());
+                    // Log bank account creation
+                    ActivityLog::logCreate($adminUser, $bankAccount, $bankAccount->toArray());
+                }
             }
 
             // Update referral code

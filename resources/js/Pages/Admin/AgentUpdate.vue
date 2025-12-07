@@ -168,6 +168,58 @@
         </button>
       </div>
     </form>
+
+    <!-- Bank Warning Dialog -->
+    <div v-if="showBankWarningDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeBankWarningDialog">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-lg font-medium text-gray-900">Incomplete Bank Information</h3>
+          </div>
+        </div>
+        <div class="mb-4">
+          <p class="text-sm text-gray-700">You have entered some bank account information but not all required fields. Please complete all bank details (Account Name, Account Number, and Bank Name) for proper bank account setup.</p>
+          <p class="text-sm text-gray-600 mt-2">Do you want to save anyway?</p>
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button @click="closeBankWarningDialog" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium transition-colors">
+            Cancel
+          </button>
+          <button @click="proceedWithSave" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-medium transition-colors">
+            Save Anyway
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Dialog -->
+    <div v-if="showErrorDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeErrorDialog">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-lg font-medium text-gray-900">Error</h3>
+          </div>
+        </div>
+        <div class="mb-4">
+          <p class="text-sm text-gray-700">{{ generalErrorMessage }}</p>
+        </div>
+        <div class="flex justify-end">
+          <button @click="closeErrorDialog" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -220,13 +272,40 @@ const isCompany = computed(() => form.value.profile_type === 'company')
 
 const isSaving = ref(false)
 const errors = ref({})
+const showErrorDialog = ref(false)
+const generalErrorMessage = ref('')
+const showBankWarningDialog = ref(false)
 
 const saveAgent = async () => {
   isSaving.value = true
   errors.value = {}
+  showErrorDialog.value = false
+  showBankWarningDialog.value = false
+  generalErrorMessage.value = ''
+
+  // Check for incomplete bank account information
+  const bankFields = [form.value.bank_account_name, form.value.bank_account_number, form.value.bank_name]
+  const filledBankFields = bankFields.filter(field => field && field.trim() !== '')
+  const hasPartialBankInfo = filledBankFields.length > 0 && filledBankFields.length < 3
+
+  if (hasPartialBankInfo) {
+    showBankWarningDialog.value = true
+    isSaving.value = false
+    return
+  }
+
   try {
     await router.put(`/admin/agents/${props.id}/update`, form.value, {
-      onError: (e) => { errors.value = e },
+      onError: (e) => {
+        errors.value = e
+
+        // Check for general errors (not field-specific)
+        if (e.error || (e.default && e.default.error)) {
+          const errorMsg = e.error || e.default.error
+          generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
+          showErrorDialog.value = true
+        }
+      },
     })
   } finally {
     isSaving.value = false
@@ -234,6 +313,39 @@ const saveAgent = async () => {
 }
 
 const goBack = () => {
-  router.visit('/admin/agents')
+  router.visit('/admin/agents/list')
+}
+
+const closeErrorDialog = () => {
+  showErrorDialog.value = false
+}
+
+const closeBankWarningDialog = () => {
+  showBankWarningDialog.value = false
+}
+
+const proceedWithSave = async () => {
+  showBankWarningDialog.value = false
+  isSaving.value = true
+  errors.value = {}
+  showErrorDialog.value = false
+  generalErrorMessage.value = ''
+
+  try {
+    await router.put(`/admin/agents/${props.id}/update`, form.value, {
+      onError: (e) => {
+        errors.value = e
+
+        // Check for general errors (not field-specific)
+        if (e.error || (e.default && e.default.error)) {
+          const errorMsg = e.error || e.default.error
+          generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
+          showErrorDialog.value = true
+        }
+      },
+    })
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>
