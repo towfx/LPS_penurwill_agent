@@ -16,7 +16,7 @@
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-xl font-bold" style="color: #bc9c5f">
           <span style="color: #eae1d0">Pen'urWill</span>
-          <span style="color: #bc9c5f">{{ adminMenu ? 'Admin' : 'Agent' }}</span>
+          <span style="color: #bc9c5f">{{ isAdmin ? 'Admin' : 'Agent' }}</span>
         </h1>
         <button
           @click="$emit('toggle')"
@@ -67,10 +67,29 @@ import {
   Settings,
   X,
   Users as UsersIcon,
-  DollarSign
+  DollarSign,
+  User
 } from 'lucide-vue-next'
 import Badge from './Badge.vue'
 import { computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+
+// Role detection
+const page = usePage()
+const userRoles = computed(() => {
+  console.log('Sidebar Debug - userRoles:', page.props.auth?.roles || [])
+  return page.props.auth?.roles || []
+})
+const isAdmin = computed(() => {
+  const admin = userRoles.value.includes('admin')
+  console.log('Sidebar Debug - isAdmin:', admin)
+  return admin
+})
+const isAgent = computed(() => {
+  const agent = userRoles.value.includes('agent')
+  console.log('Sidebar Debug - isAgent:', agent)
+  return agent
+})
 
 const props = defineProps({
   isOpen: {
@@ -96,22 +115,36 @@ const defaultAdminMenus = [
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
 ]
 
+const defaultAgentMenus = [
+  { icon: BarChart3, label: 'Dashboard', href: '/agent/dashboard' },
+  { icon: User, label: 'Agent Profile', href: '/agent/profile' },
+  { icon: DollarSign, label: 'Commissions', href: '/agent/commissions' },
+]
+
 const menuItems = computed(() => {
-  if (props.menus && Array.isArray(props.menus)) {
+  console.log('Sidebar Debug - menuItems computed running')
+  console.log('Sidebar Debug - props.menus:', props.menus)
+  console.log('Sidebar Debug - isAdmin.value:', isAdmin.value)
+  console.log('Sidebar Debug - isAgent.value:', isAgent.value)
+
+  // If custom menus are passed via props AND not empty, use them
+  if (props.menus && Array.isArray(props.menus) && props.menus.length > 0) {
+    console.log('Sidebar Debug - returning custom menus:', props.menus)
     return props.menus
   }
-  if (props.adminMenu) {
+
+  // Use role-based menu detection
+  if (isAdmin.value) {
+    console.log('Sidebar Debug - returning admin menus:', defaultAdminMenus)
     return defaultAdminMenus
   }
-  // fallback to old navItems if needed
-  return [
-    { icon: Home, label: 'Dashboard', href: '#' },
-    { icon: Users, label: 'Users', badge: '23', href: '#' },
-    { icon: BarChart3, label: 'Analytics', href: '#' },
-    { icon: ShoppingCart, label: 'Orders', badge: '12', href: '#' },
-    { icon: FileText, label: 'Reports', href: '#' },
-    { icon: Calendar, label: 'Calendar', href: '#' },
-    { icon: Settings, label: 'Settings', href: '#' },
-  ]
+  if (isAgent.value) {
+    console.log('Sidebar Debug - returning agent menus:', defaultAgentMenus)
+    return defaultAgentMenus
+  }
+
+  // Fallback for users without specific roles
+  console.log('Sidebar Debug - returning fallback agent menus')
+  return defaultAgentMenus
 })
 </script>
