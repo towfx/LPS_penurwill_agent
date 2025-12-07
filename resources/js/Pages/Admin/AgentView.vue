@@ -94,7 +94,7 @@ const goToEdit = () => {
 }
 
 const goBack = () => {
-  router.visit('/admin/agents')
+  router.visit('/admin/agents/list')
 }
 
 const isIndividual = computed(() => props.agent && props.agent.profile_type === 'individual')
