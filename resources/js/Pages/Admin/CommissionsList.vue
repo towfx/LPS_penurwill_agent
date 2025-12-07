@@ -23,24 +23,24 @@
           </select>
         </div>
 
-        <!-- Month Tabs -->
+        <!-- Month Selection -->
         <div class="flex-1">
           <label class="block text-sm font-medium text-stone-700 mb-2">Month</label>
           <div class="flex flex-wrap gap-1">
-            <button
+            <span
               v-for="(monthName, monthNum) in months"
               :key="monthNum"
               @click="selectedMonth = monthNum; updateFilters()"
               :class="`
-                px-3 py-2 text-sm font-medium rounded-md transition-colors
-                ${selectedMonth === monthNum
-                  ? 'bg-forest-dark text-white'
-                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                px-2 py-1 text-sm font-medium rounded cursor-pointer transition-colors
+                ${selectedMonth === Number(monthNum)
+                  ? 'bg-accent-blue text-white shadow-sm font-semibold'
+                  : 'text-stone-700 hover:bg-stone-100'
                 }
               `"
             >
               {{ monthName }}
-            </button>
+            </span>
           </div>
         </div>
       </div>

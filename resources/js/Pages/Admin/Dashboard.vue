@@ -125,8 +125,8 @@
             <a href="/admin/agents/add" class="bg-gold text-white text-center py-2 px-3 rounded-lg text-sm font-medium hover:bg-gold/90 transition-colors">
               Add Agent
             </a>
-            <a href="/admin/payout/create" class="bg-accent-blue text-white text-center py-2 px-3 rounded-lg text-sm font-medium hover:bg-accent-blue/90 transition-colors">
-              Create Payout
+            <a :href="commissionsUrl" class="bg-accent-blue text-white text-center py-2 px-3 rounded-lg text-sm font-medium hover:bg-accent-blue/90 transition-colors">
+              View Commissions
             </a>
           </div>
         </div>
@@ -228,6 +228,13 @@ const commissionData = computed(() => [
 const referralsLabels = computed(() => Object.keys(referralsByDay.value))
 const referralsData = computed(() => Object.values(referralsByDay.value))
 const salesData = computed(() => Object.values(salesByDay.value))
+
+const commissionsUrl = computed(() => {
+  const now = new Date()
+  const month = now.getMonth() + 1 // getMonth() returns 0-11, so add 1
+  const year = now.getFullYear()
+  return `/admin/commissions/list?month=${month}&year=${year}`
+})
 
 function trendType(val) {
   if (val === null) return 'neutral'
