@@ -143,9 +143,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
-import AgentLayout from '../Design/AgentLayout.vue'
+import ProfileLayout from '../Design/ProfileLayout.vue'
 
-defineOptions({ layout: AgentLayout })
+defineOptions({ layout: ProfileLayout })
 
 // Props
 const props = defineProps({

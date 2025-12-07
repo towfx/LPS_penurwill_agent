@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
 
@@ -24,6 +24,10 @@ const goToEdit = () => {
 const isIndividual = computed(() => props.agent && props.agent.profile_type === 'individual')
 const isCompany = computed(() => props.agent && props.agent.profile_type === 'company')
 
+// Dialog state
+const showCopyDialog = ref(false)
+const copiedValue = ref('')
+
 // Computed properties for shareable URL
 const shareableUrl = computed(() => {
   if (!props.agent?.referral_code?.code) return ''
@@ -33,7 +37,8 @@ const shareableUrl = computed(() => {
 const copyShareableUrl = async () => {
   try {
     await navigator.clipboard.writeText(shareableUrl.value)
-    // You could add a toast notification here
+    copiedValue.value = shareableUrl.value
+    showCopyDialog.value = true
   } catch (err) {
     // Fallback for older browsers
     const textArea = document.createElement('textarea')
@@ -42,6 +47,8 @@ const copyShareableUrl = async () => {
     textArea.select()
     document.execCommand('copy')
     document.body.removeChild(textArea)
+    copiedValue.value = shareableUrl.value
+    showCopyDialog.value = true
   }
 }
 
@@ -49,7 +56,8 @@ const copyReferralCode = async () => {
   const code = props.agent?.referral_code?.code || 'YOUR_CODE'
   try {
     await navigator.clipboard.writeText(code)
-    // You could add a toast notification here
+    copiedValue.value = code
+    showCopyDialog.value = true
   } catch (err) {
     // Fallback for older browsers
     const textArea = document.createElement('textarea')
@@ -58,6 +66,8 @@ const copyReferralCode = async () => {
     textArea.select()
     document.execCommand('copy')
     document.body.removeChild(textArea)
+    copiedValue.value = code
+    showCopyDialog.value = true
   }
 }
 
@@ -65,7 +75,8 @@ const copyCustomLink = async () => {
   const customLink = `${props.penurwillWebsiteUrl}/products?ref=${props.agent?.referral_code?.code || 'YOUR_CODE'}`
   try {
     await navigator.clipboard.writeText(customLink)
-    // You could add a toast notification here
+    copiedValue.value = customLink
+    showCopyDialog.value = true
   } catch (err) {
     // Fallback for older browsers
     const textArea = document.createElement('textarea')
@@ -74,6 +85,8 @@ const copyCustomLink = async () => {
     textArea.select()
     document.execCommand('copy')
     document.body.removeChild(textArea)
+    copiedValue.value = customLink
+    showCopyDialog.value = true
   }
 }
 </script>
@@ -525,6 +538,30 @@ const copyCustomLink = async () => {
           <p class="text-gray-500 mb-4">Add your bank account details to receive commission payouts.</p>
           <button @click="goToEdit" class="bg-accent-blue hover:bg-accent-blue/80 text-white px-6 py-2 rounded font-medium transition-colors">
             Add Bank Account
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copy Success Dialog -->
+    <div v-if="showCopyDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCopyDialog = false">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-lg font-medium text-gray-900">Copied!</h3>
+          </div>
+        </div>
+        <div class="mb-4">
+          <p class="text-sm text-gray-700 break-all">{{ copiedValue }}</p>
+        </div>
+        <div class="flex justify-end">
+          <button @click="showCopyDialog = false" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+            OK
           </button>
         </div>
       </div>
