@@ -255,8 +255,8 @@ const editAgent = (id) => {
 }
 
 const exportData = () => {
-  // TODO: Implement export functionality
-  console.log('Export data')
+  // Trigger Excel download
+  window.open('/admin/agents/agents.xls', '_blank')
 }
 
 const getStatusVariant = (status) => {

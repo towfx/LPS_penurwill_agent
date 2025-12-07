@@ -60,6 +60,7 @@ Route::middleware([
         Route::get('/agents/{id}/view', [AgentController::class, 'show'])->name('agents.view');
         Route::get('/agents/{id}/update', [AgentController::class, 'edit'])->name('agents.update');
         Route::put('/agents/{id}/update', [AgentController::class, 'update'])->name('agents.update.store');
+        Route::get('/agents/agents.xls', [AgentController::class, 'export'])->name('agents.export');
 
         // Commissions
         Route::get('/commissions/list', [App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('commissions.list');

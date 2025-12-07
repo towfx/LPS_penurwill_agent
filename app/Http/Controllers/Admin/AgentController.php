@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\User;
 use App\Models\ActivityLog;
+use App\Exports\AgentsExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AgentController extends Controller
 {
@@ -337,5 +339,13 @@ class AgentController extends Controller
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to update agent. ' . $e->getMessage()])->withInput();
         }
+    }
+
+    /**
+     * Export agents data to Excel
+     */
+    public function export()
+    {
+        return Excel::download(new AgentsExport, 'agents.xls');
     }
 }
