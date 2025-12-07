@@ -22,7 +22,7 @@
       </div>
 
       <div class="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" class="relative">
+        <Button variant="ghost" size="icon" class="relative" style="display: none;">
           <Bell size="20" />
           <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
             3
