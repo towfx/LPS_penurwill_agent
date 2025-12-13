@@ -11,7 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -74,6 +76,7 @@ class AgentController extends Controller
                 $agentData['individual_name'] = $request->individual_name;
                 $agentData['individual_phone'] = $request->individual_phone;
                 $agentData['individual_address'] = $request->individual_address;
+                $agentData['individual_id_number'] = $request->individual_id_number;
             } else {
                 $agentData['company_representative_name'] = $request->company_representative_name;
                 $agentData['company_name'] = $request->company_name;
@@ -83,6 +86,25 @@ class AgentController extends Controller
             }
 
             $agent = Agent::create($agentData);
+
+            // Handle file uploads
+            if ($request->profile_type === 'individual' && $request->hasFile('individual_id_file')) {
+                $file = $request->file('individual_id_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['individual_id_file' => $path]);
+            } elseif ($request->profile_type === 'company' && $request->hasFile('company_reg_file')) {
+                $file = $request->file('company_reg_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['company_reg_file' => $path]);
+            }
 
             // Log agent creation
             ActivityLog::logCreate($adminUser, $agent, $agent->toArray());
@@ -137,11 +159,14 @@ class AgentController extends Controller
                 'individual_name' => $agent->individual_name,
                 'individual_phone' => $agent->individual_phone,
                 'individual_address' => $agent->individual_address,
+                'individual_id_number' => $agent->individual_id_number,
+                'individual_id_file' => $agent->individual_id_file,
                 'company_representative_name' => $agent->company_representative_name,
                 'company_name' => $agent->company_name,
                 'company_registration_number' => $agent->company_registration_number,
                 'company_address' => $agent->company_address,
                 'company_phone' => $agent->company_phone,
+                'company_reg_file' => $agent->company_reg_file,
                 'status' => $agent->status,
                 'created_at' => $agent->created_at->format('Y-m-d H:i:s'),
                 'user_email' => $agent->users->first()?->email,
@@ -166,11 +191,14 @@ class AgentController extends Controller
                 'individual_name' => $agent->individual_name,
                 'individual_phone' => $agent->individual_phone,
                 'individual_address' => $agent->individual_address,
+                'individual_id_number' => $agent->individual_id_number,
+                'individual_id_file' => $agent->individual_id_file,
                 'company_representative_name' => $agent->company_representative_name,
                 'company_name' => $agent->company_name,
                 'company_registration_number' => $agent->company_registration_number,
                 'company_address' => $agent->company_address,
                 'company_phone' => $agent->company_phone,
+                'company_reg_file' => $agent->company_reg_file,
                 'status' => $agent->status,
                 'user_email' => $agent->users->first()?->email,
                 'bank_account' => $agent->bankAccount,
@@ -202,11 +230,14 @@ class AgentController extends Controller
             'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_phone' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_address' => 'required_if:profile_type,individual|nullable|string',
+            'individual_id_number' => 'required_if:profile_type,individual|nullable|string|max:255',
+            'individual_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'company_representative_name' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_name' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_registration_number' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_address' => 'required_if:profile_type,company|nullable|string',
             'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'user_password' => 'nullable|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
             // Bank account fields
@@ -237,25 +268,64 @@ class AgentController extends Controller
                 $agentData['individual_name'] = $request->individual_name;
                 $agentData['individual_phone'] = $request->individual_phone;
                 $agentData['individual_address'] = $request->individual_address;
-                // Clear company fields
+                $agentData['individual_id_number'] = $request->individual_id_number;
+                // Clear company fields and delete old file if exists
                 $agentData['company_representative_name'] = null;
                 $agentData['company_name'] = null;
                 $agentData['company_registration_number'] = null;
                 $agentData['company_address'] = null;
                 $agentData['company_phone'] = null;
+                if ($agent->company_reg_file && Storage::disk('local')->exists($agent->company_reg_file)) {
+                    Storage::disk('local')->delete($agent->company_reg_file);
+                }
+                $agentData['company_reg_file'] = null;
             } else {
                 $agentData['company_representative_name'] = $request->company_representative_name;
                 $agentData['company_name'] = $request->company_name;
                 $agentData['company_registration_number'] = $request->company_registration_number;
                 $agentData['company_address'] = $request->company_address;
                 $agentData['company_phone'] = $request->company_phone;
-                // Clear individual fields
+                // Clear individual fields and delete old file if exists
                 $agentData['individual_name'] = null;
                 $agentData['individual_phone'] = null;
                 $agentData['individual_address'] = null;
+                $agentData['individual_id_number'] = null;
+                if ($agent->individual_id_file && Storage::disk('local')->exists($agent->individual_id_file)) {
+                    Storage::disk('local')->delete($agent->individual_id_file);
+                }
+                $agentData['individual_id_file'] = null;
             }
 
             $agent->update($agentData);
+
+            // Handle file uploads
+            if ($request->profile_type === 'individual' && $request->hasFile('individual_id_file')) {
+                // Delete old file if exists
+                if ($agent->individual_id_file && Storage::disk('local')->exists($agent->individual_id_file)) {
+                    Storage::disk('local')->delete($agent->individual_id_file);
+                }
+
+                $file = $request->file('individual_id_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['individual_id_file' => $path]);
+            } elseif ($request->profile_type === 'company' && $request->hasFile('company_reg_file')) {
+                // Delete old file if exists
+                if ($agent->company_reg_file && Storage::disk('local')->exists($agent->company_reg_file)) {
+                    Storage::disk('local')->delete($agent->company_reg_file);
+                }
+
+                $file = $request->file('company_reg_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['company_reg_file' => $path]);
+            }
 
             // Update user if password is provided
             if ($request->filled('user_password')) {
@@ -339,6 +409,26 @@ class AgentController extends Controller
 
             return back()->withErrors(['error' => 'Failed to update agent. '.$e->getMessage()])->withInput();
         }
+    }
+
+    /**
+     * Download agent file
+     */
+    public function downloadFile($id, $field)
+    {
+        $agent = Agent::findOrFail($id);
+
+        $allowedFields = ['individual_id_file', 'company_reg_file'];
+        if (! in_array($field, $allowedFields)) {
+            abort(404);
+        }
+
+        $filePath = $agent->$field;
+        if (! $filePath || ! Storage::disk('local')->exists($filePath)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download($filePath);
     }
 
     /**

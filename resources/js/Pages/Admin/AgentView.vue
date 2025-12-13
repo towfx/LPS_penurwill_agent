@@ -25,6 +25,15 @@
           <div><span class="font-medium text-gray-700">Name:</span> {{ agent.individual_name }}</div>
           <div><span class="font-medium text-gray-700">Phone:</span> {{ agent.individual_phone }}</div>
           <div><span class="font-medium text-gray-700">Address:</span> {{ agent.individual_address }}</div>
+          <div v-if="agent.individual_id_number">
+            <span class="font-medium text-gray-700">NRIC/Passport Number:</span> {{ agent.individual_id_number }}
+          </div>
+          <div v-if="agent.individual_id_file">
+            <span class="font-medium text-gray-700">Copy of IC/Passport:</span>
+            <a :href="`/admin/agents/${agent.id}/file/individual_id_file`" target="_blank" class="text-gold hover:text-amber-700 ml-2">
+              View File
+            </a>
+          </div>
         </div>
         <div v-else-if="isCompany" class="space-y-3">
           <div><span class="font-medium text-gray-700">Company Name:</span> {{ agent.company_name }}</div>
@@ -32,6 +41,12 @@
           <div><span class="font-medium text-gray-700">Registration Number:</span> {{ agent.company_registration_number }}</div>
           <div><span class="font-medium text-gray-700">Company Address:</span> {{ agent.company_address }}</div>
           <div><span class="font-medium text-gray-700">Company Phone:</span> {{ agent.company_phone }}</div>
+          <div v-if="agent.company_reg_file">
+            <span class="font-medium text-gray-700">Business Registration Certificate:</span>
+            <a :href="`/admin/agents/${agent.id}/file/company_reg_file`" target="_blank" class="text-gold hover:text-amber-700 ml-2">
+              View File
+            </a>
+          </div>
         </div>
 
         <div class="mt-6 space-y-2">

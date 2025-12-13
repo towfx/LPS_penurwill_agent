@@ -116,8 +116,8 @@ defineEmits(['toggle'])
 
 const defaultAdminMenus = [
   { icon: Home, label: 'Dashboard', href: '/admin/dashboard' },
-  { icon: UsersIcon, label: 'Agents', href: '/admin/agents/list' },
   { icon: Building2, label: 'Partners', href: '/admin/partners/list' },
+  { icon: UsersIcon, label: 'Agents', href: '/admin/agents/list' },
   { icon: DollarSign, label: 'Commissions', href: '/admin/commissions/list' },
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
 ]

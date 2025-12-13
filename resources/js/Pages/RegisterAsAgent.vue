@@ -162,6 +162,33 @@
                 ></textarea>
                 <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
               </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">NRIC/Passport Number *</label>
+                <input
+                  v-model="form.individual_id_number"
+                  type="text"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                  placeholder="Enter NRIC or Passport Number"
+                />
+                <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
+                <p v-if="errors.individual_id_number" class="text-accent-red text-sm mt-1">{{ errors.individual_id_number }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport *</label>
+                <input
+                  @change="handleIndividualIdFileChange"
+                  type="file"
+                  accept=".pdf,.jpeg,.jpg,.png"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                />
+                <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
+                <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+                <p v-if="errors.individual_id_file" class="text-accent-red text-sm mt-1">{{ errors.individual_id_file }}</p>
+              </div>
             </div>
 
             <!-- Company Fields -->
@@ -224,6 +251,20 @@
                   placeholder="Enter company phone number"
                 />
                 <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate *</label>
+                <input
+                  @change="handleCompanyRegFileChange"
+                  type="file"
+                  accept=".pdf,.jpeg,.jpg,.png"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                />
+                <p class="text-sm text-gray-500 mt-1">Company SSM certificate</p>
+                <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+                <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
               </div>
             </div>
 
@@ -476,11 +517,14 @@ const form = ref({
   individual_name: '',
   individual_phone: '',
   individual_address: '',
+  individual_id_number: '',
+  individual_id_file: null,
   company_representative_name: '',
   company_name: '',
   company_registration_number: '',
   company_address: '',
   company_phone: '',
+  company_reg_file: null,
   referral_code: '',
   password: '',
   password_confirmation: '',
@@ -493,14 +537,25 @@ const passwordValidation = ref({
   special: false
 })
 
+// Methods
+const handleIndividualIdFileChange = (event) => {
+  form.value.individual_id_file = event.target.files[0]
+}
+
+const handleCompanyRegFileChange = (event) => {
+  form.value.company_reg_file = event.target.files[0]
+}
+
 // Computed properties
 const canProceedToNext = computed(() => {
   if (currentStep.value === 0) {
     if (form.value.profile_type === 'individual') {
-      return form.value.individual_name && form.value.individual_phone && form.value.individual_address
+      return form.value.individual_name && form.value.individual_phone && form.value.individual_address &&
+             form.value.individual_id_number && form.value.individual_id_file
     } else {
       return form.value.company_representative_name && form.value.company_name &&
-             form.value.company_registration_number && form.value.company_address && form.value.company_phone
+             form.value.company_registration_number && form.value.company_address && form.value.company_phone &&
+             form.value.company_reg_file
     }
   }
   return true
@@ -516,7 +571,6 @@ const canSubmit = computed(() => {
          form.value.password === form.value.password_confirmation
 })
 
-// Methods
 const validatePassword = () => {
   const password = form.value.password
   passwordValidation.value = {
@@ -544,7 +598,19 @@ const submitApplication = async () => {
   isLoading.value = true
 
   try {
-    await router.post('/register-as-agent', form.value, {
+    // Use FormData for file uploads
+    const formData = new FormData()
+    Object.keys(form.value).forEach(key => {
+      if (key === 'individual_id_file' && form.value[key]) {
+        formData.append(key, form.value[key])
+      } else if (key === 'company_reg_file' && form.value[key]) {
+        formData.append(key, form.value[key])
+      } else if (form.value[key] !== null && form.value[key] !== '') {
+        formData.append(key, form.value[key])
+      }
+    })
+
+    await router.post('/register-as-agent', formData, {
       onSuccess: () => {
         currentStep.value = 2
       },

@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -31,11 +32,14 @@ class AgentRegistrationController extends Controller
             'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_phone' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_address' => 'required_if:profile_type,individual|nullable|string',
+            'individual_id_number' => 'required_if:profile_type,individual|nullable|string|max:255',
+            'individual_id_file' => 'required_if:profile_type,individual|nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'company_representative_name' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_name' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_registration_number' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_address' => 'required_if:profile_type,company|nullable|string',
             'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_reg_file' => 'required_if:profile_type,company|nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'password' => [
                 'required',
                 'string',
@@ -85,7 +89,7 @@ class AgentRegistrationController extends Controller
             // Create agent
             $agentData = [
                 'profile_type' => $request->profile_type,
-                'status' => 'active',
+                'status' => 'inactive',
             ];
 
             if ($partner) {
@@ -96,6 +100,7 @@ class AgentRegistrationController extends Controller
                 $agentData['individual_name'] = $request->individual_name;
                 $agentData['individual_phone'] = $request->individual_phone;
                 $agentData['individual_address'] = $request->individual_address;
+                $agentData['individual_id_number'] = $request->individual_id_number;
             } else {
                 $agentData['company_representative_name'] = $request->company_representative_name;
                 $agentData['company_name'] = $request->company_name;
@@ -105,6 +110,25 @@ class AgentRegistrationController extends Controller
             }
 
             $agent = Agent::create($agentData);
+
+            // Handle file uploads
+            if ($request->profile_type === 'individual' && $request->hasFile('individual_id_file')) {
+                $file = $request->file('individual_id_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['individual_id_file' => $path]);
+            } elseif ($request->profile_type === 'company' && $request->hasFile('company_reg_file')) {
+                $file = $request->file('company_reg_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['company_reg_file' => $path]);
+            }
 
             // Log partner assignment if applicable
             if ($partner) {

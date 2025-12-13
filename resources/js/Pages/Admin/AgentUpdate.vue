@@ -43,6 +43,30 @@
             <textarea v-model="form.individual_address" class="w-full px-3 py-2 border rounded"></textarea>
             <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">NRIC/Passport Number</label>
+            <input v-model="form.individual_id_number" type="text" class="w-full px-3 py-2 border rounded" placeholder="National registration identification number or Passport Number" />
+            <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
+            <p v-if="errors.individual_id_number" class="text-accent-red text-sm mt-1">{{ errors.individual_id_number }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport</label>
+            <div v-if="agent?.individual_id_file" class="mb-2">
+              <span class="text-sm text-gray-600">Current file: </span>
+              <a :href="`/admin/agents/${id}/file/individual_id_file`" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+                View Current File
+              </a>
+            </div>
+            <input
+              @change="handleIndividualIdFileChange"
+              type="file"
+              accept=".pdf,.jpeg,.jpg,.png"
+              class="w-full px-3 py-2 border rounded"
+            />
+            <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
+            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            <p v-if="errors.individual_id_file" class="text-accent-red text-sm mt-1">{{ errors.individual_id_file }}</p>
+          </div>
         </div>
 
         <div v-if="isCompany" class="space-y-4">
@@ -70,6 +94,24 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
             <input v-model="form.company_phone" type="text" class="w-full px-3 py-2 border rounded" />
             <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate</label>
+            <div v-if="agent?.company_reg_file" class="mb-2">
+              <span class="text-sm text-gray-600">Current file: </span>
+              <a :href="`/admin/agents/${id}/file/company_reg_file`" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+                View Current File
+              </a>
+            </div>
+            <input
+              @change="handleCompanyRegFileChange"
+              type="file"
+              accept=".pdf,.jpeg,.jpg,.png"
+              class="w-full px-3 py-2 border rounded"
+            />
+            <p class="text-sm text-gray-500 mt-1">Company SSM certificate</p>
+            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
           </div>
         </div>
 
@@ -144,13 +186,6 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">Commission Rate (%)</label>
             <input v-model="form.referral_commission_rate" type="number" step="0.01" min="0" max="100" class="w-full px-3 py-2 border rounded" />
             <p v-if="errors.referral_commission_rate" class="text-accent-red text-sm mt-1">{{ errors.referral_commission_rate }}</p>
-          </div>
-          <div>
-            <label class="flex items-center">
-              <input v-model="form.referral_is_active" type="checkbox" class="mr-2" />
-              <span class="text-sm font-medium text-gray-700">Active</span>
-            </label>
-            <p v-if="errors.referral_is_active" class="text-accent-red text-sm mt-1">{{ errors.referral_is_active }}</p>
           </div>
         </div>
       </div>
@@ -241,11 +276,14 @@ const form = ref({
   individual_name: props.agent?.individual_name || '',
   individual_phone: props.agent?.individual_phone || '',
   individual_address: props.agent?.individual_address || '',
+  individual_id_number: props.agent?.individual_id_number || '',
+  individual_id_file: null,
   company_representative_name: props.agent?.company_representative_name || '',
   company_name: props.agent?.company_name || '',
   company_registration_number: props.agent?.company_registration_number || '',
   company_address: props.agent?.company_address || '',
   company_phone: props.agent?.company_phone || '',
+  company_reg_file: null,
   user_password: '',
   user_password_confirmation: '',
   status: props.agent?.status || 'active',
@@ -258,7 +296,7 @@ const form = ref({
   // Referral code fields
   referral_code: props.agent?.referral_code?.code || '',
   referral_commission_rate: props.agent?.referral_code?.commission_rate || '',
-  referral_is_active: props.agent?.referral_code?.is_active || true,
+  referral_is_active: true, // Always true
 })
 
 const isIndividual = computed(() => form.value.profile_type === 'individual')
@@ -269,6 +307,14 @@ const errors = ref({})
 const showErrorDialog = ref(false)
 const generalErrorMessage = ref('')
 const showBankWarningDialog = ref(false)
+
+const handleIndividualIdFileChange = (event) => {
+  form.value.individual_id_file = event.target.files[0]
+}
+
+const handleCompanyRegFileChange = (event) => {
+  form.value.company_reg_file = event.target.files[0]
+}
 
 const saveAgent = async () => {
   isSaving.value = true
@@ -288,19 +334,56 @@ const saveAgent = async () => {
     return
   }
 
-  try {
-    await router.put(`/admin/agents/${props.id}/update`, form.value, {
-      onError: (e) => {
-        errors.value = e
+  // Check if we have files to upload
+  const hasFiles = form.value.individual_id_file || form.value.company_reg_file
 
-        // Check for general errors (not field-specific)
-        if (e.error || (e.default && e.default.error)) {
-          const errorMsg = e.error || e.default.error
-          generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
-          showErrorDialog.value = true
+  try {
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const formData = new FormData()
+      Object.keys(form.value).forEach(key => {
+        if (key === 'individual_id_file' && form.value[key]) {
+          formData.append(key, form.value[key])
+        } else if (key === 'company_reg_file' && form.value[key]) {
+          formData.append(key, form.value[key])
+        } else if (form.value[key] !== null && form.value[key] !== '') {
+          // Handle boolean values properly for FormData
+          if (typeof form.value[key] === 'boolean') {
+            formData.append(key, form.value[key] ? '1' : '0')
+          } else {
+            formData.append(key, form.value[key])
+          }
         }
-      },
-    })
+      })
+      formData.append('_method', 'PUT')
+
+      await router.post(`/admin/agents/${props.id}/update`, formData, {
+        onError: (e) => {
+          errors.value = e
+
+          // Check for general errors (not field-specific)
+          if (e.error || (e.default && e.default.error)) {
+            const errorMsg = e.error || e.default.error
+            generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
+            showErrorDialog.value = true
+          }
+        },
+      })
+    } else {
+      // No files, use regular PUT request
+      await router.put(`/admin/agents/${props.id}/update`, form.value, {
+        onError: (e) => {
+          errors.value = e
+
+          // Check for general errors (not field-specific)
+          if (e.error || (e.default && e.default.error)) {
+            const errorMsg = e.error || e.default.error
+            generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
+            showErrorDialog.value = true
+          }
+        },
+      })
+    }
   } finally {
     isSaving.value = false
   }
@@ -325,19 +408,56 @@ const proceedWithSave = async () => {
   showErrorDialog.value = false
   generalErrorMessage.value = ''
 
-  try {
-    await router.put(`/admin/agents/${props.id}/update`, form.value, {
-      onError: (e) => {
-        errors.value = e
+  // Check if we have files to upload
+  const hasFiles = form.value.individual_id_file || form.value.company_reg_file
 
-        // Check for general errors (not field-specific)
-        if (e.error || (e.default && e.default.error)) {
-          const errorMsg = e.error || e.default.error
-          generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
-          showErrorDialog.value = true
+  try {
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const formData = new FormData()
+      Object.keys(form.value).forEach(key => {
+        if (key === 'individual_id_file' && form.value[key]) {
+          formData.append(key, form.value[key])
+        } else if (key === 'company_reg_file' && form.value[key]) {
+          formData.append(key, form.value[key])
+        } else if (form.value[key] !== null && form.value[key] !== '') {
+          // Handle boolean values properly for FormData
+          if (typeof form.value[key] === 'boolean') {
+            formData.append(key, form.value[key] ? '1' : '0')
+          } else {
+            formData.append(key, form.value[key])
+          }
         }
-      },
-    })
+      })
+      formData.append('_method', 'PUT')
+
+      await router.post(`/admin/agents/${props.id}/update`, formData, {
+        onError: (e) => {
+          errors.value = e
+
+          // Check for general errors (not field-specific)
+          if (e.error || (e.default && e.default.error)) {
+            const errorMsg = e.error || e.default.error
+            generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
+            showErrorDialog.value = true
+          }
+        },
+      })
+    } else {
+      // No files, use regular PUT request
+      await router.put(`/admin/agents/${props.id}/update`, form.value, {
+        onError: (e) => {
+          errors.value = e
+
+          // Check for general errors (not field-specific)
+          if (e.error || (e.default && e.default.error)) {
+            const errorMsg = e.error || e.default.error
+            generalErrorMessage.value = Array.isArray(errorMsg) ? errorMsg.join(' ') : errorMsg
+            showErrorDialog.value = true
+          }
+        },
+      })
+    }
   } finally {
     isSaving.value = false
   }
