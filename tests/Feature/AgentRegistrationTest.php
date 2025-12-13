@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Agent;
-use App\Models\ReferralCode;
 use App\Models\SystemSetting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
 
 class AgentRegistrationTest extends TestCase
 {
@@ -22,13 +21,12 @@ class AgentRegistrationTest extends TestCase
         SystemSetting::create([
             'referral_code_prefix' => 'TEST',
             'commission_default_rate' => 10.0,
-            'global_referral_usage_limit' => 1000,
         ]);
 
         // Create system user for activity logging
         User::factory()->create([
             'email' => 'system@penurwill.com',
-            'name' => 'System User'
+            'name' => 'System User',
         ]);
     }
 
@@ -232,7 +230,7 @@ class AgentRegistrationTest extends TestCase
             'company_name',
             'company_registration_number',
             'company_address',
-            'company_phone'
+            'company_phone',
         ]);
 
         // Verify no user was created
@@ -240,4 +238,4 @@ class AgentRegistrationTest extends TestCase
             'email' => 'company@example.com',
         ]);
     }
-} 
+}

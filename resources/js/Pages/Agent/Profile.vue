@@ -274,18 +274,6 @@ const copyCustomLink = async () => {
             </div>
 
             <div class="flex items-center">
-              <div class="w-6 h-6 bg-accent-orange rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-gray-500">Usage Limit</div>
-                <div class="text-gray-900">{{ agent.referral_code.usage_limit }}</div>
-              </div>
-            </div>
-
-            <div class="flex items-center">
               <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>

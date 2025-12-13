@@ -46,8 +46,6 @@ class Sale extends Model
     /**
      * Track a sale using a referral code
      *
-     * @param string $referralCode
-     * @param array $saleData
      * @return Sale|null
      */
     public static function trackSale(string $referralCode, array $saleData)
@@ -58,13 +56,8 @@ class Sale extends Model
                 ->where('is_active', true)
                 ->first();
 
-            if (!$referralCodeModel) {
+            if (! $referralCodeModel) {
                 throw new \Exception("Invalid or inactive referral code: {$referralCode}");
-            }
-
-            // Check if usage limit is exceeded
-            if ($referralCodeModel->usage_limit && $referralCodeModel->used_count >= $referralCodeModel->usage_limit) {
-                throw new \Exception("Referral code usage limit exceeded: {$referralCode}");
             }
 
             // Check if referral code has expired
@@ -74,7 +67,7 @@ class Sale extends Model
 
             // Get the agent from the referral code
             $agent = $referralCodeModel->agent;
-            if (!$agent) {
+            if (! $agent) {
                 throw new \Exception("No agent found for referral code: {$referralCode}");
             }
 

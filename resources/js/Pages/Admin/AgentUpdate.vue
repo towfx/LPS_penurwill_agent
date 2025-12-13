@@ -146,11 +146,6 @@
             <p v-if="errors.referral_commission_rate" class="text-accent-red text-sm mt-1">{{ errors.referral_commission_rate }}</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Usage Limit</label>
-            <input v-model="form.referral_usage_limit" type="number" min="1" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.referral_usage_limit" class="text-accent-red text-sm mt-1">{{ errors.referral_usage_limit }}</p>
-          </div>
-          <div>
             <label class="flex items-center">
               <input v-model="form.referral_is_active" type="checkbox" class="mr-2" />
               <span class="text-sm font-medium text-gray-700">Active</span>
@@ -263,7 +258,6 @@ const form = ref({
   // Referral code fields
   referral_code: props.agent?.referral_code?.code || '',
   referral_commission_rate: props.agent?.referral_code?.commission_rate || '',
-  referral_usage_limit: props.agent?.referral_code?.usage_limit || '',
   referral_is_active: props.agent?.referral_code?.is_active || true,
 })
 

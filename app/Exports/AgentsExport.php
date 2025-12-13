@@ -17,9 +17,6 @@ class AgentsExport implements FromCollection, WithHeadings, WithMapping
         return Agent::with(['users', 'bankAccount', 'referralCode'])->get();
     }
 
-    /**
-     * @return array
-     */
     public function headings(): array
     {
         return [
@@ -44,13 +41,12 @@ class AgentsExport implements FromCollection, WithHeadings, WithMapping
             'Commission Rate',
             'Usage Limit',
             'Created At',
-            'Updated At'
+            'Updated At',
         ];
     }
 
     /**
-     * @param mixed $agent
-     * @return array
+     * @param  mixed  $agent
      */
     public function map($agent): array
     {
@@ -74,7 +70,6 @@ class AgentsExport implements FromCollection, WithHeadings, WithMapping
             $agent->bankAccount?->swift_code,
             $agent->referralCode?->code,
             $agent->referralCode?->commission_rate,
-            $agent->referralCode?->usage_limit,
             $agent->created_at?->format('Y-m-d H:i:s'),
             $agent->updated_at?->format('Y-m-d H:i:s'),
         ];

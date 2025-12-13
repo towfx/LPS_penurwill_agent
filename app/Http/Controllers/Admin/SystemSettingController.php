@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SystemSetting;
 use App\Models\ActivityLog;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -18,12 +18,11 @@ class SystemSettingController extends Controller
     {
         $settings = SystemSetting::first();
 
-        if (!$settings) {
+        if (! $settings) {
             // Create default settings if none exist
             $settings = SystemSetting::create([
                 'commission_default_rate' => 10.00,
                 'referral_code_prefix' => 'REF',
-                'global_referral_usage_limit' => 100,
             ]);
         }
 
@@ -39,11 +38,10 @@ class SystemSettingController extends Controller
     {
         $settings = SystemSetting::first();
 
-        if (!$settings) {
+        if (! $settings) {
             $settings = SystemSetting::create([
                 'commission_default_rate' => 10.00,
                 'referral_code_prefix' => 'REF',
-                'global_referral_usage_limit' => 100,
             ]);
         }
 
@@ -62,13 +60,12 @@ class SystemSettingController extends Controller
         $request->validate([
             'commission_default_rate' => 'required|numeric|min:0|max:100',
             'referral_code_prefix' => 'required|string|max:10',
-            'global_referral_usage_limit' => 'required|integer|min:1',
         ]);
 
         $settings = SystemSetting::first();
 
-        if (!$settings) {
-            $settings = new SystemSetting();
+        if (! $settings) {
+            $settings = new SystemSetting;
         }
 
         // Capture before data for activity logging
@@ -77,7 +74,6 @@ class SystemSettingController extends Controller
         $settings->fill($request->only([
             'commission_default_rate',
             'referral_code_prefix',
-            'global_referral_usage_limit',
         ]));
 
         $settings->save();

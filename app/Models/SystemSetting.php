@@ -18,7 +18,6 @@ class SystemSetting extends Model
     protected $fillable = [
         'commission_default_rate',
         'referral_code_prefix',
-        'global_referral_usage_limit',
     ];
 
     /**
@@ -30,7 +29,6 @@ class SystemSetting extends Model
     {
         return [
             'commission_default_rate' => 'decimal:2',
-            'global_referral_usage_limit' => 'integer',
         ];
     }
 }

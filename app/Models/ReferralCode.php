@@ -20,7 +20,6 @@ class ReferralCode extends Model
         'agent_id',
         'is_active',
         'commission_rate',
-        'usage_limit',
         'used_count',
     ];
 

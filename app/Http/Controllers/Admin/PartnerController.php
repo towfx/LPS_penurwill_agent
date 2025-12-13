@@ -73,7 +73,10 @@ class PartnerController extends Controller
      */
     public function create()
     {
-        $partners = Partner::select('id', 'company_name')->get();
+        $partners = Partner::where('status', 'active')
+            ->select('id', 'company_name')
+            ->orderBy('company_name')
+            ->get();
 
         return Inertia::render('Admin/PartnersAdd', [
             'partners' => $partners,
@@ -208,7 +211,11 @@ class PartnerController extends Controller
     public function edit($id)
     {
         $partner = Partner::with(['parent', 'users'])->findOrFail($id);
-        $partners = Partner::where('id', '!=', $id)->select('id', 'company_name')->get();
+        $partners = Partner::where('id', '!=', $id)
+            ->where('status', 'active')
+            ->select('id', 'company_name')
+            ->orderBy('company_name')
+            ->get();
 
         return Inertia::render('Admin/PartnerUpdate', [
             'id' => $id,

@@ -121,7 +121,6 @@ class AgentRegistrationController extends Controller
                 'code' => $systemSetting->referral_code_prefix.strtoupper(Str::random(8)),
                 'is_active' => true,
                 'commission_rate' => $systemSetting->commission_default_rate,
-                'usage_limit' => $systemSetting->global_referral_usage_limit,
                 'used_count' => 0,
                 'expires_at' => now()->addYears(5),
             ]);

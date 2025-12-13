@@ -66,24 +66,6 @@
         </CardContent>
       </Card>
 
-      <!-- Global Referral Usage Limit -->
-      <Card class="bg-white shadow-sm border border-gray-200">
-        <CardHeader>
-          <CardTitle class="flex items-center space-x-2">
-            <Users class="w-5 h-5 text-accent-green" />
-            <span>Usage Limit</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="text-3xl font-bold text-forest-dark mb-2">
-            {{ settings.global_referral_usage_limit }}
-          </div>
-          <p class="text-sm text-gray-600">
-            Maximum number of times a referral code can be used globally.
-            This prevents abuse and controls the referral system usage.
-          </p>
-        </CardContent>
-      </Card>
     </div>
 
     <!-- Additional Info -->

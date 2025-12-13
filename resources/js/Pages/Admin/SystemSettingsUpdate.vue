@@ -90,37 +90,6 @@
           </CardContent>
         </Card>
 
-        <!-- Global Referral Usage Limit -->
-        <Card class="bg-white shadow-sm border border-gray-200">
-          <CardHeader>
-            <CardTitle class="flex items-center space-x-2">
-              <Users class="w-5 h-5 text-accent-green" />
-              <span>Global Referral Usage Limit</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <div>
-              <label for="usage_limit" class="block text-sm font-medium text-gray-700 mb-2">
-                Usage Limit
-              </label>
-              <input
-                id="usage_limit"
-                v-model="form.global_referral_usage_limit"
-                type="number"
-                min="1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition-colors"
-                :class="{ 'border-red-500': errors.global_referral_usage_limit }"
-              />
-              <p v-if="errors.global_referral_usage_limit" class="text-red-500 text-sm mt-1">
-                {{ errors.global_referral_usage_limit }}
-              </p>
-            </div>
-            <p class="text-sm text-gray-600">
-              Maximum number of times a referral code can be used globally.
-              This prevents abuse and controls the referral system usage.
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       <!-- Warning Card -->
@@ -199,7 +168,6 @@ const isSubmitting = ref(false)
 const form = reactive({
   commission_default_rate: props.settings.commission_default_rate,
   referral_code_prefix: props.settings.referral_code_prefix,
-  global_referral_usage_limit: props.settings.global_referral_usage_limit,
 })
 
 const submitForm = () => {

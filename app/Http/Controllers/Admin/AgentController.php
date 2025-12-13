@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\AgentsExport;
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Agent;
 use App\Models\User;
-use App\Models\ActivityLog;
-use App\Exports\AgentsExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -91,10 +91,9 @@ class AgentController extends Controller
             $systemSetting = \App\Models\SystemSetting::first();
             $referralCode = \App\Models\ReferralCode::create([
                 'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix . strtoupper(\Illuminate\Support\Str::random(8)),
+                'code' => $systemSetting->referral_code_prefix.strtoupper(\Illuminate\Support\Str::random(8)),
                 'is_active' => true,
                 'commission_rate' => $systemSetting->commission_default_rate,
-                'usage_limit' => $systemSetting->global_referral_usage_limit,
                 'used_count' => 0,
                 'expires_at' => now()->addYears(5),
             ]);
@@ -115,10 +114,12 @@ class AgentController extends Controller
             ActivityLog::logCustom($adminUser, 'user_agent_linked', "Admin linked user {$user->email} to agent {$agent->id}", $agent);
 
             DB::commit();
+
             return redirect()->route('admin.agents.list')->with('success', 'Agent created successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to create agent. ' . $e->getMessage()])->withInput();
+
+            return back()->withErrors(['error' => 'Failed to create agent. '.$e->getMessage()])->withInput();
         }
     }
 
@@ -146,7 +147,7 @@ class AgentController extends Controller
                 'user_email' => $agent->users->first()?->email,
                 'bank_account' => $agent->bankAccount,
                 'referral_code' => $agent->referralCode,
-            ]
+            ],
         ]);
     }
 
@@ -174,7 +175,7 @@ class AgentController extends Controller
                 'user_email' => $agent->users->first()?->email,
                 'bank_account' => $agent->bankAccount,
                 'referral_code' => $agent->referralCode,
-            ]
+            ],
         ]);
     }
 
@@ -215,9 +216,8 @@ class AgentController extends Controller
             'iban' => 'nullable|string|max:255',
             'swift_code' => 'nullable|string|max:255',
             // Referral code fields
-            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,' . ($agent->referralCode->id ?? 'NULL') . ',id',
+            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,'.($agent->referralCode->id ?? 'NULL').',id',
             'referral_commission_rate' => 'nullable|numeric|min:0|max:100',
-            'referral_usage_limit' => 'nullable|integer|min:1',
             'referral_is_active' => 'nullable|boolean',
         ]);
 
@@ -296,7 +296,6 @@ class AgentController extends Controller
                 $agent->referralCode->update([
                     'code' => $request->referral_code,
                     'commission_rate' => $request->referral_commission_rate,
-                    'usage_limit' => $request->referral_usage_limit,
                     'is_active' => $request->referral_is_active,
                 ]);
             } elseif ($request->referral_code) {
@@ -307,7 +306,6 @@ class AgentController extends Controller
                     'code' => $request->referral_code,
                     'is_active' => $request->referral_is_active ?? true,
                     'commission_rate' => $request->referral_commission_rate ?? $systemSetting->commission_default_rate,
-                    'usage_limit' => $request->referral_usage_limit ?? $systemSetting->global_referral_usage_limit,
                     'used_count' => 0,
                     'expires_at' => now()->addYears(5),
                 ]);
@@ -334,10 +332,12 @@ class AgentController extends Controller
             ActivityLog::logUpdate($adminUser, $agent, $beforeData, $afterData);
 
             DB::commit();
+
             return redirect()->route('admin.agents.list')->with('success', 'Agent updated successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to update agent. ' . $e->getMessage()])->withInput();
+
+            return back()->withErrors(['error' => 'Failed to update agent. '.$e->getMessage()])->withInput();
         }
     }
 

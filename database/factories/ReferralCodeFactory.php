@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\ReferralCode;
 use App\Models\Agent;
+use App\Models\ReferralCode;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,7 +30,6 @@ class ReferralCodeFactory extends Factory
             'code' => strtoupper($this->faker->bothify('??##??')),
             'is_active' => true,
             'commission_rate' => 10.0,
-            'usage_limit' => null,
             'used_count' => 0,
             'expires_at' => null,
             'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),

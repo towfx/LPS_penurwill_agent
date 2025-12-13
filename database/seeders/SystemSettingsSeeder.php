@@ -17,14 +17,12 @@ class SystemSettingsSeeder extends Seeder
             ['id' => 1], // Assuming we want to use ID 1 for the main settings
             [
                 'commission_default_rate' => 10.00, // 10%
-                'referral_code_prefix' => 'WILL-WRITE-',
-                'global_referral_usage_limit' => 10000,
+                'referral_code_prefix' => 'PENURWILL-',
             ]
         );
 
         $this->command->info('System settings created successfully');
         $this->command->info('Default commission rate: 10%');
-        $this->command->info('Referral code prefix: WILL-WRITE-');
-        $this->command->info('Global referral usage limit: 100');
+        $this->command->info('Referral code prefix: PENURWILL-');
     }
 }

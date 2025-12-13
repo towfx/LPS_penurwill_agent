@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use App\Models\ActivityLog;
 
 class AgentProfileController extends Controller
 {
@@ -16,7 +16,7 @@ class AgentProfileController extends Controller
 
         return Inertia::render('Agent/Profile', [
             'agent' => $agent,
-            'penurwillWebsiteUrl' => config('app.penurwill-website-url')
+            'penurwillWebsiteUrl' => config('app.penurwill-website-url'),
         ]);
     }
 
@@ -27,7 +27,7 @@ class AgentProfileController extends Controller
 
         return Inertia::render('Agent/ProfileEdit', [
             'agent' => $agent,
-            'penurwillWebsiteUrl' => config('app.penurwill-website-url')
+            'penurwillWebsiteUrl' => config('app.penurwill-website-url'),
         ]);
     }
 
@@ -35,7 +35,7 @@ class AgentProfileController extends Controller
     {
         $user = Auth::user();
         $agent = $user->agents()->first();
-        if (!$agent) {
+        if (! $agent) {
             abort(404);
         }
 
@@ -66,7 +66,7 @@ class AgentProfileController extends Controller
             'iban' => 'nullable|string|max:255',
             'swift_code' => 'nullable|string|max:255',
             // Referral code fields
-            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,' . ($agent->referralCode->id ?? 'NULL') . ',id',
+            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,'.($agent->referralCode->id ?? 'NULL').',id',
         ]);
 
         if ($data['profile_type'] === 'individual') {
@@ -107,7 +107,7 @@ class AgentProfileController extends Controller
             $agent->referralCode->update([
                 'code' => $data['referral_code'],
             ]);
-        } elseif ($data['referral_code'] && !$agent->referralCode) {
+        } elseif ($data['referral_code'] && ! $agent->referralCode) {
             // Create new referral code if agent doesn't have one
             $systemSetting = \App\Models\SystemSetting::first();
             $referralCode = \App\Models\ReferralCode::create([
@@ -115,7 +115,6 @@ class AgentProfileController extends Controller
                 'code' => $data['referral_code'],
                 'is_active' => true,
                 'commission_rate' => $systemSetting->commission_default_rate,
-                'usage_limit' => $systemSetting->global_referral_usage_limit,
                 'used_count' => 0,
                 'expires_at' => now()->addYears(5),
             ]);

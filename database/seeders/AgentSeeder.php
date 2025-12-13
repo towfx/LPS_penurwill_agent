@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Agent;
-use App\Models\User;
-use App\Models\ReferralCode;
 use App\Models\BankAccount;
+use App\Models\ReferralCode;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -136,7 +136,7 @@ class AgentSeeder extends Seeder
             'Capital One',
             'TD Bank',
             'Goldman Sachs',
-            'Morgan Stanley'
+            'Morgan Stanley',
         ];
 
         // Create individual agents
@@ -164,10 +164,9 @@ class AgentSeeder extends Seeder
             $systemSetting = \App\Models\SystemSetting::first();
             $referralCode = ReferralCode::create([
                 'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix . strtoupper(Str::random(8)),
+                'code' => $systemSetting->referral_code_prefix.strtoupper(Str::random(8)),
                 'is_active' => true,
                 'commission_rate' => $systemSetting->commission_default_rate,
-                'usage_limit' => $systemSetting->global_referral_usage_limit,
                 'used_count' => 0,
                 'expires_at' => now()->addYears(5),
             ]);
@@ -181,7 +180,7 @@ class AgentSeeder extends Seeder
                 'account_name' => $agent->individual_name,
                 'account_number' => rand(100000000, 999999999),
                 'bank_name' => $bankNames[array_rand($bankNames)],
-                'iban' => 'US' . strtoupper(Str::random(18)),
+                'iban' => 'US'.strtoupper(Str::random(18)),
                 'swift_code' => strtoupper(Str::random(8)),
             ]);
         }
@@ -211,10 +210,9 @@ class AgentSeeder extends Seeder
             $systemSetting = \App\Models\SystemSetting::first();
             $referralCode = ReferralCode::create([
                 'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix . strtoupper(Str::random(8)),
+                'code' => $systemSetting->referral_code_prefix.strtoupper(Str::random(8)),
                 'is_active' => true,
                 'commission_rate' => $systemSetting->commission_default_rate,
-                'usage_limit' => $systemSetting->global_referral_usage_limit,
                 'used_count' => 0,
                 'expires_at' => now()->addYears(5),
             ]);
@@ -228,7 +226,7 @@ class AgentSeeder extends Seeder
                 'account_name' => $agent->company_name,
                 'account_number' => rand(100000000, 999999999),
                 'bank_name' => $bankNames[array_rand($bankNames)],
-                'iban' => 'US' . strtoupper(Str::random(18)),
+                'iban' => 'US'.strtoupper(Str::random(18)),
                 'swift_code' => strtoupper(Str::random(8)),
             ]);
         }
