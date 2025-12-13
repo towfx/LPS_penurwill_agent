@@ -25,6 +25,7 @@ class Agent extends Model
         'company_phone',
         'profile_type',
         'referral_code_id',
+        'partner_id',
         'status',
         'profile_image',
     ];
@@ -130,12 +131,20 @@ class Agent extends Model
     }
 
     /**
+     * Get the partner that manages this agent.
+     */
+    public function partner()
+    {
+        return $this->belongsTo(Partner::class);
+    }
+
+    /**
      * Get the agent's display name
      */
     public function getNameAttribute()
     {
-        return $this->profile_type === 'company' 
-            ? $this->company_name 
+        return $this->profile_type === 'company'
+            ? $this->company_name
             : $this->individual_name;
     }
 

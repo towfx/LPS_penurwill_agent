@@ -259,6 +259,18 @@
               />
             </div>
 
+            <!-- Referral Code -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Referral Code (Optional)</label>
+              <input
+                v-model="form.referral_code"
+                type="text"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                placeholder="Enter partner referral code"
+              />
+              <p v-if="errors.referral_code" class="text-accent-red text-sm mt-1">{{ errors.referral_code }}</p>
+            </div>
+
             <!-- Password -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -469,6 +481,7 @@ const form = ref({
   company_registration_number: '',
   company_address: '',
   company_phone: '',
+  referral_code: '',
   password: '',
   password_confirmation: '',
   terms: false

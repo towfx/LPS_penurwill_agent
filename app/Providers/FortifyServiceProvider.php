@@ -56,16 +56,21 @@ class FortifyServiceProvider extends ServiceProvider
 
         // Role-based login redirect using custom LoginResponse
         $this->app->singleton(\Laravel\Fortify\Contracts\LoginResponse::class, function () {
-            return new class implements \Laravel\Fortify\Contracts\LoginResponse {
+            return new class implements \Laravel\Fortify\Contracts\LoginResponse
+            {
                 public function toResponse($request)
                 {
                     $user = $request->user();
                     if ($user && $user->hasRole('admin')) {
                         return redirect('/admin/dashboard');
                     }
+                    if ($user && $user->hasRole('partner')) {
+                        return redirect('/partner/dashboard');
+                    }
                     if ($user && $user->hasRole('agent')) {
                         return redirect('/agent/dashboard');
                     }
+
                     return redirect('/dashboard');
                 }
             };

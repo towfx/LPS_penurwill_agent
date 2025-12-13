@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\HasRoleChecks;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +11,6 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use App\Traits\HasRoleChecks;
 
 class User extends Authenticatable
 {
@@ -18,11 +18,12 @@ class User extends Authenticatable
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
     use HasProfilePhoto;
+    use HasRoleChecks;
+    use HasRoles;
     use Notifiable;
     use TwoFactorAuthenticatable;
-    use HasRoles;
-    use HasRoleChecks;
 
     /**
      * The attributes that are mass assignable.
@@ -77,6 +78,14 @@ class User extends Authenticatable
     public function agents()
     {
         return $this->belongsToMany(Agent::class, 'agents_users');
+    }
+
+    /**
+     * Get the partners associated with this user.
+     */
+    public function partners()
+    {
+        return $this->belongsToMany(Partner::class, 'partner_users');
     }
 
     /**

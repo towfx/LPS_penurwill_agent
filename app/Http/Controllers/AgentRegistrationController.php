@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Agent;
-use App\Models\ReferralCode;
 use App\Models\ActivityLog;
+use App\Models\Agent;
+use App\Models\Partner;
+use App\Models\ReferralCode;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -18,7 +19,7 @@ class AgentRegistrationController extends Controller
     public function show(Request $request)
     {
         return Inertia::render('RegisterAsAgent', [
-            'email' => $request->get('email', '')
+            'email' => $request->get('email', ''),
         ]);
     }
 
@@ -40,9 +41,10 @@ class AgentRegistrationController extends Controller
                 'string',
                 'min:12',
                 'confirmed',
-                //'regex:#^(?=.*[0-9])(?=.*[!@#\\$%^&*()_+\-=\[\]{}|;:,.<>?])#'
+                // 'regex:#^(?=.*[0-9])(?=.*[!@#\\$%^&*()_+\-=\[\]{}|;:,.<>?])#'
             ],
-            'terms' => 'required|accepted'
+            'referral_code' => 'nullable|string|exists:partners,code',
+            'terms' => 'required|accepted',
         ], [
             'password.regex' => 'Password must contain at least one number and one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)',
             'password.min' => 'Password must be at least 12 characters long',
@@ -74,11 +76,21 @@ class AgentRegistrationController extends Controller
             // Log role assignment
             ActivityLog::logCustom($user, 'role_assigned', "Assigned 'agent' role to user {$user->email}");
 
+            // Find partner if referral code provided
+            $partner = null;
+            if ($request->filled('referral_code')) {
+                $partner = Partner::where('code', $request->referral_code)->first();
+            }
+
             // Create agent
             $agentData = [
                 'profile_type' => $request->profile_type,
                 'status' => 'active',
             ];
+
+            if ($partner) {
+                $agentData['partner_id'] = $partner->id;
+            }
 
             if ($request->profile_type === 'individual') {
                 $agentData['individual_name'] = $request->individual_name;
@@ -94,6 +106,11 @@ class AgentRegistrationController extends Controller
 
             $agent = Agent::create($agentData);
 
+            // Log partner assignment if applicable
+            if ($partner) {
+                ActivityLog::logCustom($user, 'partner_assigned', "Assigned agent {$agent->id} to partner {$partner->company_name}", $agent);
+            }
+
             // Log agent creation
             ActivityLog::logCreate($user, $agent, $agent->toArray());
 
@@ -101,7 +118,7 @@ class AgentRegistrationController extends Controller
             $systemSetting = \App\Models\SystemSetting::first();
             $referralCode = ReferralCode::create([
                 'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix . strtoupper(Str::random(8)),
+                'code' => $systemSetting->referral_code_prefix.strtoupper(Str::random(8)),
                 'is_active' => true,
                 'commission_rate' => $systemSetting->commission_default_rate,
                 'usage_limit' => $systemSetting->global_referral_usage_limit,
@@ -125,10 +142,12 @@ class AgentRegistrationController extends Controller
             ActivityLog::logCustom($user, 'user_agent_linked', "Linked user {$user->email} to agent {$agent->id}");
 
             DB::commit();
+
             return back()->with('success', 'Agent registration completed successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to register agent. ' . $e->getMessage()])->withInput();
+
+            return back()->withErrors(['error' => 'Failed to register agent. '.$e->getMessage()])->withInput();
         }
     }
 }

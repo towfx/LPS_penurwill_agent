@@ -1,10 +1,9 @@
 <?php
 
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\Admin\AgentController;
 use App\Http\Controllers\AgentProfileController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect('/get-started');
@@ -27,6 +26,10 @@ Route::middleware([
 
         if ($user->hasRole('admin')) {
             return redirect()->route('admin.dashboard');
+        }
+
+        if ($user->hasRole('partner')) {
+            return redirect()->route('partner.dashboard');
         }
 
         if ($user->hasRole('agent')) {
@@ -54,8 +57,8 @@ Route::middleware([
         Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
         // Agents
-        Route::get('/agents/list', fn() => Inertia::render('Admin/AgentsList'))->name('agents.list');
-        Route::get('/agents/add', fn() => Inertia::render('Admin/AgentsAdd'))->name('agents.add');
+        Route::get('/agents/list', fn () => Inertia::render('Admin/AgentsList'))->name('agents.list');
+        Route::get('/agents/add', fn () => Inertia::render('Admin/AgentsAdd'))->name('agents.add');
         Route::post('/agents/store', [AgentController::class, 'store'])->name('agents.store');
         Route::get('/agents/{id}/view', [AgentController::class, 'show'])->name('agents.view');
         Route::get('/agents/{id}/update', [AgentController::class, 'edit'])->name('agents.update');
@@ -76,6 +79,15 @@ Route::middleware([
         Route::get('/system-settings', [App\Http\Controllers\Admin\SystemSettingController::class, 'index'])->name('system-settings');
         Route::get('/system-settings/update', [App\Http\Controllers\Admin\SystemSettingController::class, 'edit'])->name('system-settings.edit');
         Route::put('/system-settings/update', [App\Http\Controllers\Admin\SystemSettingController::class, 'update'])->name('system-settings.update');
+
+        // Partners
+        Route::get('/partners/list', [App\Http\Controllers\Admin\PartnerController::class, 'index'])->name('partners.list');
+        Route::get('/partners/add', [App\Http\Controllers\Admin\PartnerController::class, 'create'])->name('partners.add');
+        Route::post('/partners/store', [App\Http\Controllers\Admin\PartnerController::class, 'store'])->name('partners.store');
+        Route::get('/partners/{id}/view', [App\Http\Controllers\Admin\PartnerController::class, 'show'])->name('partners.view');
+        Route::get('/partners/{id}/update', [App\Http\Controllers\Admin\PartnerController::class, 'edit'])->name('partners.update');
+        Route::put('/partners/{id}/update', [App\Http\Controllers\Admin\PartnerController::class, 'update'])->name('partners.update.store');
+        Route::delete('/partners/{id}/delete', [App\Http\Controllers\Admin\PartnerController::class, 'destroy'])->name('partners.delete');
     });
 
     // Agent routes (require agent role)
@@ -91,5 +103,14 @@ Route::middleware([
         Route::get('/commissions', [App\Http\Controllers\Agent\CommissionController::class, 'index'])->name('commissions');
         Route::get('/commissions/detail', [App\Http\Controllers\Agent\CommissionController::class, 'detail'])->name('commissions.detail');
         Route::get('/payout/{id}/detail', [App\Http\Controllers\Agent\PayoutController::class, 'show'])->name('payout.detail');
+    });
+
+    // Partner routes (require partner role)
+    Route::middleware(['partner'])->prefix('partner')->name('partner.')->group(function () {
+        Route::get('/', function () {
+            return redirect()->route('partner.dashboard');
+        })->name('index');
+
+        Route::get('/dashboard', [\App\Http\Controllers\Partner\DashboardController::class, 'index'])->name('dashboard');
     });
 });

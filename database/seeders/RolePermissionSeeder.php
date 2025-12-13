@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -49,6 +49,7 @@ class RolePermissionSeeder extends Seeder
 
         // Create roles and assign permissions
         $adminRole = Role::create(['name' => 'admin']);
+        $partnerRole = Role::create(['name' => 'partner']);
         $agentRole = Role::create(['name' => 'agent']);
 
         // Admin gets all permissions

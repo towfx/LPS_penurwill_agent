@@ -16,7 +16,7 @@
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-xl font-bold" style="color: #bc9c5f">
           <span style="color: #eae1d0">Pen'urWill</span>
-          <span style="color: #bc9c5f">{{ isAdmin ? 'Admin' : 'Agent' }}</span>
+          <span style="color: #bc9c5f">{{ isAdmin ? 'Admin' : isPartner ? 'Partner' : 'Agent' }}</span>
         </h1>
         <button
           @click="$emit('toggle')"
@@ -68,7 +68,8 @@ import {
   X,
   Users as UsersIcon,
   DollarSign,
-  User
+  User,
+  Building2
 } from 'lucide-vue-next'
 import Badge from './Badge.vue'
 import { computed } from 'vue'
@@ -89,6 +90,11 @@ const isAgent = computed(() => {
   const agent = userRoles.value.includes('agent')
   console.log('Sidebar Debug - isAgent:', agent)
   return agent
+})
+const isPartner = computed(() => {
+  const partner = userRoles.value.includes('partner')
+  console.log('Sidebar Debug - isPartner:', partner)
+  return partner
 })
 
 const props = defineProps({
@@ -111,6 +117,7 @@ defineEmits(['toggle'])
 const defaultAdminMenus = [
   { icon: Home, label: 'Dashboard', href: '/admin/dashboard' },
   { icon: UsersIcon, label: 'Agents', href: '/admin/agents/list' },
+  { icon: Building2, label: 'Partners', href: '/admin/partners/list' },
   { icon: DollarSign, label: 'Commissions', href: '/admin/commissions/list' },
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
 ]
@@ -119,6 +126,10 @@ const defaultAgentMenus = [
   { icon: BarChart3, label: 'Dashboard', href: '/agent/dashboard' },
   { icon: User, label: 'Agent Profile', href: '/agent/profile' },
   { icon: DollarSign, label: 'Commissions', href: '/agent/commissions' },
+]
+
+const defaultPartnerMenus = [
+  { icon: BarChart3, label: 'Dashboard', href: '/partner/dashboard' },
 ]
 
 const menuItems = computed(() => {
@@ -137,6 +148,10 @@ const menuItems = computed(() => {
   if (isAdmin.value) {
     console.log('Sidebar Debug - returning admin menus:', defaultAdminMenus)
     return defaultAdminMenus
+  }
+  if (isPartner.value) {
+    console.log('Sidebar Debug - returning partner menus:', defaultPartnerMenus)
+    return defaultPartnerMenus
   }
   if (isAgent.value) {
     console.log('Sidebar Debug - returning agent menus:', defaultAgentMenus)
