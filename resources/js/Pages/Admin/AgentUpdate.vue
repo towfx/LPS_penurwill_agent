@@ -5,9 +5,14 @@
     </nav>
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold text-forest-dark">Edit Agent</h1>
-      <button @click="goBack" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors">
-        Back to List
-      </button>
+      <div class="flex space-x-2">
+        <button v-if="agent && agent.status !== 'active'" @click="showApproveDialog" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+          Approve Agent
+        </button>
+        <button @click="goBack" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors">
+          Back to List
+        </button>
+      </div>
     </div>
 
     <form @submit.prevent="saveAgent" class="space-y-6">
@@ -118,12 +123,29 @@
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select v-model="form.status" class="w-full px-3 py-2 border rounded">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
-              <option value="banned">Banned</option>
-            </select>
+            <div class="flex items-center gap-3">
+              <select v-model="form.status" class="flex-1 px-3 py-2 border rounded">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+                <option value="banned">Banned</option>
+              </select>
+              <span v-if="agent" :class="getStatusPillClass(agent.status)" class="shrink-0">
+                {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Login Information -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">Login Information</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Login Email</label>
+            <input :value="agent?.user_email || ''" type="email" disabled class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-600 cursor-not-allowed" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">New Password (leave blank to keep current)</label>
@@ -250,6 +272,35 @@
         </div>
       </div>
     </div>
+
+    <!-- Approval Confirmation Dialog -->
+    <div v-if="showApproveDialogModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeApproveDialog">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-lg font-medium text-gray-900">Approve Agent Application</h3>
+          </div>
+        </div>
+        <div class="mb-4">
+          <p class="text-sm text-gray-700 mb-2">Are you sure to approve this agent application?</p>
+          <p class="text-sm font-medium text-forest-dark">Agent Name: {{ agentName }}</p>
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button @click="closeApproveDialog" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium transition-colors">
+            Cancel
+          </button>
+          <button @click="approveAgent" :disabled="isApproving" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+            <span v-if="isApproving">Approving...</span>
+            <span v-else>Confirm</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -307,6 +358,56 @@ const errors = ref({})
 const showErrorDialog = ref(false)
 const generalErrorMessage = ref('')
 const showBankWarningDialog = ref(false)
+const showApproveDialogModal = ref(false)
+const isApproving = ref(false)
+
+const agentName = computed(() => {
+  if (!props.agent) return ''
+  return props.agent.profile_type === 'individual'
+    ? props.agent.individual_name
+    : props.agent.company_name
+})
+
+const getStatusPillClass = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'active':
+      return 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium'
+    case 'inactive':
+      return 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm font-medium'
+    case 'suspended':
+      return 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm font-medium'
+    case 'banned':
+      return 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium'
+    default:
+      return 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm font-medium'
+  }
+}
+
+const showApproveDialog = () => {
+  showApproveDialogModal.value = true
+}
+
+const closeApproveDialog = () => {
+  showApproveDialogModal.value = false
+}
+
+const approveAgent = async () => {
+  isApproving.value = true
+  try {
+    await router.post(`/admin/agents/${props.id}/approve`, {}, {
+      onSuccess: () => {
+        router.visit('/admin/agents/list')
+      },
+      onError: (errors) => {
+        console.error('Approval errors:', errors)
+      }
+    })
+  } catch (error) {
+    console.error('Approval error:', error)
+  } finally {
+    isApproving.value = false
+  }
+}
 
 const handleIndividualIdFileChange = (event) => {
   form.value.individual_id_file = event.target.files[0]
@@ -342,14 +443,19 @@ const saveAgent = async () => {
       // Use FormData for file uploads
       const formData = new FormData()
       Object.keys(form.value).forEach(key => {
-        if (key === 'individual_id_file' && form.value[key]) {
-          formData.append(key, form.value[key])
-        } else if (key === 'company_reg_file' && form.value[key]) {
-          formData.append(key, form.value[key])
-        } else if (form.value[key] !== null && form.value[key] !== '') {
+        // Skip file fields if they're null (only append if file exists)
+        if (key === 'individual_id_file' || key === 'company_reg_file') {
+          if (form.value[key]) {
+            formData.append(key, form.value[key])
+          }
+        } else {
+          // Append all other fields, including empty strings
           // Handle boolean values properly for FormData
           if (typeof form.value[key] === 'boolean') {
             formData.append(key, form.value[key] ? '1' : '0')
+          } else if (form.value[key] === null || form.value[key] === undefined) {
+            // Convert null/undefined to empty string for FormData
+            formData.append(key, '')
           } else {
             formData.append(key, form.value[key])
           }
@@ -416,14 +522,19 @@ const proceedWithSave = async () => {
       // Use FormData for file uploads
       const formData = new FormData()
       Object.keys(form.value).forEach(key => {
-        if (key === 'individual_id_file' && form.value[key]) {
-          formData.append(key, form.value[key])
-        } else if (key === 'company_reg_file' && form.value[key]) {
-          formData.append(key, form.value[key])
-        } else if (form.value[key] !== null && form.value[key] !== '') {
+        // Skip file fields if they're null (only append if file exists)
+        if (key === 'individual_id_file' || key === 'company_reg_file') {
+          if (form.value[key]) {
+            formData.append(key, form.value[key])
+          }
+        } else {
+          // Append all other fields, including empty strings
           // Handle boolean values properly for FormData
           if (typeof form.value[key] === 'boolean') {
             formData.append(key, form.value[key] ? '1' : '0')
+          } else if (form.value[key] === null || form.value[key] === undefined) {
+            // Convert null/undefined to empty string for FormData
+            formData.append(key, '')
           } else {
             formData.append(key, form.value[key])
           }

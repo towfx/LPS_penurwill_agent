@@ -135,4 +135,12 @@ class ActivityLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get the target model (polymorphic relationship).
+     */
+    public function target()
+    {
+        return $this->morphTo();
+    }
 }

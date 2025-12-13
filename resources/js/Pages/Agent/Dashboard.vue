@@ -11,6 +11,7 @@ import { TrendingUp, Users, DollarSign, Target } from 'lucide-vue-next'
 defineOptions({ layout: AgentLayout })
 
 const page = usePage()
+const agent = computed(() => page.props.agent)
 const stats = computed(() => page.props.stats)
 const salesByDay = computed(() => page.props.salesByDay)
 const referralsByDay = computed(() => page.props.referralsByDay)
@@ -32,6 +33,21 @@ function trendText(val, isPercent = false) {
   if (val === null) return '—'
   return (val > 0 ? '+' : '') + val.toFixed(1) + (isPercent ? '%' : '')
 }
+
+function getStatusPillClass(status) {
+  switch (status?.toLowerCase()) {
+    case 'active':
+      return 'bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-base font-medium'
+    case 'inactive':
+      return 'bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-base font-medium'
+    case 'suspended':
+      return 'bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-base font-medium'
+    case 'banned':
+      return 'bg-red-100 text-red-800 px-3 py-1.5 rounded-full text-base font-medium'
+    default:
+      return 'bg-gray-100 text-gray-800 px-3 py-1.5 rounded-full text-base font-medium'
+  }
+}
 </script>
 
 <template>
@@ -41,9 +57,14 @@ function trendText(val, isPercent = false) {
       <span>Agent</span> / <span class="text-stone-900 font-medium">Dashboard</span>
     </nav>
     <!-- Title & Description -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-1 flex items-center gap-2">
-      <DollarSign class="inline text-gold" size="28" /> Agent Dashboard
-    </h1>
+    <div class="flex items-center justify-between mb-1">
+      <h1 class="text-2xl font-bold text-forest-dark flex items-center gap-2">
+        <DollarSign class="inline text-gold" size="28" /> Agent Dashboard
+      </h1>
+      <span v-if="agent?.status" :class="getStatusPillClass(agent.status)" class="shrink-0">
+        {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
+      </span>
+    </div>
     <p class="text-stone-700 mb-6">Your performance overview, sales, referrals, and more.</p>
 
     <!-- Stats Cards -->

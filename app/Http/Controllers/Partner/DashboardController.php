@@ -183,12 +183,14 @@ class DashboardController extends Controller
 
         // 6. Recent System Activity (filtered by partner's agents)
         $recentActivity = ActivityLog::with(['user'])
-            ->whereHasMorph('target', [Agent::class], function ($q) use ($agentIds) {
-                $q->whereIn('id', $agentIds);
-            })
-            ->orWhere(function ($q) use ($partner) {
-                $q->where('target_type', Partner::class)
-                    ->where('target_id', $partner->id);
+            ->where(function ($q) use ($agentIds, $partner) {
+                $q->whereHasMorph('target', [Agent::class], function ($subQ) use ($agentIds) {
+                    $subQ->whereIn('id', $agentIds);
+                })
+                ->orWhere(function ($subQ) use ($partner) {
+                    $subQ->where('target_type', Partner::class)
+                        ->where('target_id', $partner->id);
+                });
             })
             ->orderByDesc('created_at')
             ->take(10)

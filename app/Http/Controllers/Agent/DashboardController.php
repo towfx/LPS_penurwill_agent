@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
+use App\Models\Commission;
+use App\Models\Payout;
+use App\Models\Referral;
+use App\Models\Sale;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use App\Models\Sale;
-use App\Models\Commission;
-use App\Models\Referral;
-use App\Models\Payout;
-use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 
 class DashboardController extends Controller
 {
@@ -20,7 +20,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         // If user has multiple agents, use the first (most users will have one)
         $agent = $user->agents()->first();
-        if (!$agent) {
+        if (! $agent) {
             abort(403, 'Not an agent');
         }
         $agentId = $agent->id;
@@ -47,12 +47,12 @@ class DashboardController extends Controller
 
         // Total commissions this month
         $commThisMonth = Commission::where('agent_id', $agentId)
-            ->whereHas('sale', function($q) use ($startOfMonth, $endOfMonth) {
+            ->whereHas('sale', function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
             })
             ->sum('amount');
         $commLastMonth = Commission::where('agent_id', $agentId)
-            ->whereHas('sale', function($q) use ($startOfLastMonth, $endOfLastMonth) {
+            ->whereHas('sale', function ($q) use ($startOfLastMonth, $endOfLastMonth) {
                 $q->whereBetween('sale_date', [$startOfLastMonth, $endOfLastMonth]);
             })
             ->sum('amount');
@@ -109,14 +109,18 @@ class DashboardController extends Controller
             ->get(['created_at']);
         foreach ($referrals as $ref) {
             $day = Carbon::parse($ref->created_at)->format('Y-m-d');
-            if (isset($referralsByDay[$day])) $referralsByDay[$day]++;
+            if (isset($referralsByDay[$day])) {
+                $referralsByDay[$day]++;
+            }
         }
         $sales90 = Sale::where('agent_id', $agentId)
             ->whereBetween('sale_date', [$start90, $end90])
             ->get(['sale_date']);
         foreach ($sales90 as $sale) {
             $day = Carbon::parse($sale->sale_date)->format('Y-m-d');
-            if (isset($conversionsByDay[$day])) $conversionsByDay[$day]++;
+            if (isset($conversionsByDay[$day])) {
+                $conversionsByDay[$day]++;
+            }
         }
         // Conversion rate by day
         $conversionRateByDay = [];
@@ -147,6 +151,9 @@ class DashboardController extends Controller
             ->sum('amount');
 
         return Inertia::render('Agent/Dashboard', [
+            'agent' => [
+                'status' => $agent->status,
+            ],
             'stats' => [
                 'salesThisMonth' => $salesThisMonth,
                 'salesChange' => $salesChange,

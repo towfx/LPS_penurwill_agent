@@ -9,6 +9,9 @@
         <button @click="goBack" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors">
           Back to List
         </button>
+        <button v-if="agent.status !== 'active'" @click="showApproveDialog" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+          Approve Agent
+        </button>
         <button @click="goToEdit" class="bg-gold hover:bg-amber-700 text-white px-4 py-2 rounded font-medium transition-colors">
           Edit Agent
         </button>
@@ -50,7 +53,12 @@
         </div>
 
         <div class="mt-6 space-y-2">
-          <div><span class="font-medium text-gray-700">Status:</span> <span class="capitalize">{{ agent.status }}</span></div>
+          <div>
+            <span class="font-medium text-gray-700">Status:</span>
+            <span :class="getStatusPillClass(agent.status)" class="ml-2">
+              {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
+            </span>
+          </div>
           <div><span class="font-medium text-gray-700">User Email:</span> {{ agent.user_email }}</div>
           <div><span class="font-medium text-gray-700">Created:</span> {{ agent.created_at }}</div>
         </div>
@@ -86,11 +94,40 @@
         <div v-else class="text-gray-500">No referral code information available.</div>
       </div>
     </div>
+
+    <!-- Approval Confirmation Dialog -->
+    <div v-if="showApproveDialogModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeApproveDialog">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-lg font-medium text-gray-900">Approve Agent Application</h3>
+          </div>
+        </div>
+        <div class="mb-4">
+          <p class="text-sm text-gray-700 mb-2">Are you sure to approve this agent application?</p>
+          <p class="text-sm font-medium text-forest-dark">Agent Name: {{ agentName }}</p>
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button @click="closeApproveDialog" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium transition-colors">
+            Cancel
+          </button>
+          <button @click="approveAgent" :disabled="isApproving" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+            <span v-if="isApproving">Approving...</span>
+            <span v-else>Confirm</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 
@@ -102,6 +139,57 @@ const props = defineProps({
     default: null
   }
 })
+
+const showApproveDialogModal = ref(false)
+const isApproving = ref(false)
+
+const agentName = computed(() => {
+  if (!props.agent) return ''
+  return props.agent.profile_type === 'individual'
+    ? props.agent.individual_name
+    : props.agent.company_name
+})
+
+const getStatusPillClass = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'active':
+      return 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium'
+    case 'inactive':
+      return 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm font-medium'
+    case 'suspended':
+      return 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm font-medium'
+    case 'banned':
+      return 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium'
+    default:
+      return 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm font-medium'
+  }
+}
+
+const showApproveDialog = () => {
+  showApproveDialogModal.value = true
+}
+
+const closeApproveDialog = () => {
+  showApproveDialogModal.value = false
+}
+
+const approveAgent = async () => {
+  isApproving.value = true
+  try {
+    await router.post(`/admin/agents/${props.agent.id}/approve`, {}, {
+      onSuccess: () => {
+        router.visit('/admin/agents/list')
+      },
+      onError: (errors) => {
+        console.error('Approval errors:', errors)
+      }
+    })
+  } catch (error) {
+    console.error('Approval error:', error)
+  } finally {
+    isApproving.value = false
+  }
+}
 
 const goToEdit = () => {
   router.visit(`/admin/agents/${props.agent.id}/update`)

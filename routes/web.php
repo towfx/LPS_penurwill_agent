@@ -64,6 +64,7 @@ Route::middleware([
         Route::get('/agents/{id}/update', [AgentController::class, 'edit'])->name('agents.update');
         Route::put('/agents/{id}/update', [AgentController::class, 'update'])->name('agents.update.store');
         Route::post('/agents/{id}/update', [AgentController::class, 'update'])->name('agents.update.store.post');
+        Route::post('/agents/{id}/approve', [AgentController::class, 'approve'])->name('agents.approve');
         Route::get('/agents/{id}/file/{field}', [AgentController::class, 'downloadFile'])->name('agents.file.download');
         Route::get('/agents/agents.xls', [AgentController::class, 'export'])->name('agents.export');
 

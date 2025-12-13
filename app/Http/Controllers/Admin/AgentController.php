@@ -31,11 +31,14 @@ class AgentController extends Controller
             'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_phone' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_address' => 'required_if:profile_type,individual|nullable|string',
+            'individual_id_number' => 'required_if:profile_type,individual|nullable|string|max:255',
+            'individual_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'company_representative_name' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_name' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_registration_number' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_address' => 'required_if:profile_type,company|nullable|string',
             'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'user_email' => 'required|email|unique:users,email',
             'user_password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
@@ -225,19 +228,9 @@ class AgentController extends Controller
             $beforeData['referral_code'] = $agent->referralCode->toArray();
         }
 
-        $validator = Validator::make($request->all(), [
+        // Build validation rules based on profile type
+        $rules = [
             'profile_type' => 'required|in:individual,company',
-            'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
-            'individual_phone' => 'required_if:profile_type,individual|nullable|string|max:255',
-            'individual_address' => 'required_if:profile_type,individual|nullable|string',
-            'individual_id_number' => 'required_if:profile_type,individual|nullable|string|max:255',
-            'individual_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
-            'company_representative_name' => 'required_if:profile_type,company|nullable|string|max:255',
-            'company_name' => 'required_if:profile_type,company|nullable|string|max:255',
-            'company_registration_number' => 'required_if:profile_type,company|nullable|string|max:255',
-            'company_address' => 'required_if:profile_type,company|nullable|string',
-            'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
-            'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'user_password' => 'nullable|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
             // Bank account fields
@@ -250,7 +243,25 @@ class AgentController extends Controller
             'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,'.($agent->referralCode->id ?? 'NULL').',id',
             'referral_commission_rate' => 'nullable|numeric|min:0|max:100',
             'referral_is_active' => 'nullable|boolean',
-        ]);
+        ];
+
+        // Add validation rules based on profile type
+        if ($request->profile_type === 'individual') {
+            $rules['individual_name'] = 'required|string|max:255';
+            $rules['individual_phone'] = 'required|string|max:255';
+            $rules['individual_address'] = 'required|string';
+            $rules['individual_id_number'] = 'required|string|max:255';
+            $rules['individual_id_file'] = 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240';
+        } else {
+            $rules['company_representative_name'] = 'required|string|max:255';
+            $rules['company_name'] = 'required|string|max:255';
+            $rules['company_registration_number'] = 'required|string|max:255';
+            $rules['company_address'] = 'required|string';
+            $rules['company_phone'] = 'required|string|max:255';
+            $rules['company_reg_file'] = 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
@@ -428,7 +439,40 @@ class AgentController extends Controller
             abort(404);
         }
 
-        return Storage::disk('local')->download($filePath);
+        return response()->download(Storage::disk('local')->path($filePath));
+    }
+
+    /**
+     * Approve agent application
+     */
+    public function approve($id)
+    {
+        $adminUser = Auth::user();
+        $agent = Agent::findOrFail($id);
+
+        DB::beginTransaction();
+        try {
+            // Capture before data for activity logging
+            $beforeData = $agent->toArray();
+
+            // Update agent status to active
+            $agent->update(['status' => 'active']);
+
+            // Capture after data for activity logging
+            $afterData = $agent->toArray();
+
+            // Log the agent approval activity
+            ActivityLog::logUpdate($adminUser, $agent, $beforeData, $afterData);
+            ActivityLog::logCustom($adminUser, 'agent_approved', "Admin approved agent application for agent {$agent->id}", $agent);
+
+            DB::commit();
+
+            return redirect()->route('admin.agents.list')->with('success', 'Agent approved successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to approve agent. '.$e->getMessage()]);
+        }
     }
 
     /**
