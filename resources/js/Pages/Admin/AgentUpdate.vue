@@ -120,6 +120,25 @@
           </div>
         </div>
 
+        <!-- About Me / About Company -->
+        <div class="space-y-4 mt-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }} *
+            </label>
+            <textarea
+              v-model="form.about"
+              rows="4"
+              maxlength="1000"
+              class="w-full px-3 py-2 border rounded"
+              :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
+            ></textarea>
+            <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
+            <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
+            <p v-if="errors.about" class="text-accent-red text-sm mt-1">{{ errors.about }}</p>
+          </div>
+        </div>
+
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -335,6 +354,7 @@ const form = ref({
   company_address: props.agent?.company_address || '',
   company_phone: props.agent?.company_phone || '',
   company_reg_file: null,
+  about: props.agent?.about || '',
   user_password: '',
   user_password_confirmation: '',
   status: props.agent?.status || 'active',
@@ -352,6 +372,13 @@ const form = ref({
 
 const isIndividual = computed(() => form.value.profile_type === 'individual')
 const isCompany = computed(() => form.value.profile_type === 'company')
+
+const aboutWordCount = computed(() => {
+  if (!form.value.about || !form.value.about.trim()) {
+    return 0
+  }
+  return form.value.about.trim().split(/\s+/).filter(word => word.length > 0).length
+})
 
 const isSaving = ref(false)
 const errors = ref({})

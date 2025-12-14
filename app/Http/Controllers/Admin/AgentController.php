@@ -39,6 +39,7 @@ class AgentController extends Controller
             'company_address' => 'required_if:profile_type,company|nullable|string',
             'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
+            'about' => 'required|string|max:1000',
             'user_email' => 'required|email|unique:users,email',
             'user_password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
@@ -73,6 +74,7 @@ class AgentController extends Controller
             $agentData = [
                 'profile_type' => $request->profile_type,
                 'status' => $request->status,
+                'about' => $request->about,
             ];
 
             if ($request->profile_type === 'individual') {
@@ -231,6 +233,7 @@ class AgentController extends Controller
         // Build validation rules based on profile type
         $rules = [
             'profile_type' => 'required|in:individual,company',
+            'about' => 'required|string|max:1000',
             'user_password' => 'nullable|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
             // Bank account fields
@@ -273,6 +276,7 @@ class AgentController extends Controller
             $agentData = [
                 'profile_type' => $request->profile_type,
                 'status' => $request->status,
+                'about' => $request->about,
             ];
 
             if ($request->profile_type === 'individual') {

@@ -268,6 +268,24 @@
               </div>
             </div>
 
+            <!-- About Me / About Company -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }} *
+              </label>
+              <textarea
+                v-model="form.about"
+                rows="4"
+                required
+                maxlength="1000"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
+              ></textarea>
+              <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
+              <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
+              <p v-if="errors.about" class="text-accent-red text-sm mt-1">{{ errors.about }}</p>
+            </div>
+
             <!-- Next Button -->
             <div class="flex justify-end pt-6">
               <Button
@@ -551,7 +569,8 @@ const form = ref({
   referral_code: '',
   password: '',
   password_confirmation: '',
-  terms: false
+  terms: false,
+  about: ''
 })
 
 const passwordValidation = ref({
@@ -570,15 +589,22 @@ const handleCompanyRegFileChange = (event) => {
 }
 
 // Computed properties
+const aboutWordCount = computed(() => {
+  if (!form.value.about || !form.value.about.trim()) {
+    return 0
+  }
+  return form.value.about.trim().split(/\s+/).filter(word => word.length > 0).length
+})
+
 const canProceedToNext = computed(() => {
   if (currentStep.value === 0) {
     if (form.value.profile_type === 'individual') {
       return form.value.individual_name && form.value.individual_phone && form.value.individual_address &&
-             form.value.individual_id_number && form.value.individual_id_file
+             form.value.individual_id_number && form.value.individual_id_file && form.value.about
     } else {
       return form.value.company_representative_name && form.value.company_name &&
              form.value.company_registration_number && form.value.company_address && form.value.company_phone &&
-             form.value.company_reg_file
+             form.value.company_reg_file && form.value.about
     }
   }
   return true

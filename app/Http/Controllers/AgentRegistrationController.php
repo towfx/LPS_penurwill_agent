@@ -55,6 +55,7 @@ class AgentRegistrationController extends Controller
             'company_address' => 'required_if:profile_type,company|string',
             'company_phone' => 'required_if:profile_type,company|string|max:255',
             'company_reg_file' => 'required_if:profile_type,company|file|mimes:pdf,jpeg,jpg,png|max:10240',
+            'about' => 'required|string|max:1000',
             'password' => [
                 'required',
                 'string',
@@ -105,6 +106,7 @@ class AgentRegistrationController extends Controller
             $agentData = [
                 'profile_type' => $request->profile_type,
                 'status' => 'inactive',
+                'about' => $request->about,
             ];
 
             if ($partner) {

@@ -139,6 +139,23 @@
             </div>
           </div>
 
+          <!-- About Me / About Company -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }} *
+            </label>
+            <textarea
+              v-model="form.about"
+              rows="4"
+              maxlength="1000"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+              :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
+            ></textarea>
+            <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
+            <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
+            <p v-if="errors.about" class="text-red-500 text-sm mt-1">{{ errors.about }}</p>
+          </div>
+
           <!-- User Account Information -->
           <div class="border-t pt-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">User Account Information</h3>
@@ -237,6 +254,13 @@ const props = defineProps({
 // Reactive data
 const isSubmitting = ref(false)
 
+const aboutWordCount = computed(() => {
+  if (!form.about || !form.about.trim()) {
+    return 0
+  }
+  return form.about.trim().split(/\s+/).filter(word => word.length > 0).length
+})
+
 const form = reactive({
   profile_type: 'individual',
   individual_name: '',
@@ -247,6 +271,7 @@ const form = reactive({
   company_registration_number: '',
   company_address: '',
   company_phone: '',
+  about: '',
   user_email: '',
   user_password: '',
   user_password_confirmation: '',

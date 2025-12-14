@@ -31,6 +31,7 @@ class Agent extends Model
         'partner_id',
         'status',
         'profile_image',
+        'about',
     ];
 
     /**

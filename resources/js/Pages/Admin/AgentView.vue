@@ -52,6 +52,13 @@
           </div>
         </div>
 
+        <div v-if="agent.about" class="mt-6 space-y-2">
+          <div>
+            <span class="font-medium text-gray-700">{{ isIndividual ? 'About Me' : 'About Company' }}:</span>
+            <p class="mt-1 text-gray-600 whitespace-pre-wrap">{{ agent.about }}</p>
+          </div>
+        </div>
+
         <div class="mt-6 space-y-2">
           <div>
             <span class="font-medium text-gray-700">Status:</span>
