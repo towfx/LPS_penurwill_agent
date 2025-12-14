@@ -19,8 +19,23 @@ class AgentRegistrationController extends Controller
 {
     public function show(Request $request)
     {
+        $email = $request->get('email', '');
+        $invalidEmail = false;
+
+        // Validate email format if provided
+        if (!empty($email)) {
+            $validator = Validator::make(['email' => $email], [
+                'email' => 'required|email',
+            ]);
+
+            if ($validator->fails()) {
+                $invalidEmail = true;
+            }
+        }
+
         return Inertia::render('RegisterAsAgent', [
-            'email' => $request->get('email', ''),
+            'email' => $email,
+            'invalidEmail' => $invalidEmail,
         ]);
     }
 

@@ -52,16 +52,6 @@
             <p v-if="errors.code" class="text-accent-red text-sm mt-1">{{ errors.code }}</p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Partner</label>
-            <select v-model="form.parent_id" class="w-full px-3 py-2 border rounded">
-              <option :value="0">None (Top Level)</option>
-              <option v-for="p in partners" :key="p.id" :value="p.id" :disabled="p.id == id">
-                {{ p.company_name }}
-              </option>
-            </select>
-            <p v-if="errors.parent_id" class="text-accent-red text-sm mt-1">{{ errors.parent_id }}</p>
-          </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -157,7 +147,6 @@ const form = reactive({
   company_phone: props.partner?.company_phone || '',
   company_email: props.partner?.company_email || '',
   code: props.partner?.code || '',
-  parent_id: props.partner?.parent_id || 0,
   status: props.partner?.status || 'active',
   company_profile_file: null,
   user_email: props.partner?.user_email || '',

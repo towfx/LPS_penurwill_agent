@@ -98,7 +98,6 @@ class PartnerController extends Controller
             'company_email' => 'required|email|unique:partners,company_email',
             'status' => 'required|in:active,inactive,suspended',
             'code' => 'required|string|max:255|unique:partners,code',
-            'parent_id' => 'nullable|exists:partners,id',
             'user_email' => 'required|email|unique:users,email',
             'user_password' => 'required|string|min:8|confirmed',
             'company_profile_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
@@ -119,7 +118,7 @@ class PartnerController extends Controller
                 'company_email' => $request->company_email,
                 'status' => $request->status,
                 'code' => $request->code,
-                'parent_id' => $request->parent_id ?? 0,
+                'parent_id' => 1,
             ];
 
             $partner = Partner::create($partnerData);
@@ -255,7 +254,6 @@ class PartnerController extends Controller
             'company_email' => 'required|email|unique:partners,company_email,'.$id,
             'status' => 'required|in:active,inactive,suspended',
             'code' => 'required|string|max:255|unique:partners,code,'.$id,
-            'parent_id' => 'nullable|exists:partners,id',
             'user_password' => 'nullable|string|min:8|confirmed',
             'company_profile_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
@@ -275,7 +273,7 @@ class PartnerController extends Controller
                 'company_email' => $request->company_email,
                 'status' => $request->status,
                 'code' => $request->code,
-                'parent_id' => $request->parent_id ?? 0,
+                'parent_id' => 1,
             ];
 
             // Handle file upload

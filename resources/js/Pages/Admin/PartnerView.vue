@@ -29,7 +29,6 @@
           <div><span class="font-medium text-gray-700">Company Email:</span> {{ partner.company_email }}</div>
           <div><span class="font-medium text-gray-700">Partner Code:</span> <span class="font-mono bg-gray-100 px-2 py-1 rounded">{{ partner.code }}</span></div>
           <div><span class="font-medium text-gray-700">Status:</span> <span class="capitalize">{{ partner.status }}</span></div>
-          <div v-if="partner.parent_name"><span class="font-medium text-gray-700">Parent Partner:</span> {{ partner.parent_name }}</div>
           <div><span class="font-medium text-gray-700">Created:</span> {{ partner.created_at }}</div>
         </div>
 

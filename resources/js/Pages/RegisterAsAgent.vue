@@ -477,6 +477,23 @@
         </Card>
       </div>
     </div>
+
+    <!-- Invalid Email Dialog -->
+    <DialogModal :show="showInvalidEmailDialog" @close="handleDialogClose" :closeable="false">
+      <template #title>
+        Invalid Email Address
+      </template>
+
+      <template #content>
+        <p>The email address provided is not in a valid format. Please use a valid email address to register as an agent.</p>
+      </template>
+
+      <template #footer>
+        <Button @click="handleDialogClose" class="bg-gold hover:bg-amber-700 text-white">
+          OK
+        </Button>
+      </template>
+    </DialogModal>
   </div>
 </template>
 
@@ -488,12 +505,17 @@ import { ArrowLeft, CheckCircle } from 'lucide-vue-next'
 // Components
 import Card from './Design/Components/Card.vue'
 import Button from './Design/Components/Button.vue'
+import DialogModal from '@/Components/DialogModal.vue'
 
 // Props
 const props = defineProps({
   email: {
     type: String,
     default: ''
+  },
+  invalidEmail: {
+    type: Boolean,
+    default: false
   },
   errors: {
     type: Object,
@@ -504,6 +526,7 @@ const props = defineProps({
 // Reactive data
 const currentStep = ref(0)
 const isLoading = ref(false)
+const showInvalidEmailDialog = ref(false)
 
 const steps = [
   { label: 'Agent Info', key: 'agent-info' },
@@ -629,6 +652,10 @@ const goToLogin = () => {
   router.visit(`/login?email=${encodeURIComponent(form.value.email)}`)
 }
 
+const handleDialogClose = () => {
+  router.visit('/')
+}
+
 const getStepClasses = (index) => {
   if (index < currentStep.value) {
     return 'border-gold bg-gold text-white'
@@ -672,6 +699,11 @@ onMounted(() => {
   // Set email from props or URL params
   const urlParams = new URLSearchParams(window.location.search)
   form.value.email = props.email || urlParams.get('email') || ''
+
+  // Show dialog if invalid email detected
+  if (props.invalidEmail) {
+    showInvalidEmailDialog.value = true
+  }
 })
 </script>
 

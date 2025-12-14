@@ -114,7 +114,7 @@ const submit = () => {
             </Link>
           </div>
 
-          <Button type="submit" className="w-full mt-2" :class="{ 'opacity-50': form.processing }" :disabled="form.processing">
+          <Button type="submit" size="lg" class="w-full mt-2 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-accent-green hover:bg-accent-green/90 text-white" :class="{ 'opacity-50': form.processing }" :disabled="form.processing">
             Log in
           </Button>
         </form>
