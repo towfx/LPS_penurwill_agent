@@ -152,6 +152,17 @@
               </div>
 
               <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Alternative E-Mail Address</label>
+                <input
+                  v-model="form.individual_email"
+                  type="email"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                  placeholder="Enter alternative email address (optional)"
+                />
+                <p v-if="errors.individual_email" class="text-accent-red text-sm mt-1">{{ errors.individual_email }}</p>
+              </div>
+
+              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Address *</label>
                 <textarea
                   v-model="form.individual_address"
@@ -254,6 +265,18 @@
               </div>
 
               <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address *</label>
+                <input
+                  v-model="form.company_email_address"
+                  type="email"
+                  required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                  placeholder="Enter company email address"
+                />
+                <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
+              </div>
+
+              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate *</label>
                 <input
                   @change="handleCompanyRegFileChange"
@@ -262,7 +285,7 @@
                   required
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
                 />
-                <p class="text-sm text-gray-500 mt-1">Company SSM certificate</p>
+                <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
                 <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
                 <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
               </div>
@@ -557,6 +580,7 @@ const form = ref({
   profile_type: 'individual',
   individual_name: '',
   individual_phone: '',
+  individual_email: '',
   individual_address: '',
   individual_id_number: '',
   individual_id_file: null,
@@ -565,6 +589,7 @@ const form = ref({
   company_registration_number: '',
   company_address: '',
   company_phone: '',
+  company_email_address: '',
   company_reg_file: null,
   referral_code: '',
   password: '',
@@ -604,7 +629,7 @@ const canProceedToNext = computed(() => {
     } else {
       return form.value.company_representative_name && form.value.company_name &&
              form.value.company_registration_number && form.value.company_address && form.value.company_phone &&
-             form.value.company_reg_file && form.value.about
+             form.value.company_email_address && form.value.company_reg_file && form.value.about
     }
   }
   return true

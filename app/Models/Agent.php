@@ -17,6 +17,7 @@ class Agent extends Model
     protected $fillable = [
         'individual_name',
         'individual_phone',
+        'individual_email',
         'individual_address',
         'individual_id_number',
         'individual_id_file',
@@ -25,6 +26,7 @@ class Agent extends Model
         'company_registration_number',
         'company_address',
         'company_phone',
+        'company_email_address',
         'company_reg_file',
         'profile_type',
         'referral_code_id',

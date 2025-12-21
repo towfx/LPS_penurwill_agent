@@ -38,7 +38,7 @@ class Sale extends Model
         return [
             'amount' => 'decimal:2',
             'commission_amount' => 'decimal:2',
-            'sale_date' => 'date',
+            'sale_date' => 'datetime',
             'is_recurring' => 'boolean',
         ];
     }

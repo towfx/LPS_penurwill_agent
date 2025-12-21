@@ -31,7 +31,7 @@ const copiedValue = ref('')
 // Computed properties for shareable URL
 const shareableUrl = computed(() => {
   if (!props.agent?.referral_code?.code) return ''
-  return `${props.penurwillWebsiteUrl}?ref=${props.agent.referral_code.code}`
+  return `https://penurwill.com/write/guest/start?rc=${props.agent.referral_code.code}`
 })
 
 const copyShareableUrl = async () => {
@@ -142,6 +142,18 @@ const copyCustomLink = async () => {
               </div>
             </div>
 
+            <div v-if="agent.individual_email" class="flex items-center">
+              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Alternative E-Mail Address</div>
+                <div class="text-gray-900">{{ agent.individual_email }}</div>
+              </div>
+            </div>
+
             <div class="flex items-start md:col-span-3">
               <div class="w-6 h-6 bg-accent-orange rounded-full flex items-center justify-center mr-3 flex-shrink-0 mt-1">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,6 +229,18 @@ const copyCustomLink = async () => {
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium text-gray-500">Company Phone</div>
                 <div class="text-gray-900">{{ agent.company_phone }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Company E-Mail Address</div>
+                <div class="text-gray-900">{{ agent.company_email_address }}</div>
               </div>
             </div>
           </div>
@@ -335,9 +359,6 @@ const copyCustomLink = async () => {
             <div class="p-3 bg-gray-50 rounded border font-mono text-sm break-all">
               {{ shareableUrl }}
             </div>
-            <p class="text-sm text-gray-500 mt-2">
-              Note: You may append any landing page with ?ref={{ agent.referral_code.code }}
-            </p>
           </div>
         </div>
         <div v-else class="text-gray-500">No referral code information available.</div>
@@ -396,18 +417,6 @@ const copyCustomLink = async () => {
                   {{ shareableUrl }}
                 </div>
               </div>
-
-              <div class="bg-gray-50 rounded-lg p-3">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-sm font-medium text-gray-700">Custom Page Example:</span>
-                  <button @click="copyCustomLink" class="px-2 py-1 bg-accent-blue hover:bg-accent-blue/80 text-white text-xs rounded transition-colors">
-                    Copy
-                  </button>
-                </div>
-                <div class="font-mono text-sm text-gray-600 break-all">
-                  {{ penurwillWebsiteUrl }}/products?ref={{ agent.referral_code?.code || 'YOUR_CODE' }}
-                </div>
-              </div>
             </div>
           </div>
 
@@ -422,10 +431,6 @@ const copyCustomLink = async () => {
               <h4 class="font-semibold text-forest-dark">Pro Tips</h4>
             </div>
             <ul class="text-sm text-gray-700 space-y-2">
-              <li class="flex items-start">
-                <span class="text-accent-orange mr-2">•</span>
-                You can append <code class="bg-gray-100 px-1 rounded text-xs">?ref={{ agent.referral_code?.code || 'YOUR_CODE' }}</code> to any page URL
-              </li>
               <li class="flex items-start">
                 <span class="text-accent-orange mr-2">•</span>
                 Share on social media, WhatsApp, or email with your personalized links

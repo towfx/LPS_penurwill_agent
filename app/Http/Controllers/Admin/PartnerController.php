@@ -78,8 +78,12 @@ class PartnerController extends Controller
             ->orderBy('company_name')
             ->get();
 
+        $systemSetting = \App\Models\SystemSetting::first();
+        $referralCodePrefix = $systemSetting?->referral_code_prefix ?? 'REF';
+
         return Inertia::render('Admin/PartnersAdd', [
             'partners' => $partners,
+            'referralCodePrefix' => $referralCodePrefix,
         ]);
     }
 

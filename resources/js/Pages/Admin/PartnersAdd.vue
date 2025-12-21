@@ -1,11 +1,11 @@
 <template>
   <div>
     <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Partners</span> / <span class="text-stone-900 font-medium">Add</span>
+      <span>Admin</span> / <span>Business Partners</span> / <span class="text-stone-900 font-medium">Add</span>
     </nav>
 
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-forest-dark">Add Partner</h1>
+      <h1 class="text-2xl font-bold text-forest-dark">Add Business Partner</h1>
       <Button variant="outline" @click="goBack">
         <ArrowLeft size="16" class="mr-2" />
         Back to List
@@ -14,7 +14,7 @@
 
     <Card>
       <CardHeader>
-        <CardTitle>Partner Information</CardTitle>
+        <CardTitle>Business Partner Information</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -78,12 +78,23 @@
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Partner Code *</label>
-              <input
-                v-model="form.code"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent font-mono"
-                placeholder="Enter unique partner code"
-              />
+              <div class="flex gap-2">
+                <input
+                  v-model="form.code"
+                  type="text"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent font-mono"
+                  placeholder="Enter unique partner code"
+                />
+                <button
+                  type="button"
+                  @click="regenerateCode"
+                  class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md font-medium transition-colors whitespace-nowrap"
+                  title="Generate new code"
+                >
+                  Regenerate
+                </button>
+              </div>
+              <p class="text-sm text-gray-500 mt-1">Prefix: {{ referralCodePrefix }} (auto-generated)</p>
               <p v-if="errors.code" class="text-red-500 text-sm mt-1">{{ errors.code }}</p>
             </div>
 
@@ -193,11 +204,30 @@ const props = defineProps({
   partners: {
     type: Array,
     default: () => []
+  },
+  referralCodePrefix: {
+    type: String,
+    default: 'REF'
   }
 })
 
 // Reactive data
 const isSubmitting = ref(false)
+
+// Generate random code suffix (8 uppercase characters)
+const generateCodeSuffix = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let result = ''
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+// Generate full partner code
+const generatePartnerCode = () => {
+  return props.referralCodePrefix + generateCodeSuffix()
+}
 
 const form = reactive({
   company_name: '',
@@ -205,13 +235,18 @@ const form = reactive({
   company_address: '',
   company_phone: '',
   company_email: '',
-  code: '',
+  code: generatePartnerCode(),
   status: 'active',
   company_profile_file: null,
   user_email: '',
   user_password: '',
   user_password_confirmation: ''
 })
+
+// Method to regenerate partner code
+const regenerateCode = () => {
+  form.code = generatePartnerCode()
+}
 
 // Methods
 const handleFileChange = (event) => {

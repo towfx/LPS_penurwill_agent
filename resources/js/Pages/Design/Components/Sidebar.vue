@@ -78,23 +78,16 @@ import { usePage } from '@inertiajs/vue3'
 // Role detection
 const page = usePage()
 const userRoles = computed(() => {
-  console.log('Sidebar Debug - userRoles:', page.props.auth?.roles || [])
   return page.props.auth?.roles || []
 })
 const isAdmin = computed(() => {
-  const admin = userRoles.value.includes('admin')
-  console.log('Sidebar Debug - isAdmin:', admin)
-  return admin
+  return userRoles.value.includes('admin')
 })
 const isAgent = computed(() => {
-  const agent = userRoles.value.includes('agent')
-  console.log('Sidebar Debug - isAgent:', agent)
-  return agent
+  return userRoles.value.includes('agent')
 })
 const isPartner = computed(() => {
-  const partner = userRoles.value.includes('partner')
-  console.log('Sidebar Debug - isPartner:', partner)
-  return partner
+  return userRoles.value.includes('partner')
 })
 
 const props = defineProps({
@@ -116,16 +109,17 @@ defineEmits(['toggle'])
 
 const defaultAdminMenus = [
   { icon: Home, label: 'Dashboard', href: '/admin/dashboard' },
-  { icon: Building2, label: 'Partners', href: '/admin/partners/list' },
+  { icon: Building2, label: 'Business Partners', href: '/admin/partners/list' },
   { icon: UsersIcon, label: 'Agents', href: '/admin/agents/list' },
-  { icon: DollarSign, label: 'Commissions', href: '/admin/commissions/list' },
+  { icon: DollarSign, label: 'Payouts', href: '/admin/payouts' },
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
 ]
 
 const defaultAgentMenus = [
   { icon: BarChart3, label: 'Dashboard', href: '/agent/dashboard' },
   { icon: User, label: 'Agent Profile', href: '/agent/profile' },
-  { icon: DollarSign, label: 'Commissions', href: '/agent/commissions' },
+  { icon: ShoppingCart, label: 'Sales & Commissions', href: '/agent/sales' },
+  { icon: DollarSign, label: 'Payout', href: '/agent/payouts' },
 ]
 
 const defaultPartnerMenus = [
@@ -133,33 +127,23 @@ const defaultPartnerMenus = [
 ]
 
 const menuItems = computed(() => {
-  console.log('Sidebar Debug - menuItems computed running')
-  console.log('Sidebar Debug - props.menus:', props.menus)
-  console.log('Sidebar Debug - isAdmin.value:', isAdmin.value)
-  console.log('Sidebar Debug - isAgent.value:', isAgent.value)
-
   // If custom menus are passed via props AND not empty, use them
   if (props.menus && Array.isArray(props.menus) && props.menus.length > 0) {
-    console.log('Sidebar Debug - returning custom menus:', props.menus)
     return props.menus
   }
 
   // Use role-based menu detection
   if (isAdmin.value) {
-    console.log('Sidebar Debug - returning admin menus:', defaultAdminMenus)
     return defaultAdminMenus
   }
   if (isPartner.value) {
-    console.log('Sidebar Debug - returning partner menus:', defaultPartnerMenus)
     return defaultPartnerMenus
   }
   if (isAgent.value) {
-    console.log('Sidebar Debug - returning agent menus:', defaultAgentMenus)
     return defaultAgentMenus
   }
 
   // Fallback for users without specific roles
-  console.log('Sidebar Debug - returning fallback agent menus')
   return defaultAgentMenus
 })
 </script>

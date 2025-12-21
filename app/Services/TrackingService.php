@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use App\Models\Agent;
 use App\Models\AgentVisit;
 use App\Models\Commission;
@@ -9,7 +10,6 @@ use App\Models\Referral;
 use App\Models\ReferralCode;
 use App\Models\Sale;
 use App\Models\User;
-use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -20,9 +20,6 @@ class TrackingService
     /**
      * Track a new referral
      *
-     * @param array $data
-     * @param Request $request
-     * @return array
      * @throws ValidationException
      */
     public function trackReferral(array $data, Request $request): array
@@ -49,13 +46,13 @@ class TrackingService
             ->where('is_active', true)
             ->first();
 
-        if (!$referralCode) {
+        if (! $referralCode) {
             throw new \Exception('Invalid or inactive referral code', 404);
         }
 
         // Get the agent
         $agent = $referralCode->agent;
-        if (!$agent || $agent->status !== 'active') {
+        if (! $agent || $agent->status !== 'active') {
             throw new \Exception('Agent not found or inactive', 404);
         }
 
@@ -99,7 +96,7 @@ class TrackingService
                     'customer_name' => $referral->customer_name,
                     'status' => $referral->status,
                     'tracked_at' => $referral->tracked_at,
-                ]
+                ],
             ];
 
         } catch (\Exception $e) {
@@ -111,9 +108,6 @@ class TrackingService
     /**
      * Track a new visit
      *
-     * @param array $data
-     * @param Request $request
-     * @return array
      * @throws ValidationException
      */
     public function trackVisit(array $data, Request $request): array
@@ -143,13 +137,13 @@ class TrackingService
             ->where('is_active', true)
             ->first();
 
-        if (!$referralCode) {
+        if (! $referralCode) {
             throw new \Exception('Invalid or inactive referral code', 404);
         }
 
         // Get the agent
         $agent = $referralCode->agent;
-        if (!$agent || $agent->status !== 'active') {
+        if (! $agent || $agent->status !== 'active') {
             throw new \Exception('Agent not found or inactive', 404);
         }
 
@@ -191,7 +185,7 @@ class TrackingService
                     'visit_time' => $validatedData['visit_time'],
                     'referral_page' => $validatedData['referral_page'],
                     'tracked_at' => $visit->created_at,
-                ]
+                ],
             ];
 
         } catch (\Exception $e) {
@@ -203,9 +197,6 @@ class TrackingService
     /**
      * Track a new sale
      *
-     * @param array $data
-     * @param Request $request
-     * @return array
      * @throws ValidationException
      */
     public function trackSale(array $data, Request $request): array
@@ -221,6 +212,7 @@ class TrackingService
             'sale_date' => 'required|date|before_or_equal:today',
             'notes' => 'nullable|string|max:1000',
             'source' => 'nullable|string|max:100',
+            'invoice_number' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -234,13 +226,13 @@ class TrackingService
             ->where('is_active', true)
             ->first();
 
-        if (!$referralCode) {
+        if (! $referralCode) {
             throw new \Exception('Invalid or inactive referral code', 404);
         }
 
         // Get the agent
         $agent = $referralCode->agent;
-        if (!$agent || $agent->status !== 'active') {
+        if (! $agent || $agent->status !== 'active') {
             throw new \Exception('Agent not found or inactive', 404);
         }
 
@@ -262,6 +254,7 @@ class TrackingService
                 'description' => $validatedData['product_name'],
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
+                'invoice_number' => $validatedData['invoice_number'],
             ]);
 
             // Create commission
@@ -297,7 +290,7 @@ class TrackingService
                     'commission_percentage' => $commission->percentage,
                     'status' => $sale->status,
                     'tracked_at' => $sale->tracked_at,
-                ]
+                ],
             ];
 
         } catch (\Exception $e) {
@@ -308,9 +301,6 @@ class TrackingService
 
     /**
      * Get referral code information
-     *
-     * @param string $code
-     * @return array
      */
     public function getReferralCodeInfo(string $code): array
     {
@@ -319,12 +309,12 @@ class TrackingService
             ->with('agent')
             ->first();
 
-        if (!$referralCode) {
+        if (! $referralCode) {
             throw new \Exception('Referral code not found or inactive', 404);
         }
 
         $agent = $referralCode->agent;
-        if (!$agent || $agent->status !== 'active') {
+        if (! $agent || $agent->status !== 'active') {
             throw new \Exception('Agent not found or inactive', 404);
         }
 
@@ -336,14 +326,12 @@ class TrackingService
                 'agent_type' => $agent->type,
                 'is_active' => $referralCode->is_active,
                 'created_at' => $referralCode->created_at,
-            ]
+            ],
         ];
     }
 
     /**
      * Get API version information
-     *
-     * @return array
      */
     public function getVersion(): array
     {
@@ -367,7 +355,7 @@ class TrackingService
                     'activity_logging' => true,
                 ],
                 'timestamp' => now()->toISOString(),
-            ]
+            ],
         ];
     }
-} 
+}

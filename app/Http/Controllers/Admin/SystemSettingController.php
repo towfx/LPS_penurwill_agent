@@ -22,6 +22,7 @@ class SystemSettingController extends Controller
             // Create default settings if none exist
             $settings = SystemSetting::create([
                 'commission_default_rate' => 10.00,
+                'partner_default_commission_rate' => 5.00,
                 'referral_code_prefix' => 'REF',
             ]);
         }
@@ -41,6 +42,7 @@ class SystemSettingController extends Controller
         if (! $settings) {
             $settings = SystemSetting::create([
                 'commission_default_rate' => 10.00,
+                'partner_default_commission_rate' => 5.00,
                 'referral_code_prefix' => 'REF',
             ]);
         }
@@ -59,6 +61,7 @@ class SystemSettingController extends Controller
 
         $request->validate([
             'commission_default_rate' => 'required|numeric|min:0|max:100',
+            'partner_default_commission_rate' => 'required|numeric|min:0|max:100',
             'referral_code_prefix' => 'required|string|max:10',
         ]);
 
@@ -73,6 +76,7 @@ class SystemSettingController extends Controller
 
         $settings->fill($request->only([
             'commission_default_rate',
+            'partner_default_commission_rate',
             'referral_code_prefix',
         ]));
 

@@ -4,7 +4,7 @@
       <span>Admin</span> / <span>Partners</span> / <span class="text-stone-900 font-medium">Edit Partner</span>
     </nav>
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-forest-dark">Edit Partner</h1>
+      <h1 class="text-2xl font-bold text-forest-dark">Edit Business Partner</h1>
       <button @click="goBack" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors">
         Back to List
       </button>

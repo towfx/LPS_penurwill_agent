@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AgentController extends Controller
 {
@@ -21,11 +21,13 @@ class AgentController extends Controller
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
                 $q->where('individual_name', 'like', "%{$search}%")
-                  ->orWhere('company_name', 'like', "%{$search}%")
-                  ->orWhere('company_representative_name', 'like', "%{$search}%")
-                  ->orWhere('individual_phone', 'like', "%{$search}%")
-                  ->orWhere('company_phone', 'like', "%{$search}%")
-                  ->orWhere('company_registration_number', 'like', "%{$search}%");
+                    ->orWhere('company_name', 'like', "%{$search}%")
+                    ->orWhere('company_representative_name', 'like', "%{$search}%")
+                    ->orWhere('individual_phone', 'like', "%{$search}%")
+                    ->orWhere('individual_email', 'like', "%{$search}%")
+                    ->orWhere('company_phone', 'like', "%{$search}%")
+                    ->orWhere('company_email_address', 'like', "%{$search}%")
+                    ->orWhere('company_registration_number', 'like', "%{$search}%");
             });
         }
 
@@ -43,7 +45,7 @@ class AgentController extends Controller
 
         // Validate sort fields
         $allowedSortFields = ['id', 'individual_name', 'company_name', 'profile_type', 'status', 'created_at'];
-        if (!in_array($sortBy, $allowedSortFields)) {
+        if (! in_array($sortBy, $allowedSortFields)) {
             $sortBy = 'id';
         }
 
@@ -83,7 +85,7 @@ class AgentController extends Controller
                 'total' => $agents->total(),
                 'from' => $agents->firstItem(),
                 'to' => $agents->lastItem(),
-            ]
+            ],
         ]);
     }
 
@@ -99,12 +101,14 @@ class AgentController extends Controller
             'profile_type' => $agent->profile_type,
             'individual_name' => $agent->individual_name,
             'individual_phone' => $agent->individual_phone,
+            'individual_email' => $agent->individual_email,
             'individual_address' => $agent->individual_address,
             'company_representative_name' => $agent->company_representative_name,
             'company_name' => $agent->company_name,
             'company_registration_number' => $agent->company_registration_number,
             'company_address' => $agent->company_address,
             'company_phone' => $agent->company_phone,
+            'company_email_address' => $agent->company_email_address,
             'status' => $agent->status,
             'created_at' => $agent->created_at->format('Y-m-d H:i:s'),
             'user_email' => $agent->users->first()?->email,

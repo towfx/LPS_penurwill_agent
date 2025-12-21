@@ -21,12 +21,14 @@ const form = ref({
   profile_type: props.agent?.profile_type || 'individual',
   individual_name: props.agent?.individual_name || '',
   individual_phone: props.agent?.individual_phone || '',
+  individual_email: props.agent?.individual_email || '',
   individual_address: props.agent?.individual_address || '',
   company_representative_name: props.agent?.company_representative_name || '',
   company_name: props.agent?.company_name || '',
   company_registration_number: props.agent?.company_registration_number || '',
   company_address: props.agent?.company_address || '',
   company_phone: props.agent?.company_phone || '',
+  company_email_address: props.agent?.company_email_address || '',
   status: props.agent?.status || 'active',
   // Bank account fields
   bank_account_name: props.agent?.bank_account?.account_name || '',
@@ -148,6 +150,11 @@ const saveProfile = async () => {
             <p v-if="errors.individual_phone" class="text-accent-red text-sm mt-1">{{ errors.individual_phone }}</p>
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Alternative E-Mail Address</label>
+            <input v-model="form.individual_email" type="email" class="w-full px-3 py-2 border rounded" placeholder="Enter alternative email address (optional)" />
+            <p v-if="errors.individual_email" class="text-accent-red text-sm mt-1">{{ errors.individual_email }}</p>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
             <textarea v-model="form.individual_address" class="w-full px-3 py-2 border rounded"></textarea>
             <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
@@ -179,6 +186,11 @@ const saveProfile = async () => {
             <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
             <input v-model="form.company_phone" type="text" class="w-full px-3 py-2 border rounded" />
             <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address</label>
+            <input v-model="form.company_email_address" type="email" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
           </div>
         </div>
 

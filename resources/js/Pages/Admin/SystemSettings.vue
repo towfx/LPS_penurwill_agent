@@ -47,6 +47,25 @@
         </CardContent>
       </Card>
 
+      <!-- Partner Default Commission Rate -->
+      <Card class="bg-white shadow-sm border border-gray-200">
+        <CardHeader>
+          <CardTitle class="flex items-center space-x-2">
+            <Percent class="w-5 h-5 text-accent-green" />
+            <span>Partner Commission Rate</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold text-forest-dark mb-2">
+            {{ settings.partner_default_commission_rate }}%
+          </div>
+          <p class="text-sm text-gray-600">
+            Default commission rate applied to new partners when no specific rate is set.
+            This percentage determines how much commission partners earn from sales.
+          </p>
+        </CardContent>
+      </Card>
+
       <!-- Referral Code Prefix -->
       <Card class="bg-white shadow-sm border border-gray-200">
         <CardHeader>

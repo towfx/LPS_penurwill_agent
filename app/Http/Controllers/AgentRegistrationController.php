@@ -23,7 +23,7 @@ class AgentRegistrationController extends Controller
         $invalidEmail = false;
 
         // Validate email format if provided
-        if (!empty($email)) {
+        if (! empty($email)) {
             $validator = Validator::make(['email' => $email], [
                 'email' => 'required|email',
             ]);
@@ -46,6 +46,7 @@ class AgentRegistrationController extends Controller
             'profile_type' => 'required|in:individual,company',
             'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_phone' => 'required_if:profile_type,individual|nullable|string|max:255',
+            'individual_email' => 'nullable|email|max:255',
             'individual_address' => 'required_if:profile_type,individual|nullable|string',
             'individual_id_number' => 'required_if:profile_type,individual|string|max:255',
             'individual_id_file' => 'required_if:profile_type,individual|file|mimes:pdf,jpeg,jpg,png|max:10240',
@@ -54,6 +55,7 @@ class AgentRegistrationController extends Controller
             'company_registration_number' => 'required_if:profile_type,company|string|max:255',
             'company_address' => 'required_if:profile_type,company|string',
             'company_phone' => 'required_if:profile_type,company|string|max:255',
+            'company_email_address' => 'required_if:profile_type,company|nullable|email|max:255',
             'company_reg_file' => 'required_if:profile_type,company|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'about' => 'required|string|max:1000',
             'password' => [
@@ -116,6 +118,7 @@ class AgentRegistrationController extends Controller
             if ($request->profile_type === 'individual') {
                 $agentData['individual_name'] = $request->individual_name;
                 $agentData['individual_phone'] = $request->individual_phone;
+                $agentData['individual_email'] = $request->individual_email;
                 $agentData['individual_address'] = $request->individual_address;
                 $agentData['individual_id_number'] = $request->individual_id_number;
             } else {
@@ -124,6 +127,7 @@ class AgentRegistrationController extends Controller
                 $agentData['company_registration_number'] = $request->company_registration_number;
                 $agentData['company_address'] = $request->company_address;
                 $agentData['company_phone'] = $request->company_phone;
+                $agentData['company_email_address'] = $request->company_email_address;
             }
 
             $agent = Agent::create($agentData);

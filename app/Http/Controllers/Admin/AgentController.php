@@ -30,6 +30,7 @@ class AgentController extends Controller
             'profile_type' => 'required|in:individual,company',
             'individual_name' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_phone' => 'required_if:profile_type,individual|nullable|string|max:255',
+            'individual_email' => 'nullable|email|max:255',
             'individual_address' => 'required_if:profile_type,individual|nullable|string',
             'individual_id_number' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
@@ -38,6 +39,7 @@ class AgentController extends Controller
             'company_registration_number' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_address' => 'required_if:profile_type,company|nullable|string',
             'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_email_address' => 'required_if:profile_type,company|nullable|email|max:255',
             'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'about' => 'required|string|max:1000',
             'user_email' => 'required|email|unique:users,email',
@@ -80,6 +82,7 @@ class AgentController extends Controller
             if ($request->profile_type === 'individual') {
                 $agentData['individual_name'] = $request->individual_name;
                 $agentData['individual_phone'] = $request->individual_phone;
+                $agentData['individual_email'] = $request->individual_email;
                 $agentData['individual_address'] = $request->individual_address;
                 $agentData['individual_id_number'] = $request->individual_id_number;
             } else {
@@ -88,6 +91,7 @@ class AgentController extends Controller
                 $agentData['company_registration_number'] = $request->company_registration_number;
                 $agentData['company_address'] = $request->company_address;
                 $agentData['company_phone'] = $request->company_phone;
+                $agentData['company_email_address'] = $request->company_email_address;
             }
 
             $agent = Agent::create($agentData);
@@ -233,7 +237,7 @@ class AgentController extends Controller
         // Build validation rules based on profile type
         $rules = [
             'profile_type' => 'required|in:individual,company',
-            'about' => 'required|string|max:1000',
+            'about' => 'nullable|string|max:1000',
             'user_password' => 'nullable|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
             // Bank account fields
@@ -252,6 +256,7 @@ class AgentController extends Controller
         if ($request->profile_type === 'individual') {
             $rules['individual_name'] = 'required|string|max:255';
             $rules['individual_phone'] = 'required|string|max:255';
+            $rules['individual_email'] = 'nullable|email|max:255';
             $rules['individual_address'] = 'required|string';
             $rules['individual_id_number'] = 'required|string|max:255';
             $rules['individual_id_file'] = 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240';
@@ -261,6 +266,7 @@ class AgentController extends Controller
             $rules['company_registration_number'] = 'required|string|max:255';
             $rules['company_address'] = 'required|string';
             $rules['company_phone'] = 'required|string|max:255';
+            $rules['company_email_address'] = 'required_if:profile_type,company|nullable|email|max:255';
             $rules['company_reg_file'] = 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240';
         }
 
@@ -282,6 +288,7 @@ class AgentController extends Controller
             if ($request->profile_type === 'individual') {
                 $agentData['individual_name'] = $request->individual_name;
                 $agentData['individual_phone'] = $request->individual_phone;
+                $agentData['individual_email'] = $request->individual_email;
                 $agentData['individual_address'] = $request->individual_address;
                 $agentData['individual_id_number'] = $request->individual_id_number;
                 // Clear company fields and delete old file if exists
@@ -290,6 +297,7 @@ class AgentController extends Controller
                 $agentData['company_registration_number'] = null;
                 $agentData['company_address'] = null;
                 $agentData['company_phone'] = null;
+                $agentData['company_email_address'] = null;
                 if ($agent->company_reg_file && Storage::disk('local')->exists($agent->company_reg_file)) {
                     Storage::disk('local')->delete($agent->company_reg_file);
                 }
@@ -300,6 +308,7 @@ class AgentController extends Controller
                 $agentData['company_registration_number'] = $request->company_registration_number;
                 $agentData['company_address'] = $request->company_address;
                 $agentData['company_phone'] = $request->company_phone;
+                $agentData['company_email_address'] = $request->company_email_address;
                 // Clear individual fields and delete old file if exists
                 $agentData['individual_name'] = null;
                 $agentData['individual_phone'] = null;

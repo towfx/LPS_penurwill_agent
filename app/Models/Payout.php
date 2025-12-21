@@ -23,6 +23,7 @@ class Payout extends Model
         'notes',
         'paid_at',
         'created_by',
+        'bank_transfer_file',
     ];
 
     /**

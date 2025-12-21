@@ -38,6 +38,18 @@ onMounted(() => {
     }
 });
 
+const changeEmail = () => {
+    // Remove email from URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('email');
+    window.history.replaceState({}, '', url);
+    
+    // Clear form and state
+    form.email = '';
+    emailFromUrl.value = '';
+    hasEmailParam.value = false;
+};
+
 const submit = () => {
     form.transform(data => ({
         ...data,
@@ -76,6 +88,14 @@ const submit = () => {
             <div v-if="hasEmailParam" class="mt-1 block w-full rounded-lg border border-stone-300 bg-gray-100 text-stone-600 px-3 py-2 cursor-not-allowed">
               {{ emailFromUrl }}
             </div>
+            <a 
+              v-if="hasEmailParam" 
+              @click.prevent="changeEmail" 
+              href="#" 
+              class="mt-1 text-sm text-amber-700 hover:text-amber-900 font-medium underline-offset-2 hover:underline"
+            >
+              Change email address
+            </a>
             <input
               v-else
               id="email"

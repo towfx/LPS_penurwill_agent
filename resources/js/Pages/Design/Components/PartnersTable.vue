@@ -54,8 +54,6 @@
                 </div>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Parent Partner</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Agents</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -79,12 +77,6 @@
                 <Badge :variant="getStatusVariant(partner.status)">
                   {{ partner.status }}
                 </Badge>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ partner.parent_name || '—' }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ partner.agents_count }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div class="flex items-center space-x-2">

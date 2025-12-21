@@ -73,6 +73,11 @@ Route::middleware([
         Route::get('/commission/detail', [App\Http\Controllers\Admin\CommissionController::class, 'detail'])->name('commission.detail');
 
         // Payouts
+        Route::get('/payouts', [App\Http\Controllers\Admin\PayoutController::class, 'index'])->name('payouts.list');
+        Route::get('/payout/{id}', [App\Http\Controllers\Admin\PayoutController::class, 'show'])->name('payout.show');
+        Route::post('/payout/{id}/upload-bank-transfer', [App\Http\Controllers\Admin\PayoutController::class, 'uploadBankTransfer'])->name('payout.upload-bank-transfer');
+        Route::post('/payout/{id}/mark-as-paid', [App\Http\Controllers\Admin\PayoutController::class, 'markAsPaid'])->name('payout.mark-as-paid');
+        Route::get('/payout/{id}/download-bank-transfer', [App\Http\Controllers\Admin\PayoutController::class, 'downloadBankTransfer'])->name('payout.download-bank-transfer');
         Route::get('/payout/create', [App\Http\Controllers\Admin\PayoutController::class, 'create'])->name('payout.create');
         Route::post('/payout/store', [App\Http\Controllers\Admin\PayoutController::class, 'store'])->name('payout.store');
         Route::get('/payout/{id}/update', [App\Http\Controllers\Admin\PayoutController::class, 'edit'])->name('payout.update');
@@ -105,6 +110,12 @@ Route::middleware([
         Route::put('/profile/edit', [AgentProfileController::class, 'update'])->name('profile.update');
         Route::get('/commissions', [App\Http\Controllers\Agent\CommissionController::class, 'index'])->name('commissions');
         Route::get('/commissions/detail', [App\Http\Controllers\Agent\CommissionController::class, 'detail'])->name('commissions.detail');
+        Route::get('/sales', [App\Http\Controllers\Agent\SalesController::class, 'index'])->name('sales');
+        Route::get('/payouts', [App\Http\Controllers\Agent\PayoutController::class, 'index'])->name('payouts');
+        Route::get('/payout/{id}', [App\Http\Controllers\Agent\PayoutController::class, 'show'])->name('payout.show');
+        Route::get('/payout/{id}/download-bank-transfer', [App\Http\Controllers\Agent\PayoutController::class, 'downloadBankTransfer'])->name('payout.download-bank-transfer');
+        Route::get('/request-payout', [App\Http\Controllers\Agent\RequestPayoutController::class, 'index'])->name('request-payout');
+        Route::post('/request_payout', [App\Http\Controllers\Agent\RequestPayoutController::class, 'store']);
         Route::get('/payout/{id}/detail', [App\Http\Controllers\Agent\PayoutController::class, 'show'])->name('payout.detail');
     });
 

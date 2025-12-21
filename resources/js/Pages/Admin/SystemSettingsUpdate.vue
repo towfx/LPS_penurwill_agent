@@ -58,6 +58,40 @@
           </CardContent>
         </Card>
 
+        <!-- Partner Default Commission Rate -->
+        <Card class="bg-white shadow-sm border border-gray-200">
+          <CardHeader>
+            <CardTitle class="flex items-center space-x-2">
+              <Percent class="w-5 h-5 text-accent-green" />
+              <span>Partner Default Commission Rate</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div>
+              <label for="partner_commission_rate" class="block text-sm font-medium text-gray-700 mb-2">
+                Partner Commission Rate (%)
+              </label>
+              <input
+                id="partner_commission_rate"
+                v-model="form.partner_default_commission_rate"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition-colors"
+                :class="{ 'border-red-500': errors.partner_default_commission_rate }"
+              />
+              <p v-if="errors.partner_default_commission_rate" class="text-red-500 text-sm mt-1">
+                {{ errors.partner_default_commission_rate }}
+              </p>
+            </div>
+            <p class="text-sm text-gray-600">
+              Default commission rate applied to new partners when no specific rate is set.
+              This percentage determines how much commission partners earn from sales.
+            </p>
+          </CardContent>
+        </Card>
+
         <!-- Referral Code Prefix -->
         <Card class="bg-white shadow-sm border border-gray-200">
           <CardHeader>
@@ -167,6 +201,7 @@ const isSubmitting = ref(false)
 
 const form = reactive({
   commission_default_rate: props.settings.commission_default_rate,
+  partner_default_commission_rate: props.settings.partner_default_commission_rate,
   referral_code_prefix: props.settings.referral_code_prefix,
 })
 

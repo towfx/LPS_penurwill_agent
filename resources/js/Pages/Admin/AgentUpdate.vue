@@ -44,6 +44,11 @@
             <p v-if="errors.individual_phone" class="text-accent-red text-sm mt-1">{{ errors.individual_phone }}</p>
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Alternative E-Mail Address</label>
+            <input v-model="form.individual_email" type="email" class="w-full px-3 py-2 border rounded" placeholder="Enter alternative email address (optional)" />
+            <p v-if="errors.individual_email" class="text-accent-red text-sm mt-1">{{ errors.individual_email }}</p>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
             <textarea v-model="form.individual_address" class="w-full px-3 py-2 border rounded"></textarea>
             <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
@@ -101,6 +106,11 @@
             <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address</label>
+            <input v-model="form.company_email_address" type="email" class="w-full px-3 py-2 border rounded" />
+            <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate</label>
             <div v-if="agent?.company_reg_file" class="mb-2">
               <span class="text-sm text-gray-600">Current file: </span>
@@ -114,7 +124,7 @@
               accept=".pdf,.jpeg,.jpg,.png"
               class="w-full px-3 py-2 border rounded"
             />
-            <p class="text-sm text-gray-500 mt-1">Company SSM certificate</p>
+            <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
             <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
             <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
           </div>
@@ -124,7 +134,7 @@
         <div class="space-y-4 mt-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }} *
+              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }}
             </label>
             <textarea
               v-model="form.about"
@@ -345,6 +355,7 @@ const form = ref({
   profile_type: props.agent?.profile_type || 'individual',
   individual_name: props.agent?.individual_name || '',
   individual_phone: props.agent?.individual_phone || '',
+  individual_email: props.agent?.individual_email || '',
   individual_address: props.agent?.individual_address || '',
   individual_id_number: props.agent?.individual_id_number || '',
   individual_id_file: null,
@@ -353,6 +364,7 @@ const form = ref({
   company_registration_number: props.agent?.company_registration_number || '',
   company_address: props.agent?.company_address || '',
   company_phone: props.agent?.company_phone || '',
+  company_email_address: props.agent?.company_email_address || '',
   company_reg_file: null,
   about: props.agent?.about || '',
   user_password: '',

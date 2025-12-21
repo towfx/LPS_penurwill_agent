@@ -52,12 +52,14 @@ class AgentProfileController extends Controller
             'profile_type' => 'required|in:individual,company',
             'individual_name' => 'nullable|string|max:255',
             'individual_phone' => 'nullable|string|max:255',
+            'individual_email' => 'nullable|email|max:255',
             'individual_address' => 'nullable|string',
             'company_representative_name' => 'nullable|string|max:255',
             'company_name' => 'nullable|string|max:255',
             'company_registration_number' => 'nullable|string|max:255',
             'company_address' => 'nullable|string',
             'company_phone' => 'nullable|string|max:255',
+            'company_email_address' => 'nullable|email|max:255',
             'status' => 'required|in:active,inactive,suspended,banned',
             // Bank account fields
             'bank_account_name' => 'nullable|string|max:255',
@@ -75,6 +77,7 @@ class AgentProfileController extends Controller
             $data['company_registration_number'] = null;
             $data['company_address'] = null;
             $data['company_phone'] = null;
+            $data['company_email_address'] = null;
         } else {
             $data['individual_name'] = null;
             $data['individual_phone'] = null;

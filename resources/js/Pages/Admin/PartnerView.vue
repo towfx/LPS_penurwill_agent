@@ -10,7 +10,7 @@
           Back to List
         </button>
         <button @click="goToEdit" class="bg-gold hover:bg-amber-700 text-white px-4 py-2 rounded font-medium transition-colors">
-          Edit Partner
+          Edit Business Partner
         </button>
       </div>
     </div>
