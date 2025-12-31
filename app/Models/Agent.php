@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Agent extends Model
 {
@@ -160,5 +161,49 @@ class Agent extends Model
     public function getTypeAttribute()
     {
         return $this->profile_type;
+    }
+
+    /**
+     * Generate a unique referral code string.
+     *
+     * @return string
+     */
+    public static function generateReferralCode(): string
+    {
+        $systemSetting = SystemSetting::first();
+        $prefix = $systemSetting?->referral_code_prefix ?? 'REF';
+
+        do {
+            $code = $prefix.strtoupper(Str::random(8));
+            $exists = ReferralCode::where('code', $code)->exists();
+        } while ($exists);
+
+        return $code;
+    }
+
+    /**
+     * Create and associate a referral code with this agent.
+     *
+     * @param float|null $commissionRate Commission rate (defaults to system setting)
+     * @param bool|null $isActive Whether the code is active (defaults to true)
+     * @param \DateTime|null $expiresAt Expiration date (defaults to 5 years from now)
+     * @return ReferralCode
+     */
+    public function createReferralCode(?float $commissionRate = null, ?bool $isActive = true, ?\DateTime $expiresAt = null): ReferralCode
+    {
+        $systemSetting = SystemSetting::first();
+
+        $referralCode = ReferralCode::create([
+            'agent_id' => $this->id,
+            'code' => self::generateReferralCode(),
+            'is_active' => $isActive ?? true,
+            'commission_rate' => $commissionRate ?? $systemSetting?->commission_default_rate ?? 0,
+            'used_count' => 0,
+            'expires_at' => $expiresAt ?? now()->addYears(5),
+        ]);
+
+        $this->update(['referral_code_id' => $referralCode->id]);
+
+        return $referralCode;
     }
 }

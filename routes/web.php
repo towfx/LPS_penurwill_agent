@@ -58,7 +58,7 @@ Route::middleware([
 
         // Agents
         Route::get('/agents/list', fn () => Inertia::render('Admin/AgentsList'))->name('agents.list');
-        Route::get('/agents/add', fn () => Inertia::render('Admin/AgentsAdd'))->name('agents.add');
+        Route::get('/agents/add', [AgentController::class, 'create'])->name('agents.add');
         Route::post('/agents/store', [AgentController::class, 'store'])->name('agents.store');
         Route::get('/agents/{id}/view', [AgentController::class, 'show'])->name('agents.view');
         Route::get('/agents/{id}/update', [AgentController::class, 'edit'])->name('agents.update');

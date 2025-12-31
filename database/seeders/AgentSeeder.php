@@ -160,19 +160,8 @@ class AgentSeeder extends Seeder
             // Link user to agent
             $user->agents()->attach($agent->id);
 
-            // Create referral code for this agent
-            $systemSetting = \App\Models\SystemSetting::first();
-            $referralCode = ReferralCode::create([
-                'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix.strtoupper(Str::random(8)),
-                'is_active' => true,
-                'commission_rate' => $systemSetting->commission_default_rate,
-                'used_count' => 0,
-                'expires_at' => now()->addYears(5),
-            ]);
-
-            // Update agent with referral code
-            $agent->update(['referral_code_id' => $referralCode->id]);
+            // Create referral code for this agent using helper method
+            $agent->createReferralCode();
 
             // Create bank account for this agent
             BankAccount::create([
@@ -206,19 +195,8 @@ class AgentSeeder extends Seeder
             // Link user to agent
             $user->agents()->attach($agent->id);
 
-            // Create referral code for this agent
-            $systemSetting = \App\Models\SystemSetting::first();
-            $referralCode = ReferralCode::create([
-                'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix.strtoupper(Str::random(8)),
-                'is_active' => true,
-                'commission_rate' => $systemSetting->commission_default_rate,
-                'used_count' => 0,
-                'expires_at' => now()->addYears(5),
-            ]);
-
-            // Update agent with referral code
-            $agent->update(['referral_code_id' => $referralCode->id]);
+            // Create referral code for this agent using helper method
+            $agent->createReferralCode();
 
             // Create bank account for this agent
             BankAccount::create([

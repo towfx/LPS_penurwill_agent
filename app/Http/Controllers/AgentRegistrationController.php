@@ -159,22 +159,11 @@ class AgentRegistrationController extends Controller
             // Log agent creation
             ActivityLog::logCreate($user, $agent, $agent->toArray());
 
-            // Create referral code for this agent
-            $systemSetting = \App\Models\SystemSetting::first();
-            $referralCode = ReferralCode::create([
-                'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix.strtoupper(Str::random(8)),
-                'is_active' => true,
-                'commission_rate' => $systemSetting->commission_default_rate,
-                'used_count' => 0,
-                'expires_at' => now()->addYears(5),
-            ]);
+            // Create referral code for this agent using helper method
+            $referralCode = $agent->createReferralCode();
 
             // Log referral code creation
             ActivityLog::logCreate($user, $referralCode, $referralCode->toArray());
-
-            // Update agent with referral code
-            $agent->update(['referral_code_id' => $referralCode->id]);
 
             // Log agent referral code assignment
             ActivityLog::logCustom($user, 'referral_code_assigned', "Assigned referral code {$referralCode->code} to agent {$agent->id}");

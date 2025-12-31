@@ -20,6 +20,21 @@ use Maatwebsite\Excel\Facades\Excel;
 class AgentController extends Controller
 {
     /**
+     * Show the form for creating a new agent
+     */
+    public function create()
+    {
+        $systemSetting = \App\Models\SystemSetting::first();
+        $referralCodePrefix = $systemSetting?->referral_code_prefix ?? 'REF';
+        $commissionDefaultRate = $systemSetting?->commission_default_rate ? (float) $systemSetting->commission_default_rate : 0;
+
+        return Inertia::render('Admin/AgentsAdd', [
+            'referralCodePrefix' => $referralCodePrefix,
+            'commissionDefaultRate' => $commissionDefaultRate,
+        ]);
+    }
+
+    /**
      * Store a newly created agent
      */
     public function store(Request $request)
@@ -45,6 +60,16 @@ class AgentController extends Controller
             'user_email' => 'required|email|unique:users,email',
             'user_password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
+            // Bank account fields
+            'bank_account_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:255',
+            'bank_name' => 'nullable|string|max:255',
+            'iban' => 'nullable|string|max:255',
+            'swift_code' => 'nullable|string|max:255',
+            // Referral code fields
+            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code',
+            'referral_commission_rate' => 'nullable|numeric|min:0|max:100',
+            'referral_is_active' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -118,22 +143,40 @@ class AgentController extends Controller
             // Log agent creation
             ActivityLog::logCreate($adminUser, $agent, $agent->toArray());
 
-            // Create referral code for this agent using system settings default values
-            $systemSetting = \App\Models\SystemSetting::first();
-            $referralCode = \App\Models\ReferralCode::create([
-                'agent_id' => $agent->id,
-                'code' => $systemSetting->referral_code_prefix.strtoupper(\Illuminate\Support\Str::random(8)),
-                'is_active' => true,
-                'commission_rate' => $systemSetting->commission_default_rate,
-                'used_count' => 0,
-                'expires_at' => now()->addYears(5),
-            ]);
+            // Handle bank account creation
+            if ($request->filled('bank_account_name') && $request->filled('bank_account_number') && $request->filled('bank_name')) {
+                \App\Models\BankAccount::create([
+                    'agent_id' => $agent->id,
+                    'account_name' => $request->bank_account_name,
+                    'account_number' => $request->bank_account_number,
+                    'bank_name' => $request->bank_name,
+                    'iban' => $request->iban,
+                    'swift_code' => $request->swift_code,
+                ]);
+            }
+
+            // Create or use provided referral code
+            if ($request->filled('referral_code')) {
+                $systemSetting = \App\Models\SystemSetting::first();
+                $referralCode = \App\Models\ReferralCode::create([
+                    'agent_id' => $agent->id,
+                    'code' => $request->referral_code,
+                    'is_active' => $request->referral_is_active ?? true,
+                    'commission_rate' => $request->referral_commission_rate ?? $systemSetting?->commission_default_rate ?? 0,
+                    'used_count' => 0,
+                    'expires_at' => now()->addYears(5),
+                ]);
+                $agent->update(['referral_code_id' => $referralCode->id]);
+            } else {
+                // Generate referral code using helper method
+                $referralCode = $agent->createReferralCode(
+                    $request->referral_commission_rate,
+                    $request->referral_is_active ?? true
+                );
+            }
 
             // Log referral code creation
             ActivityLog::logCreate($adminUser, $referralCode, $referralCode->toArray());
-
-            // Update agent with referral code
-            $agent->update(['referral_code_id' => $referralCode->id]);
 
             // Log agent referral code assignment
             ActivityLog::logCustom($adminUser, 'referral_code_assigned', "Admin assigned referral code {$referralCode->code} to agent {$agent->id}", $agent);
