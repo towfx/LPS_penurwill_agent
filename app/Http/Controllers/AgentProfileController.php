@@ -96,13 +96,15 @@ class AgentProfileController extends Controller
                 'swift_code' => $data['swift_code'],
             ]);
         } else {
-            $agent->bankAccount()->create([
-                'account_name' => $data['bank_account_name'],
-                'account_number' => $data['bank_account_number'],
-                'bank_name' => $data['bank_name'],
-                'iban' => $data['iban'],
-                'swift_code' => $data['swift_code'],
-            ]);
+            if ($data['bank_account_name']) { 
+                $agent->bankAccount()->create([
+                    'account_name' => $data['bank_account_name'],
+                    'account_number' => $data['bank_account_number'],
+                    'bank_name' => $data['bank_name'],
+                    'iban' => $data['iban'],
+                    'swift_code' => $data['swift_code'],
+                ]);
+            }
         }
 
         // Update referral code
