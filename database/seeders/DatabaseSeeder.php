@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SystemSettingsSeeder::class,
             UserSeeder::class,
-            PartnerSeeder::class,
-            AgentSeeder::class,
+            // PartnerSeeder::class,
+            // AgentSeeder::class,
             // TestDataSeeder::class, // Generate sales data for agents
         ]);
     }
