@@ -18,9 +18,9 @@ return new class extends Migration
             $table->string('company_registration_number');
             $table->text('company_address');
             $table->string('company_phone');
-            $table->string('company_email')->unique();
+            $table->string('company_email')->collation('latin1_bin')->unique();
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
-            $table->string('code')->unique();
+            $table->string('code')->collation('latin1_bin')->unique();
             $table->string('company_profile_file')->nullable();
             $table->timestamps();
         });

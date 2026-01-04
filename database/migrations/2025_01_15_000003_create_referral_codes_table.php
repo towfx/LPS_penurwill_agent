@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('referral_codes', function (Blueprint $table) {
             $table->id();
             $table->timestamp('expires_at')->nullable();
-            $table->string('code')->unique();
+            $table->string('code')->collation('latin1_bin')->unique();
             $table->foreignId('agent_id')->nullable();
             $table->boolean('is_active')->default(true);
             $table->decimal('commission_rate', 5, 2);

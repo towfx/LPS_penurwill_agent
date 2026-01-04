@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('agent_visits', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('agent_id');
-            $table->string('referral_code', 50);
+            $table->string('referral_code', 50)->collation('latin1_bin');
             $table->string('visit_url', 500);
             $table->timestamp('visit_time');
             $table->string('referral_page', 255)->nullable();
-            $table->string('session_id', 100)->nullable();
+            $table->string('session_id', 100)->collation('latin1_bin')->nullable();
             $table->string('page_title', 255)->nullable();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
