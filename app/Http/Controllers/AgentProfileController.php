@@ -60,15 +60,12 @@ class AgentProfileController extends Controller
             'company_address' => 'nullable|string',
             'company_phone' => 'nullable|string|max:255',
             'company_email_address' => 'nullable|email|max:255',
-            'status' => 'required|in:active,inactive,suspended,banned',
             // Bank account fields
             'bank_account_name' => 'nullable|string|max:255',
             'bank_account_number' => 'nullable|string|max:255',
             'bank_name' => 'nullable|string|max:255',
             'iban' => 'nullable|string|max:255',
             'swift_code' => 'nullable|string|max:255',
-            // Referral code fields
-            'referral_code' => 'nullable|string|max:255|unique:referral_codes,code,'.($agent->referralCode->id ?? 'NULL').',id',
         ]);
 
         if ($data['profile_type'] === 'individual') {
@@ -83,6 +80,10 @@ class AgentProfileController extends Controller
             $data['individual_phone'] = null;
             $data['individual_address'] = null;
         }
+
+        // Remove status and referral_code from data to prevent updates
+        unset($data['status']);
+        unset($data['referral_code']);
 
         $agent->update($data);
 
@@ -105,25 +106,6 @@ class AgentProfileController extends Controller
                     'swift_code' => $data['swift_code'],
                 ]);
             }
-        }
-
-        // Update referral code
-        if ($agent->referralCode && $data['referral_code']) {
-            $agent->referralCode->update([
-                'code' => $data['referral_code'],
-            ]);
-        } elseif ($data['referral_code'] && ! $agent->referralCode) {
-            // Create new referral code if agent doesn't have one
-            $systemSetting = \App\Models\SystemSetting::first();
-            $referralCode = \App\Models\ReferralCode::create([
-                'agent_id' => $agent->id,
-                'code' => $data['referral_code'],
-                'is_active' => true,
-                'commission_rate' => $systemSetting->commission_default_rate,
-                'used_count' => 0,
-                'expires_at' => now()->addYears(5),
-            ]);
-            $agent->update(['referral_code_id' => $referralCode->id]);
         }
 
         // Refresh agent data to get updated relationships

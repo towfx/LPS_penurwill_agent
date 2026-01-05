@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import Badge from '../Design/Components/Badge.vue'
 
 defineOptions({ layout: AgentLayout })
 
@@ -29,15 +30,12 @@ const form = ref({
   company_address: props.agent?.company_address || '',
   company_phone: props.agent?.company_phone || '',
   company_email_address: props.agent?.company_email_address || '',
-  status: props.agent?.status || 'active',
   // Bank account fields
   bank_account_name: props.agent?.bank_account?.account_name || '',
   bank_account_number: props.agent?.bank_account?.account_number || '',
   bank_name: props.agent?.bank_account?.bank_name || '',
   iban: props.agent?.bank_account?.iban || '',
   swift_code: props.agent?.bank_account?.swift_code || '',
-  // Referral code fields
-  referral_code: props.agent?.referral_code?.code || '',
 })
 
 const isIndividual = computed(() => form.value.profile_type === 'individual')
@@ -100,6 +98,21 @@ const copyShareableUrl = async () => {
   }
 }
 
+const getStatusVariant = (status) => {
+  switch(status?.toLowerCase()) {
+    case 'active':
+      return 'success'
+    case 'inactive':
+      return 'destructive'
+    case 'suspended':
+      return 'warning'
+    case 'banned':
+      return 'destructive'
+    default:
+      return 'default'
+  }
+}
+
 const saveProfile = async () => {
   isSaving.value = true
   errors.value = {}
@@ -119,7 +132,12 @@ const saveProfile = async () => {
     <nav class="text-sm text-stone-500 mb-4">
       <span>Agent</span> / <span class="text-stone-900 font-medium">Edit Profile</span>
     </nav>
-    <h1 class="text-2xl font-bold text-forest-dark mb-4">Edit Agent Profile</h1>
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold text-forest-dark">Edit Agent Profile</h1>
+      <Badge v-if="agent?.status" :variant="getStatusVariant(agent.status)" class="capitalize text-xl px-8 py-3">
+        {{ agent.status }}
+      </Badge>
+    </div>
 
     <form @submit.prevent="saveProfile" class="space-y-6">
       <!-- Agent Information -->
@@ -193,16 +211,6 @@ const saveProfile = async () => {
             <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
           </div>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-          <select v-model="form.status" class="w-full px-3 py-2 border rounded">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="suspended">Suspended</option>
-            <option value="banned">Banned</option>
-          </select>
-        </div>
       </div>
 
       <!-- Bank Account Information -->
@@ -234,67 +242,6 @@ const saveProfile = async () => {
             <label class="block text-sm font-medium text-gray-700 mb-2">SWIFT Code</label>
             <input v-model="form.swift_code" type="text" class="w-full px-3 py-2 border rounded" />
             <p v-if="errors.swift_code" class="text-accent-red text-sm mt-1">{{ errors.swift_code }}</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Referral Code Information -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-forest-dark mb-4">Referral Code Information</h3>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Referral Code</label>
-            <input v-model="form.referral_code" type="text" class="w-full px-3 py-2 border rounded font-mono" placeholder="Enter unique referral code" />
-            <p v-if="errors.referral_code" class="text-accent-red text-sm mt-1">{{ errors.referral_code }}</p>
-            <p class="text-sm text-gray-500 mt-1">Referral code must be unique across all agents</p>
-          </div>
-
-          <!-- Shareable URL -->
-          <div v-if="form.referral_code">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Shareable URL</label>
-            <div class="flex items-center space-x-2">
-              <input
-                :value="shareableUrl"
-                type="text"
-                readonly
-                class="flex-1 px-3 py-2 border rounded font-mono bg-gray-50 text-gray-700"
-              />
-              <button
-                @click="copyShareableUrl"
-                type="button"
-                class="px-4 py-2 bg-gold hover:bg-amber-700 text-white rounded font-medium transition-colors"
-              >
-                {{ copyStatus }}
-              </button>
-            </div>
-            <p class="text-sm text-gray-500 mt-1">
-              Note: You may append any landing page with ?ref={{ form.referral_code }}
-            </p>
-          </div>
-
-          <!-- Explanation -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 class="font-medium text-blue-900 mb-3">How to use your referral code:</h4>
-
-            <div class="space-y-4">
-              <div>
-                <h5 class="font-medium text-blue-800 mb-2">Option 1</h5>
-                <p class="text-sm text-blue-700">
-                  Ask your client to use code <span class="font-mono bg-blue-100 px-1 rounded">{{ form.referral_code }}</span> during checkout
-                </p>
-              </div>
-
-              <div>
-                <h5 class="font-medium text-blue-800 mb-2">Option 2</h5>
-                <p class="text-sm text-blue-700 mb-2">
-                  Ask your client to click shareable link <span class="font-mono bg-blue-100 px-1 rounded">{{ shareableUrl }}</span>
-                </p>
-                <p class="text-sm text-blue-700">
-                  You may use customized link like <span class="font-mono bg-blue-100 px-1 rounded">{{ penurwillWebsiteUrl }}/[any page]/?ref={{ form.referral_code }}</span>
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
