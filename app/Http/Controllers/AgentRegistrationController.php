@@ -114,6 +114,9 @@ class AgentRegistrationController extends Controller
             if ($partner) {
                 $agentData['partner_id'] = $partner->id;
             }
+            else{
+                $agentData['partner_id'] = 1;
+            }
 
             if ($request->profile_type === 'individual') {
                 $agentData['individual_name'] = $request->individual_name;
