@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
-class PartnerSeeder extends Seeder
+class PartnerSeederTest extends Seeder
 {
     /**
      * Run the database seeds.
@@ -16,16 +16,27 @@ class PartnerSeeder extends Seeder
     {
         $partners = [
             [
-                'id' => 1,
-                'parent_id' => 0,
-                'company_name' => 'Vdurya Management Services Sdn Bhd',
-                'company_registration_number' => '200701028225 / 0786247D',
-                'company_address' => 'C-2-6, Jalan Todak 4, Sunway Business Park, Seberang Jaya, 13700 Prai, Penang, Malaysia',
-                'company_phone' => '04-398 5095, 016-4161823, 012-448 3514',
-                'company_email' => 'info@vdurya.com', // Assuming a generic info email, update as needed
+                'parent_id' => 1,
+                'company_name' => 'Beta Enterprise Solutions',
+                'company_registration_number' => 'BETA-2024-002',
+                'company_address' => '456 Enterprise Avenue, Selangor, Malaysia',
+                'company_phone' => '+60198765432',
+                'company_email' => 'beta@partners.com',
                 'status' => 'active',
-                'code' => 'VDURYA2024',
-                'user_email' => 'info@vdurya.com',
+                'code' => 'BETA2024',
+                'user_email' => 'beta@partners.com',
+                'user_password' => 'passw123',
+            ],
+            [
+                'parent_id' => 1,
+                'company_name' => 'Gamma Trading Group',
+                'company_registration_number' => 'GAMMA-2024-003',
+                'company_address' => '789 Trading Boulevard, Penang, Malaysia',
+                'company_phone' => '+60187654321',
+                'company_email' => 'gamma@partners.com',
+                'status' => 'active',
+                'code' => 'GAMMA2024',
+                'user_email' => 'gamma@partners.com',
                 'user_password' => 'passw123',
             ],
         ];
