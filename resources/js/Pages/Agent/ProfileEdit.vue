@@ -24,12 +24,16 @@ const form = ref({
   individual_phone: props.agent?.individual_phone || '',
   individual_email: props.agent?.individual_email || '',
   individual_address: props.agent?.individual_address || '',
+  individual_id_number: props.agent?.individual_id_number || '',
+  individual_id_file: null,
   company_representative_name: props.agent?.company_representative_name || '',
   company_name: props.agent?.company_name || '',
   company_registration_number: props.agent?.company_registration_number || '',
   company_address: props.agent?.company_address || '',
   company_phone: props.agent?.company_phone || '',
   company_email_address: props.agent?.company_email_address || '',
+  company_reg_file: null,
+  about: props.agent?.about || '',
   // Bank account fields
   bank_account_name: props.agent?.bank_account?.account_name || '',
   bank_account_number: props.agent?.bank_account?.account_number || '',
@@ -45,6 +49,13 @@ const isCompany = computed(() => form.value.profile_type === 'company')
 const isSaving = ref(false)
 const errors = ref({})
 const copyStatus = ref('Copy')
+
+const aboutWordCount = computed(() => {
+  if (!form.value.about || !form.value.about.trim()) {
+    return 0
+  }
+  return form.value.about.trim().split(/\s+/).filter(word => word.length > 0).length
+})
 
 // Computed properties for shareable URL
 const shareableUrl = computed(() => {
@@ -98,6 +109,24 @@ const copyShareableUrl = async () => {
   }
 }
 
+const handleIndividualIdFileChange = (event) => {
+  form.value.individual_id_file = event.target.files[0]
+}
+
+const handleCompanyRegFileChange = (event) => {
+  form.value.company_reg_file = event.target.files[0]
+}
+
+// Helper function to generate file URL with cache-busting parameter
+const getFileUrl = (field) => {
+  if (!props.agent) return ''
+  // Use updated_at timestamp for cache-busting, or current timestamp as fallback
+  const timestamp = props.agent.updated_at 
+    ? new Date(props.agent.updated_at).getTime() 
+    : Date.now()
+  return `/agent/profile/file/${field}?t=${timestamp}`
+}
+
 const getStatusVariant = (status) => {
   switch(status?.toLowerCase()) {
     case 'active':
@@ -116,11 +145,77 @@ const getStatusVariant = (status) => {
 const saveProfile = async () => {
   isSaving.value = true
   errors.value = {}
+
+  // Debug: Log form data before submission
+  console.log('Form data before submission:', JSON.parse(JSON.stringify(form.value)))
+
+  // Check if we have files to upload
+  const hasFiles = form.value.individual_id_file || form.value.company_reg_file
+
   try {
-    await router.put('/agent/profile/edit', form.value, {
-      onSuccess: () => router.visit('/agent/profile'),
-      onError: (e) => { errors.value = e },
-    })
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const formData = new FormData()
+      Object.keys(form.value).forEach(key => {
+        // Skip file fields if they're null (only append if file exists)
+        if (key === 'individual_id_file' || key === 'company_reg_file') {
+          if (form.value[key]) {
+            formData.append(key, form.value[key])
+            console.log(`Added file ${key}:`, form.value[key].name)
+          }
+        } else {
+          // Append all other fields, including empty strings
+          // Handle boolean values properly for FormData
+          if (typeof form.value[key] === 'boolean') {
+            formData.append(key, form.value[key] ? '1' : '0')
+          } else if (form.value[key] === null || form.value[key] === undefined) {
+            // Convert null/undefined to empty string for FormData
+            formData.append(key, '')
+          } else {
+            formData.append(key, form.value[key])
+          }
+        }
+      })
+      formData.append('_method', 'PUT')
+
+      // Debug: Log FormData contents
+      console.log('FormData entries:')
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, value.name, `(${value.size} bytes)`)
+        } else {
+          console.log(`${key}:`, value)
+        }
+      }
+
+      await router.post('/agent/profile/edit', formData, {
+        onSuccess: () => {
+          console.log('Profile updated successfully')
+          router.visit('/agent/profile')
+        },
+        onError: (e) => {
+          console.error('Error updating profile:', e)
+          errors.value = e
+        },
+      })
+    } else {
+      // No files, use regular PUT request
+      console.log('Submitting without files:', form.value)
+
+      await router.put('/agent/profile/edit', form.value, {
+        onSuccess: () => {
+          console.log('Profile updated successfully')
+          router.visit('/agent/profile')
+        },
+        onError: (e) => {
+          console.error('Error updating profile:', e)
+          errors.value = e
+        },
+      })
+    }
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    errors.value = { error: 'An unexpected error occurred. Please try again.' }
   } finally {
     isSaving.value = false
   }
@@ -177,6 +272,30 @@ const saveProfile = async () => {
             <textarea v-model="form.individual_address" class="w-full px-3 py-2 border rounded"></textarea>
             <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">NRIC/Passport Number</label>
+            <input v-model="form.individual_id_number" type="text" class="w-full px-3 py-2 border rounded" placeholder="National registration identification number or Passport Number" />
+            <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
+            <p v-if="errors.individual_id_number" class="text-accent-red text-sm mt-1">{{ errors.individual_id_number }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport</label>
+            <div v-if="agent?.individual_id_file" class="mb-2">
+              <span class="text-sm text-gray-600">Current file: </span>
+              <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+                View Current File
+              </a>
+            </div>
+            <input
+              @change="handleIndividualIdFileChange"
+              type="file"
+              accept=".pdf,.jpeg,.jpg,.png"
+              class="w-full px-3 py-2 border rounded"
+            />
+            <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
+            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            <p v-if="errors.individual_id_file" class="text-accent-red text-sm mt-1">{{ errors.individual_id_file }}</p>
+          </div>
         </div>
 
         <div v-if="isCompany" class="space-y-4">
@@ -209,6 +328,43 @@ const saveProfile = async () => {
             <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address</label>
             <input v-model="form.company_email_address" type="email" class="w-full px-3 py-2 border rounded" />
             <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate</label>
+            <div v-if="agent?.company_reg_file" class="mb-2">
+              <span class="text-sm text-gray-600">Current file: </span>
+              <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+                View Current File
+              </a>
+            </div>
+            <input
+              @change="handleCompanyRegFileChange"
+              type="file"
+              accept=".pdf,.jpeg,.jpg,.png"
+              class="w-full px-3 py-2 border rounded"
+            />
+            <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
+            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
+          </div>
+        </div>
+
+        <!-- About Me / About Company -->
+        <div class="space-y-4 mt-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }}
+            </label>
+            <textarea
+              v-model="form.about"
+              rows="4"
+              maxlength="1000"
+              class="w-full px-3 py-2 border rounded"
+              :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
+            ></textarea>
+            <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
+            <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
+            <p v-if="errors.about" class="text-accent-red text-sm mt-1">{{ errors.about }}</p>
           </div>
         </div>
       </div>

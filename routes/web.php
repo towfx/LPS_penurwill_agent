@@ -108,6 +108,7 @@ Route::middleware([
         Route::get('/profile', [AgentProfileController::class, 'show'])->name('profile');
         Route::get('/profile/edit', [AgentProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile/edit', [AgentProfileController::class, 'update'])->name('profile.update');
+        Route::get('/profile/file/{field}', [AgentProfileController::class, 'downloadFile'])->name('profile.file.download');
         Route::get('/commissions', [App\Http\Controllers\Agent\CommissionController::class, 'index'])->name('commissions');
         Route::get('/commissions/detail', [App\Http\Controllers\Agent\CommissionController::class, 'detail'])->name('commissions.detail');
         Route::get('/sales', [App\Http\Controllers\Agent\SalesController::class, 'index'])->name('sales');

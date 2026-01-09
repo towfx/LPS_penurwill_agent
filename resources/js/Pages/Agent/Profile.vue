@@ -89,6 +89,16 @@ const copyCustomLink = async () => {
     showCopyDialog.value = true
   }
 }
+
+// Helper function to generate file URL with cache-busting parameter
+const getFileUrl = (field) => {
+  if (!props.agent) return ''
+  // Use updated_at timestamp for cache-busting, or current timestamp as fallback
+  const timestamp = props.agent.updated_at 
+    ? new Date(props.agent.updated_at).getTime() 
+    : Date.now()
+  return `/agent/profile/file/${field}?t=${timestamp}`
+}
 </script>
 
 <template>
@@ -164,6 +174,32 @@ const copyCustomLink = async () => {
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium text-gray-500">Address</div>
                 <div class="text-gray-900">{{ agent.individual_address }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center md:col-span-2">
+              <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">NRIC/Passport Number</div>
+                <div class="text-gray-900">{{ agent.individual_id_number }}</div>
+              </div>
+            </div>
+
+            <div v-if="agent.individual_id_file" class="flex items-center">
+              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Copy of IC/Passport</div>
+                <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
+                  View File
+                </a>
               </div>
             </div>
           </div>
@@ -243,6 +279,20 @@ const copyCustomLink = async () => {
                 <div class="text-gray-900">{{ agent.company_email_address }}</div>
               </div>
             </div>
+
+            <div v-if="agent.company_reg_file" class="flex items-center">
+              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Business Registration Certificate</div>
+                <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
+                  View File
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -257,6 +307,13 @@ const copyCustomLink = async () => {
               <div class="text-sm font-medium text-gray-500">Status</div>
               <div class="text-gray-900 capitalize">{{ agent.status }}</div>
             </div>
+          </div>
+        </div>
+
+        <div v-if="agent.about" class="mt-6 space-y-2">
+          <div>
+            <span class="font-medium text-gray-700">{{ isIndividual ? 'About Me' : 'About Company' }}:</span>
+            <p class="mt-1 text-gray-600 whitespace-pre-wrap">{{ agent.about }}</p>
           </div>
         </div>
       </div>
