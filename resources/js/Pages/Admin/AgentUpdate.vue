@@ -63,7 +63,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport</label>
             <div v-if="agent?.individual_id_file" class="mb-2">
               <span class="text-sm text-gray-600">Current file: </span>
-              <a :href="`/admin/agents/${id}/file/individual_id_file`" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+              <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
                 View Current File
               </a>
             </div>
@@ -114,7 +114,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate</label>
             <div v-if="agent?.company_reg_file" class="mb-2">
               <span class="text-sm text-gray-600">Current file: </span>
-              <a :href="`/admin/agents/${id}/file/company_reg_file`" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+              <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
                 View Current File
               </a>
             </div>
@@ -420,6 +420,16 @@ const getStatusPillClass = (status) => {
     default:
       return 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm font-medium'
   }
+}
+
+// Helper function to generate file URL with cache-busting parameter
+const getFileUrl = (field) => {
+  if (!props.agent) return ''
+  // Use updated_at timestamp for cache-busting, or current timestamp as fallback
+  const timestamp = props.agent.updated_at 
+    ? new Date(props.agent.updated_at).getTime() 
+    : Date.now()
+  return `/admin/agents/${props.id}/file/${field}?t=${timestamp}`
 }
 
 const showApproveDialog = () => {
