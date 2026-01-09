@@ -365,34 +365,6 @@ const getFileUrl = (field) => {
                 <div class="text-gray-900">{{ agent.referral_code.used_count }}</div>
               </div>
             </div>
-
-            <div class="flex items-center">
-              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-gray-500">Status</div>
-                <div class="text-gray-900">
-                  <span :class="agent.referral_code.is_active ? 'text-accent-green' : 'text-accent-red'">
-                    {{ agent.referral_code.is_active ? 'Active' : 'Inactive' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center">
-              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-medium text-gray-500">Expires</div>
-                <div class="text-gray-900">{{ new Date(agent.referral_code.expires_at).toLocaleDateString() }}</div>
-              </div>
-            </div>
           </div>
 
           <!-- Shareable URL -->
@@ -498,7 +470,7 @@ const getFileUrl = (field) => {
               </li>
               <li class="flex items-start">
                 <span class="text-accent-orange mr-2">•</span>
-                Commission rate: <strong>{{ agent.referral_code?.commission_rate || 0 }}%</strong> on successful referrals
+                Commission rate: <strong>{{ agent.referral_code?.commission_rate || 0 }}%</strong>&nbsp;on successful referrals
               </li>
             </ul>
           </div>

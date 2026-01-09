@@ -91,12 +91,6 @@
           <div><span class="font-medium text-gray-700">Referral Code:</span> <span class="font-mono bg-gray-100 px-2 py-1 rounded">{{ agent.referral_code.code }}</span></div>
           <div><span class="font-medium text-gray-700">Commission Rate:</span> {{ agent.referral_code.commission_rate }}%</div>
           <div><span class="font-medium text-gray-700">Used Count:</span> {{ agent.referral_code.used_count }}</div>
-          <div><span class="font-medium text-gray-700">Status:</span>
-            <span :class="agent.referral_code.is_active ? 'text-accent-green' : 'text-accent-red'">
-              {{ agent.referral_code.is_active ? 'Active' : 'Inactive' }}
-            </span>
-          </div>
-          <div><span class="font-medium text-gray-700">Expires:</span> {{ new Date(agent.referral_code.expires_at).toLocaleDateString() }}</div>
         </div>
         <div v-else class="text-gray-500">No referral code information available.</div>
       </div>
