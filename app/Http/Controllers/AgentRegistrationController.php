@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -161,6 +163,42 @@ class AgentRegistrationController extends Controller
 
             // Log agent creation
             ActivityLog::logCreate($user, $agent, $agent->toArray());
+
+            // Send email notification
+            try {
+                $agent->load('partner');
+                $recipientEmail = null;
+                $ccEmail = null;
+
+                // Get recipient email from agent's partner
+                if ($agent->partner && $agent->partner->company_email) {
+                    $recipientEmail = $agent->partner->company_email;
+                }
+
+                // Get CC email from partner_id=1 if different from agent's partner
+                if ($agent->partner_id != 1) {
+                    $mainPartner = Partner::find(1);
+                    if ($mainPartner && $mainPartner->company_email) {
+                        $ccEmail = $mainPartner->company_email;
+                    }
+                }
+
+                // Send email if we have at least one recipient
+                if ($recipientEmail) {
+                    $mail = Mail::to($recipientEmail);
+
+                    if ($ccEmail) {
+                        $mail->cc($ccEmail);
+                    }
+
+                    $mail->send(new \App\Mail\AgentRegisteredNotification($agent));
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send agent registration notification email', [
+                    'agent_id' => $agent->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // Create referral code for this agent using helper method
             $referralCode = $agent->createReferralCode();
