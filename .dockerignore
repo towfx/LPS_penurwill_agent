@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Node
+node_modules
+npm-debug.log
+pnpm-debug.log
+yarn-error.log
+
+# PHP
+vendor
+.php-cs-fixer.cache
+.phpstan.cache
+
+# Laravel
+storage/logs/*
+!storage/logs/.gitkeep
+bootstrap/cache/*
+!bootstrap/cache/.gitkeep
+.env
+.env.*.local
+
+# Testing
+coverage
+.phpunit.result.cache
+phpunit.xml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+public/build
+docker-compose.yml
+
+# Development
+Makefile
+docker/dev
+README.md
+API_VISIT_TRACKING.md

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: penurwill-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: penurwill
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    networks:
+      - penurwill
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: penurwill-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: mysql
+      PMA_PASSWORD: password
+      PMA_ROOT_PASSWORD: root
+    ports:
+      - "8090:80"
+    networks:
+      - penurwill
+    depends_on:
+      - mysql
+
+networks:
+  penurwill:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
