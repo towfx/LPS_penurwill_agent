@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Laravel Server",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["artisan", "serve"],
+      "port": 8000
+    },
+    {
+      "name": "Vite Dev Server",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 5173
+    },
+    {
+      "name": "Queue Listener",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["artisan", "queue:listen", "--tries=1"],
+      "port": null
+    },
+    {
+      "name": "Log Viewer",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["artisan", "pail", "--timeout=0"],
+      "port": null
+    }
+  ]
+}
