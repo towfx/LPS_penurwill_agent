@@ -549,12 +549,23 @@ Works well with monthly cutoff workflow.
 
 ### ✋ Decision 7: Commission Calculation Order
 
-**Decision**: Current Priority ✅
+**Decision**: Simplified Priority ✅ *(updated — ReferralCode rates removed)*
 
 **Priority Order** (confirmed):
-1. AgentCommissionRate.custom_rate (highest priority)
-2. ReferralCode.commission_rate
-3. SystemSetting (lowest priority)
+1. `AgentCommissionRate` (highest priority — per-agent kind override)
+2. `SystemSetting` role-based rate (lowest priority — global default)
+
+**Removed**: `ReferralCode.commission_rate` is **no longer part of the calculation priority**. ReferralCode continues to link visits to agents for attribution but does not carry a commission rate override. All rate decisions go through AgentCommissionRate or SystemSetting.
+
+**Commission Calculation Flow** (document in CommissionCalculator docblock):
+```
+getApplicableRate(Agent $agent, string $kind):
+  1. Check AgentCommissionRate where (agent_id = $agent->id AND kind = $kind)
+     → If found: return custom_percentage, custom_fixed_amount, commission_calc_type
+  2. Fall back to SystemSetting role-based rate:
+     → key = {agent_role}_{kind}_percentage / _fixed_amount / _calc_type
+     → Return that
+```
 
 ---
 
@@ -695,7 +706,7 @@ Works well with monthly cutoff workflow.
 
 ## UPDATED FINAL DECISIONS SUMMARY
 
-**17 critical decisions are now locked in**:
+**27 critical decisions are now locked in**:
 
 1. TrackingService approach: **Option A** ✅
 2. Partner vs Agent hierarchy: **Option D** ✅
@@ -703,7 +714,7 @@ Works well with monthly cutoff workflow.
 4. Commission recalculation policy: **Option A** ✅
 5. User role synchronization: **Option C** ✅
 6. Commission rate type support: **Option B** ✅
-7. Commission calculation priority: **Current order** ✅
+7. Commission calculation priority: **AgentCommissionRate → SystemSetting (ReferralCode removed)** ✅
 8. Fixed amount commission behavior: **Option C** ✅
 9. Override commission eligibility: **Option A** ✅
 10. Payout report grouping: **Option D** ✅
@@ -714,3 +725,131 @@ Works well with monthly cutoff workflow.
 15. Role name storage: **Flat columns on system_settings** ✅
 16. Renewal & expiry field location: **Flat columns on agents** ✅
 17. Refund commission reversal: **New negative-amount row** ✅
+18. Commission reversal time limit: **`reversal_time_limit` in SystemSetting, default 60 days** ✅
+19. Clawback from already-paid commissions: **Deducted during next payout calculation** ✅
+20. Role downgrade consequences: **Keep subordinates, stop override commissions, admin popup warning** ✅
+21. Admin reject after Stripe payment: **Last resort; manual refund with popup reminder; add automation as TODO** ✅
+22. Admin-created agent fee handling: **Fee mandatory until approved; admin approval skips payment entirely** ✅
+23. Stripe package: **Laravel Cashier** ✅
+24. API response backward compatibility: **Return first commission only; no override details exposed** ✅
+25. commission_fixed_amount precision: **DECIMAL(10,2) for all transaction fields; SystemSetting stored as string, parsed in CommissionCalculator** ✅
+26. Cache invalidation strategy: **Flush ALL SystemSetting cache on every update** ✅
+27. Email verification retry limit: **Max attempts configurable via `email_verification_max_retry` in SystemSetting, default 10; resets next day** ✅
+
+---
+
+## Decision 18: Commission Reversal Time Limit (Gap Resolution)
+
+**Question**: Can admins reverse a commission on a sale made months or years ago?
+
+**Decision**: Add `reversal_time_limit` integer column to `system_settings` (days). Default: 60. `RefundService::reverseSale()` checks `sale.created_at >= now()->subDays($setting->reversal_time_limit)` before creating reversal rows. If outside the window, throw a `ReversalWindowExpiredException` and block the action with an error message to admin.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 19: Clawback from Already-Paid Commissions (Gap Resolution)
+
+**Question**: If a commission reversal targets a commission already included in a completed payout, how is the money recovered from the agent?
+
+**Decision**: The negative-amount reversal Commission row is created immediately (Decision 17). When the agent next submits a payout request, `RequestPayoutController` totals all **eligible commissions** (pending, not in open/closed payout). If any `is_reversal = true` rows exist for that agent with `status = pending`, they are included in the total as negative amounts. The request total displayed to the agent shows the net figure. The system blocks payout requests where the net total is ≤ 0. This is automatic — no separate clawback flow needed.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 20: Role Downgrade Consequences (Gap Resolution)
+
+**Question**: When admin downgrades an agent from Leader → Agent (or BP → Leader), what happens?
+
+**Decision**:
+- **Subordinate structure preserved**: `parent_agent_id` of existing subordinates is NOT changed. Subordinates remain linked to the downgraded agent as their parent (even though the parent is now a lower role).
+- **Override commissions stop**: After the role change, `CommissionGenerator` will not create override commissions for the downgraded agent (they no longer meet the role threshold). Past commissions are immutable (Decision 4).
+- **Admin popup warning**: When admin saves a role change that is a downgrade AND the agent has direct subordinates, show a blocking confirmation modal: "⚠ This agent has {N} subordinates. After downgrade they will no longer earn override commissions from those agents. Subordinates must be manually reassigned if desired. Continue?"
+- **Payout uses current role**: Payout generation and commission eligibility always reads `agent_role` at request time. No recalculation of past commissions.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 21: Admin Reject After Stripe Payment (Gap Resolution)
+
+**Question**: If admin rejects a paid applicant, what happens to their payment?
+
+**Decision**:
+- Rejection of a paid agent is treated as a **last resort** (admin should request corrected documents first in most cases).
+- There is **no automated refund** in the system. When admin clicks [Reject Application] on a fee-paid agent, a modal reminder popup is displayed: "⚠ This agent has a completed fee payment. Stripe refunds must be processed manually via the Stripe dashboard. Please refund before or after rejecting. [Confirm Rejection]".
+- **Automation is a TODO** (Phase 7+): Future enhancement to trigger Stripe refund via Cashier automatically on rejection. List in TODOS.md backlog.
+- Stripe dashboard refund: Yes, admins can initiate refunds from the Stripe dashboard against any Checkout Session ID stored in `fee_payments.payment_reference`.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 22: Admin-Created Agent Fee Handling (Gap Resolution)
+
+**Question**: When admin directly creates an agent via `/admin/agents/add`, does the fee apply? What if admin approves without verifying payment?
+
+**Decision**:
+- Fee is **mandatory** for all agents regardless of how they were created — until the agent is approved.
+- Admin may upload a manual bank transfer receipt on behalf of the agent (same as the self-registration manual path).
+- If admin clicks **[Approve Agent]** without a fee record: the approval **skips fee entirely** — no fee_payments row is created and `fee_payment_status` is set to `waived`. This is intentional: admin takes explicit responsibility.
+- If admin clicks **[Approve Agent]** when fee is already paid: normal approval flow, `FeeService::applyEntryFee` is called.
+- The [Approve Agent] button is always visible (not blocked by fee), but the UI shows the current fee status clearly so admin makes an informed choice.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 23: Stripe Package (Gap Resolution)
+
+**Question**: Which Stripe integration library to use?
+
+**Decision**: **Laravel Cashier** (`laravel/cashier`). Rationale: native Laravel integration, handles Checkout Sessions, webhook verification, and charge records with minimal boilerplate. `FeeService` wraps Cashier calls so the rest of the codebase never imports Cashier directly.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 24: API Response Backward Compatibility (Gap Resolution)
+
+**Question**: The tracking API (`POST /api/agents/track/sale`) currently returns a single commission. With multi-level commissions, the response will change. How to handle existing integrations?
+
+**Decision**: No API versioning needed. The response will return **the first (own_sales) commission** for the sale agent + the sale agent's info — same shape as today. Override commissions are internal and not surfaced to external API callers. `AgentTrackingController` returns `$commissions->firstWhere('commission_type', 'own_sales')`. Existing integrations will see no breaking change.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 25: commission_fixed_amount Decimal Precision (Gap Resolution)
+
+**Question**: What precision for fixed commission amounts?
+
+**Decision**: All commission/fee monetary columns use `DECIMAL(10,2)`. SystemSetting rate/fixed columns that are human-entered are stored as `DECIMAL(10,2)` as well. `CommissionCalculator::calculate()` explicitly casts inputs to `float` before arithmetic to prevent string-math bugs. No silent string concatenation.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 26: Cache Invalidation on SystemSetting Update (Gap Resolution)
+
+**Question**: Current plan caches SystemSetting for 1 hour. If a rate is changed and a sale arrives within the cache window, the old rate is used.
+
+**Decision**: **Always flush the entire `commission_config` cache key whenever `SystemSetting` is updated** — no partial flush, no TTL dependency. `SystemSettingController::update()` calls `CommissionConfig::flush()` as the last step before redirect. The 1-hour TTL acts only as a safety net. Acceptable trade-off: admins change settings rarely; the 1-request lag after manual flush is negligible.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 27: Email Verification Retry Limit (Gap Resolution)
+
+**Question**: How many failed verification attempts before lockout? Can users get a new code?
+
+**Decision**:
+- Max attempts per code: configurable via `email_verification_max_retry` in `system_settings`. Default: **10**.
+- Expiry per code: 15 minutes from generation.
+- After exhausting max attempts for a given code, the user must request a **Resend** to get a fresh code (resets attempts counter for the new code).
+- Daily limit: tracked per email per calendar day. If total daily attempts (across all codes) exceed `email_verification_max_retry`, block for the rest of the day and show: "Too many attempts. Please try again tomorrow."
+- Resend cooldown: 60 seconds between resend requests (enforced in Vue UI + server-side timestamp check).
+
+**Status**: LOCKED ✅
