@@ -1,4 +1,69 @@
 <template>
+  <!--
+  ============================================================
+  DESIGN SYSTEM REFERENCE — resources/js/Pages/Design/Design01.vue
+  Preview at: /design/design-01
+
+  This file is the single source of truth for UI patterns.
+  All new pages should import components from ./Components/
+  and follow the patterns demonstrated here.
+
+  SECTIONS IN THIS FILE:
+    ✓  Layout (Sidebar + Header)
+    ✓  StatsCard (4 variants with trends)
+    ✓  Tabs (TabsList / TabsTrigger / TabsContent)
+    ✓  Card / CardHeader / CardContent / CardTitle
+    ✓  Progress bar
+    ✓  Badge (secondary, outline, default) — incomplete, see @TODO
+    ✓  Button (outline/sm) — incomplete, see @TODO
+    ✓  UsersTable
+    ✓  ActivityTimeline
+    ✓  AlertsSection
+
+  @TODO — MISSING SECTIONS (complete before Phase 4 frontend work):
+
+  CRITICAL (needed for admin + agent forms):
+  [ ] Form Elements — Input, Textarea, Select, Checkbox, Radio
+      → These need new shadcn-based components in ./Components/
+      → Show: label + input + error state + disabled state
+  [ ] All Button variants — default (stone-900), secondary (amber-600),
+      destructive (red-600), ghost, link; all 4 sizes (default, sm, lg, icon)
+  [ ] All Badge variants — add: success (green), warning (yellow), destructive (red)
+  [ ] ConfirmationModal pattern — used for approve/reject/downgrade flows
+      → Show: title, body text, cancel + confirm buttons, destructive variant
+  [ ] Status badge system — show the custom CSS classes from app.css:
+      status-pending (yellow), status-paid (green), status-cancelled (red)
+      + active/inactive/suspended/expired/rejected variants
+
+  HIGH (needed for most pages):
+  [ ] Breadcrumb navigation pattern — show: Home > Section > Current Page
+  [ ] Page layout template — show the standard admin page structure:
+      breadcrumb + title row (with action button) + content area
+  [ ] EmptyState component — icon + headline + subtext + optional CTA
+      → Needed for every list screen when no records exist
+  [ ] Pagination component — prev/next + page numbers + "showing X of Y"
+  [ ] Toast / flash notification — Inertia $page.props.flash.success / error
+  [ ] All Alert variants — Alert.vue exists but is not shown here
+      → Show: default, destructive, success, warning
+
+  MEDIUM (needed for specific screens):
+  [ ] File upload input pattern — choose file + preview name + remove
+  [ ] Status stepper / progress timeline — for payout lifecycle:
+      Pending → Approved → Processing → Paid (with dates)
+  [ ] BarChart, LineChart, PieChart — components exist but not shown
+  [ ] Inbox notification row — subject, body excerpt, timestamp, unread badge
+  [ ] Multi-step wizard header — step dots 1-6 with active/completed states
+
+  LOW (polish / reference):
+  [ ] Color palette showcase — visual swatches for all brand + accent colors
+  [ ] Typography scale — h1 through h4, body, muted, label sizes in context
+  [ ] Icon reference — show key Lucide icons by concept:
+      (DollarSign=money, Users=team, ShoppingCart=sales, etc.)
+  [ ] Loading / skeleton state — show shimmer placeholder for cards + tables
+  [ ] Date range picker pattern — from/to inputs with calendar
+  ============================================================
+  -->
+
   <div class="min-h-screen h-screen bg-cream font-sans">
     <!-- Google Fonts Import -->
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -13,6 +78,10 @@
 
         <!-- Main Content -->
         <main class="flex-1 p-4 sm:p-6 overflow-y-auto">
+
+          <!-- @TODO: Add breadcrumb pattern here -->
+          <!-- Example: Home > Admin > Dashboard -->
+
           <div class="mb-6 sm:mb-8">
             <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-forest-dark">
               Dashboard Overview
@@ -20,7 +89,13 @@
             <p class="text-gray-600 text-sm sm:text-base">Welcome back! Here's what's happening with your business today.</p>
           </div>
 
-          <!-- Stats Cards -->
+          <!-- @TODO: Add page layout template block here showing:
+               breadcrumb + title + description + right-side action button -->
+
+
+          <!-- ── StatsCard ───────────────────────────────────────── -->
+          <!-- @TODO: StatsCard icon prop only accepts: DollarSign, Users, ShoppingCart, Activity
+               Add more icons to StatsCard.vue iconComponent map as needed -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <StatsCard
               title="Total Revenue"
@@ -55,6 +130,35 @@
               :progress="32"
             />
           </div>
+
+          <!-- @TODO: Add Button variants section here
+               Show all 6 variants × 4 sizes in a grid:
+               default (stone-900), secondary (amber-600), destructive (red),
+               outline, ghost, link — sizes: default, sm, lg, icon -->
+
+          <!-- @TODO: Add Badge variants section here
+               Show: default, secondary, outline, success (green), warning (yellow), destructive (red)
+               Also show status badge classes: status-pending, status-paid, status-cancelled -->
+
+          <!-- @TODO: Add Alert variants section here (uses Alert.vue)
+               Show: default, destructive, success, warning -->
+
+          <!-- @TODO: Add form elements section here — these need new shadcn components:
+               Input (text, with label + error state)
+               Textarea
+               Select / Dropdown
+               Checkbox
+               Radio button group
+               File upload input (choose file + filename preview) -->
+
+          <!-- @TODO: Add ConfirmationModal pattern here
+               Show: trigger button → modal with title, body, cancel + confirm -->
+
+          <!-- @TODO: Add EmptyState pattern here
+               Show: icon + headline + subtext + optional CTA button -->
+
+          <!-- @TODO: Add status stepper / timeline here
+               Show: Pending → Approved → Processing → Paid lifecycle stepper -->
 
           <!-- Tabs Section -->
           <div class="mb-6 sm:mb-8">
@@ -168,9 +272,42 @@
 
               <TabsContent value="notifications">
                 <AlertsSection />
+                <!-- @TODO: Add inbox notification row pattern here
+                     Show: unread dot, subject, body excerpt, timestamp, [Mark Read] button -->
               </TabsContent>
             </Tabs>
           </div>
+
+          <!-- @TODO: Add charts section here — BarChart, LineChart, PieChart are in ./Components/
+               Show each with sample data and labels -->
+
+          <!-- @TODO: Add pagination component here (component does not exist yet — create it)
+               Show: prev button + page numbers + next button + "Showing X–Y of Z" -->
+
+          <!-- @TODO: Add color palette showcase section
+               Swatches: forest-dark, forest-light, gold, cream, accent-red/orange/green/blue/gray
+               Stone neutrals: stone-50 through stone-900 -->
+
+          <!-- @TODO: Add typography scale section
+               h1 (text-3xl font-bold text-forest-dark)
+               h2 (text-2xl font-semibold text-forest-dark)
+               h3 (text-xl font-semibold text-stone-800)
+               Body (text-sm text-stone-600)
+               Muted (text-sm text-stone-400)
+               Label (text-sm font-medium text-stone-700) -->
+
+          <!-- @TODO: Add icon reference section
+               Show key Lucide icons by concept grouped:
+               Finance: DollarSign, CreditCard, Banknote, TrendingUp, TrendingDown
+               People: Users, User, UserPlus, UserCheck, UserX
+               Status: CheckCircle, XCircle, AlertCircle, Clock, Info
+               Actions: Edit, Trash2, Eye, Download, Upload, Plus, Search, Filter
+               Navigation: ChevronDown, ChevronRight, ArrowLeft, Menu
+               System: Settings, Bell, Mail, Shield, Activity -->
+
+          <!-- @TODO: Add loading/skeleton state section
+               Show shimmer placeholder card and table row skeletons -->
+
         </main>
       </div>
     </div>

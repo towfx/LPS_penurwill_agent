@@ -47,7 +47,9 @@ Create in order so FKs resolve:
    ```php
    $table->enum('agent_role', ['agent', 'agent_leader', 'business_partner'])->default('agent')->after('status');
    $table->foreignId('parent_agent_id')->nullable()->after('agent_role')->constrained('agents')->nullOnDelete();
+   $table->boolean('is_default')->default(false)->after('parent_agent_id'); // marks the canonical default BP (QNA-03)
    $table->index('agent_role');
+   $table->index('is_default');
    ```
 2. [N] `database/migrations/2026_04_29_000002_extend_commissions_for_hierarchy.php`
    ```php
@@ -84,13 +86,6 @@ Create in order so FKs resolve:
    $table->enum('commission_calc_type', ['percentage', 'fixed'])->default('percentage')->after('custom_fixed_amount'); // QNA-20
    $table->unique(['agent_id', 'kind']);
    ```
-6. [N] `database/migrations/2026_04_30_000006_drop_partner_tables.php` — **defer to PR2** (QNA-02)
-   ```php
-   Schema::table('agents', fn ($t) => $t->dropConstrainedForeignId('partner_id'));
-   Schema::dropIfExists('partner_users');
-   Schema::dropIfExists('partners');
-   ```
-
 #### CRD: Fee Management & Flexible Commission (Decision 13–17)
 
 7. [N] `database/migrations/2026_04_30_000007_add_fee_config_and_role_names_to_system_settings_table.php`
@@ -149,15 +144,44 @@ Create in order so FKs resolve:
         $table->enum('fee_type', ['entry', 'renewal']);
         $table->string('role', 50);
         $table->decimal('amount', 10, 2);
+        $table->enum('payment_method', ['stripe', 'bank_transfer', 'manual', 'waived'])->default('manual');
+        $table->string('payment_reference', 255)->nullable(); // Stripe Checkout Session ID or bank ref (Decision 21)
         $table->timestamp('paid_at')->nullable();
         $table->foreignId('recorded_by')->nullable()->constrained('users')->nullOnDelete();
         $table->timestamps();
+        $table->index(['agent_id', 'fee_type']);
     });
     ```
 13. [N] `database/migrations/2026_04_30_000013_add_company_representative_id_file_to_agents_table.php` (bug fix — Part 18)
     ```php
     $table->string('company_representative_id_file')->nullable()->after('company_reg_file');
     ```
+14. [N] `database/migrations/2026_04_30_000014_create_scheduler_logs_table.php`
+    ```php
+    Schema::create('scheduler_logs', function (Blueprint $table) {
+        $table->id();
+        $table->string('job_type', 100)->index();
+        $table->enum('status', ['success', 'failed']);
+        $table->timestamp('ran_at');
+        $table->text('error_message')->nullable();
+        $table->timestamps();
+    });
+    ```
+    > Note: Phase 7 migrations start at #15 (filename `2026_05_01_000015_…`). Laravel orders by full filename so no renaming required — just ensure Phase 7 filenames use date `2026_05_01` which alphabetically follows `2026_04_30`.
+
+---
+
+### ⚠ PR2-Only Migration (do NOT include in Phase 1 PR)
+
+Run this migration in the **second PR** after Phase 1 has soaked in production. This drops tables — irreversible.
+
+```php
+// database/migrations/2026_05_02_000001_drop_partner_tables.php  (PR2)
+Schema::table('agents', fn ($t) => $t->dropConstrainedForeignId('partner_id'));
+Schema::dropIfExists('partner_users');
+Schema::dropIfExists('partners');
+// Also: remove Spatie 'partner' role via a seeder/migration
+```
 
 ### Models
 
@@ -181,7 +205,7 @@ Create in order so FKs resolve:
 - [M] [app/Models/AgentCommissionRate.php](app/Models/AgentCommissionRate.php)
   - Add `kind`, `custom_fixed_amount`, `commission_calc_type`; rename `custom_rate` → `custom_percentage`.
   - Constants `KIND_OWN_SALES`, `KIND_OVERRIDE_AGENT`, `KIND_OVERRIDE_AGENT_LEADER`. Scope `forKind($kind)`.
-- [N] [app/Models/FeePayment.php](app/Models/FeePayment.php) — fillable: `agent_id`, `fee_type`, `role`, `amount`, `paid_at`, `recorded_by`. Relations: `agent()`, `recordedBy()`.
+- [N] [app/Models/FeePayment.php](app/Models/FeePayment.php) — fillable: `agent_id`, `fee_type`, `role`, `amount`, `payment_method`, `payment_reference`, `paid_at`, `recorded_by`. Casts: `paid_at` → datetime. Relations: `agent()`, `recordedBy()`. Scope: `stripe()`, `manual()`, `forAgent($id)`.
 - [D] [app/Models/Partner.php](app/Models/Partner.php) — delete after Phase 4 refactor.
 
 ### Factories / Seeders
@@ -324,6 +348,16 @@ Create in order so FKs resolve:
 - [M] [app/Http/Middleware/](app/Http/Middleware/) — drop `partner` middleware; admin/agent stay.
 - [M] [app/Models/User.php](app/Models/User.php) — remove `partners()` relation.
 - [M] [app/Http/Middleware/HandleInertiaRequests.php](app/Http/Middleware/HandleInertiaRequests.php) — share `systemSettings` (including role name fields) in `share()` so Vue can read role labels without hardcoding (Decision 15).
+
+---
+
+## Phase 3.5 — Design System Pre-flight (before any Vue work)
+
+> **Do this before writing a single new Vue page.** The design reference file may need gaps filled so the team has a complete visual spec to work from.
+
+- [ ] Open `/design/design-01` in the browser and review the current state.
+- [ ] Work through the `@TODO` comments inside `resources/js/Pages/Design/Design01.vue` — complete any sections marked critical before Phase 4 begins (especially: form elements, all button variants, status badges, modal pattern).
+- [ ] After Design01.vue is updated, get stakeholder sign-off that the visual language is correct before Phase 4 coding starts.
 
 ---
 
@@ -502,11 +536,13 @@ Create in order so FKs resolve:
 ### Models [N/M]
 
 - [N] [app/Models/AgentNotification.php](app/Models/AgentNotification.php)
-  - Fillable: `agent_id`, `type`, `subject`, `body`, `is_read`, `read_at`, `related_model`, `related_id`
+  - Fillable: `agent_id`, `type`, `subject`, `body`, `status`, `read_at`, `related_model`, `related_id`
+  - Casts: `status` → string, `read_at` → datetime
   - Relations: `agent()`
-  - Scopes: `unread()`, `forAgent($agentId)`
-  - Helper: `markRead()` sets `is_read=true`, `read_at=now()`
-  - Constants: `TYPE_*` for each event type
+  - Scopes: `unread()` → `where('status', 'unread')`, `pending()` → `where('status', 'pending')`, `archived()` → `where('status', 'archived')`, `forAgent($agentId)`
+  - Helpers: `markRead()` → sets `status='read'`, `read_at=now()`; `archive()` → sets `status='archived'`; `markPending()` → sets `status='pending'`
+  - Constants: `STATUS_UNREAD`, `STATUS_READ`, `STATUS_PENDING`, `STATUS_ARCHIVED`; `TYPE_*` for each event type
+  - Note: `is_read` column does NOT exist — migration #16 uses `status` enum. Do not add `is_read`.
 
 - [N] [app/Models/RegistrationVerification.php](app/Models/RegistrationVerification.php)
   - Fillable: `email`, `code`, `expires_at`, `attempts`, `verified`
