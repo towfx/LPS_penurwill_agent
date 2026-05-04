@@ -101,10 +101,14 @@ Create in order so FKs resolve:
    $table->boolean('renewal_fee_agent_enabled')->default(true)->after('renewal_fee_agent');
    // Renewal notification timing (QNA-17)
    $table->integer('renewal_reminder_days_before')->default(30)->after('renewal_fee_agent_enabled');
+   // Membership duration — how many days from approval until expiry (user decision 2026-05-04)
+   $table->integer('membership_duration_days')->default(365)->after('renewal_reminder_days_before');
    // Role name editability (Decision 15)
    $table->string('role_name_agent', 100)->default('Agent');
    $table->string('role_name_leader', 100)->default('Leader');
    $table->string('role_name_business_partner', 100)->default('Business Partner');
+   // Referral code prefix — default prefix for auto-generated codes (user decision 2026-05-04)
+   $table->string('referral_code_prefix', 50)->default('PENURWILL-');
    ```
 8. [N] `database/migrations/2026_04_30_000008_add_commission_calc_type_to_system_settings_table.php` (Decision 14)
    ```php
@@ -200,7 +204,7 @@ Schema::dropIfExists('partners');
   - Constants: `TYPE_OWN_SALES`, `TYPE_OVERRIDE`, `CAT_AGENT`, `CAT_AGENT_LEADER`, `CAT_BUSINESS_PARTNER`, `CALC_PERCENTAGE`, `CALC_FIXED`.
 - [M] [app/Models/PayoutItem.php](app/Models/PayoutItem.php) — add `commission_type`, `commission_category` to fillable; scopes `ownSales()`, `overrides()`.
 - [M] [app/Models/SystemSetting.php](app/Models/SystemSetting.php)
-  - Replace fillable/casts with the full list: 12 rate fields + `skip_zero_commissions` + 8 fee fields + `renewal_reminder_days_before` + 3 role name fields + 4 calc_type fields.
+  - Replace fillable/casts with the full list: 12 rate fields + `skip_zero_commissions` + 8 fee fields + `renewal_reminder_days_before` + `membership_duration_days` (int) + `referral_code_prefix` (string) + 3 role name fields + 4 calc_type fields.
   - Add typed accessor `getCommissionConfigAttribute()` returning a structured array used by services.
 - [M] [app/Models/AgentCommissionRate.php](app/Models/AgentCommissionRate.php)
   - Add `kind`, `custom_fixed_amount`, `commission_calc_type`; rename `custom_rate` → `custom_percentage`.
@@ -211,7 +215,11 @@ Schema::dropIfExists('partners');
 ### Factories / Seeders
 
 - [M] `database/factories/AgentFactory.php` — add `agent_role` (default `agent`), `parent_agent_id` null, `fee_payment_status`, `registered_at`. States: `agentLeader()`, `businessPartner()`, `under(Agent $parent)`, `expired()`.
-- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — seed all new fields: rate defaults (agent 10%, AL override 5%, BP override 2%), fee defaults (BP 3000/1000, Leader 100/100, Agent 100/100), role names (Agent/Leader/Business Partner), `renewal_reminder_days_before = 30`, `skip_zero_commissions = true`.
+- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — seed all new fields with confirmed defaults (user decisions 2026-05-04):
+  - Commission rates: `agent_own_sales_percentage = 10`, `agent_leader_override_agent_percentage = 5`, `bp_override_agent_percentage = 2`, `bp_override_leader_percentage = 3`
+  - Fee config: `entry_fee_business_partner = 3000`, `renewal_fee_business_partner = 1000`, `entry_fee_leader = 100`, `renewal_fee_leader = 100`, `entry_fee_agent = 100`, `renewal_fee_agent = 100`
+  - Role labels: `role_name_agent = 'Agent'`, `role_name_leader = 'Leader'`, `role_name_business_partner = 'Business Partner'`
+  - General: `renewal_reminder_days_before = 30`, `skip_zero_commissions = true`, `membership_duration_days = 365`, `referral_code_prefix = 'PENURWILL-'`
 - [D] [database/seeders/PartnerSeeder.php](database/seeders/PartnerSeeder.php) — remove. Replace with `BusinessPartnerSeeder.php`.
 - [N] `database/seeders/BusinessPartnerSeeder.php` — creates Agent with `agent_role='business_partner'`, `is_default=true` (or id=1), as the default upline fallback (QNA-03).
 - [M] [database/seeders/DatabaseSeeder.php](database/seeders/DatabaseSeeder.php) — drop PartnerSeeder, add SystemUserSeeder + BusinessPartnerSeeder.
@@ -246,7 +254,7 @@ Schema::dropIfExists('partners');
   - `transactions(Agent, …)` — flat list
   - All queries hit `payout_items` using denormalized `commission_type` (Decision 3).
 - [N] [app/Services/FeeService.php](app/Services/FeeService.php) — fee management (Part 12 / Decision 13):
-  - `applyEntryFee(Agent $agent, User $recordedBy): FeePayment` — creates `fee_payments` row for entry fee; sets `fee_payment_status = 'paid'`, `registered_at = today`, `expires_at = today + 365`, `renewal_due_at = expires_at - renewal_reminder_days_before`.
+  - `applyEntryFee(Agent $agent, User $recordedBy): FeePayment` — creates `fee_payments` row for entry fee; sets `fee_payment_status = 'paid'`, `registered_at = today`, `expires_at = today + membership_duration_days (read from SystemSetting, default 365)`, `renewal_due_at = expires_at - renewal_reminder_days_before`.
   - `applyRenewalFee(Agent $agent, User $recordedBy): FeePayment` — updates `expires_at`, `renewal_due_at`, `fee_payment_status = 'paid'`.
   - `getFeeAmountFor(string $agentRole, string $feeType): float` — reads from SystemSetting.
   - `isRenewalEnabled(string $agentRole): bool`.
@@ -333,6 +341,8 @@ Schema::dropIfExists('partners');
 
 ### Public
 
+- [N] `resources/js/Pages/Terms.vue` — static Terms & Conditions page with placeholder content. No auth required. Route: `GET /terms`. Text to be replaced before go-live; page must exist so registration Step 5 T&C checkbox can link to it (user decision 2026-05-04).
+- [M] [routes/web.php](routes/web.php) — add `Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');` outside auth middleware.
 - [M] [app/Http/Controllers/AgentRegistrationController.php](app/Http/Controllers/AgentRegistrationController.php)
   - Replace `Partner::where('code', …)` + `Partner::find(1)` with Agent lookup by `agent_role='business_partner'`. Default upline = seeded BP agent (QNA-03).
   - Set `parent_agent_id` instead of `partner_id`.
@@ -583,13 +593,14 @@ Schema::dropIfExists('partners');
 
 ### Seeders
 
-- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — add `min_payout_amount = 1.00`, `reversal_time_limit = 60`, `email_verification_max_retry = 10`
+- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — add Phase 7 fields: `min_payout_amount = 1.00`, `reversal_time_limit = 60`, `email_verification_max_retry = 10`
 
 ### Controllers [N/M]
 
 #### Dependencies
 
 - [M] `composer.json` — add `laravel/cashier` (Decision 23). Run `composer require laravel/cashier`. Publish migrations: `php artisan vendor:publish --tag="cashier-migrations"`. Add `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` to `.env.example`. Wrap all Cashier calls inside `FeeService` — no direct Cashier usage outside that class.
+  > **⚠ Before Phase 7 dev**: populate `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` in `.env` with live/test keys. Stripe account exists; credentials provided separately by owner (user decision 2026-05-04).
 - [M] `app/Models/Agent.php` — add `use Billable` trait from Cashier (or create a proxy via FeeService that references `agent->user` as the Billable entity).
 
 #### Registration (rebuild)

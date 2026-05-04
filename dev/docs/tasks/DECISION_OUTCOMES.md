@@ -706,7 +706,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## UPDATED FINAL DECISIONS SUMMARY
 
-**27 critical decisions are now locked in**:
+**35 critical decisions are now locked in**:
 
 1. TrackingService approach: **Option A** ✅
 2. Partner vs Agent hierarchy: **Option D** ✅
@@ -735,6 +735,14 @@ getApplicableRate(Agent $agent, string $kind):
 25. commission_fixed_amount precision: **DECIMAL(10,2) for all transaction fields; SystemSetting stored as string, parsed in CommissionCalculator** ✅
 26. Cache invalidation strategy: **Flush ALL SystemSetting cache on every update** ✅
 27. Email verification retry limit: **Max attempts configurable via `email_verification_max_retry` in SystemSetting, default 10; resets next day** ✅
+28. Stripe credentials: **Account exists; keys provided separately by owner; add to `.env` before Phase 7** ✅
+29. Terms & Conditions: **Static `/terms` page with placeholder text; no auth required; real content inserted before go-live** ✅
+30. Manual transfer bank account: **Registration wizard reads bank details from `Agent::find(1)->bankAccount`** ✅
+31. Commission rate defaults: **agent own-sales 10%, Leader override-agent 5%, BP override-agent 2%, BP override-leader 3% — seeded into SystemSettings** ✅
+32. Fee defaults: **BP entry RM3000 / renewal RM1000; Leader entry RM100 / renewal RM100; Agent entry RM100 / renewal RM100 — seeded into SystemSettings** ✅
+33. Membership duration: **365 days stored as `membership_duration_days` integer in SystemSettings (default 365); FeeService reads this — not hardcoded** ✅
+34. Default Business Partner agent: **Agent #1; seeded by BusinessPartnerSeeder with `is_default=true`; used as upline fallback and system notification target** ✅
+35. Referral code prefix: **`PENURWILL-` stored as `referral_code_prefix` in SystemSettings; default changed from `REF-`** ✅
 
 ---
 
@@ -851,5 +859,96 @@ getApplicableRate(Agent $agent, string $kind):
 - After exhausting max attempts for a given code, the user must request a **Resend** to get a fresh code (resets attempts counter for the new code).
 - Daily limit: tracked per email per calendar day. If total daily attempts (across all codes) exceed `email_verification_max_retry`, block for the rest of the day and show: "Too many attempts. Please try again tomorrow."
 - Resend cooldown: 60 seconds between resend requests (enforced in Vue UI + server-side timestamp check).
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 28: Stripe Credentials (Configuration Decision 2026-05-04)
+
+**Question**: Is the Stripe account set up?
+
+**Decision**: Stripe account exists. Keys are not committed to source control. Add `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` to `.env` before starting Phase 7 development. Reference `.env.example` for the required variable names. Keys are provided separately by the project owner.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 29: Terms & Conditions Page (Configuration Decision 2026-05-04)
+
+**Question**: Where does the T&C link in registration Step 5 point? Who writes the content?
+
+**Decision**: Static public page at `/terms` (`Terms.vue`). No authentication required. Placeholder content is inserted during development. Real legal text is copied into the file before go-live. The page must exist so the T&C checkbox in registration Step 5 can link to it. Route is added outside the auth middleware group in `routes/web.php`.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 30: System Bank Account for Manual Transfers (Configuration Decision 2026-05-04)
+
+**Question**: Which bank account details does the registration wizard display for manual bank transfer payment?
+
+**Decision**: Display bank details from `Agent::find(1)->bankAccount`. Agent #1 is the seeded default Business Partner (system owner). Admin must ensure Agent #1's bank account is populated before enabling manual transfer flow in production.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 31: Commission Rate Defaults (Configuration Decision 2026-05-04)
+
+**Question**: What are the default commission rates seeded into SystemSettings?
+
+**Decision**:
+- Agent own-sales: **10%**
+- Agent Leader override on agent sales: **5%**
+- Business Partner override on agent sales: **2%**
+- Business Partner override on Agent Leader sales: **3%**
+
+All four values seeded into SystemSettings as percentage columns. `AgentCommissionRate` rows can override these per-agent-per-kind without changing the global defaults.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 32: Fee Defaults (Configuration Decision 2026-05-04)
+
+**Question**: What are the default entry and renewal fees seeded into SystemSettings?
+
+**Decision**:
+- Business Partner: entry **RM 3,000** / renewal **RM 1,000**
+- Agent Leader: entry **RM 100** / renewal **RM 100**
+- Agent: entry **RM 100** / renewal **RM 100**
+
+All six values seeded as `DECIMAL(10,2)` columns in `system_settings`.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 33: Membership Duration (Configuration Decision 2026-05-04)
+
+**Question**: How long is a membership valid after approval? Is this hardcoded or configurable?
+
+**Decision**: **365 days**, stored as `membership_duration_days` integer column in `system_settings` with default 365. `FeeService::applyEntryFee()` reads this value instead of hardcoding 365. Admin can adjust on System Settings page. Migration #7 (Phase 1) adds the column.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 34: Default Business Partner Agent (Configuration Decision 2026-05-04)
+
+**Question**: Which agent is the system owner / default upline?
+
+**Decision**: **Agent #1**, seeded by `BusinessPartnerSeeder` with `agent_role='business_partner'` and `is_default=true`. Used as: (a) default upline fallback when no referral code is supplied during registration; (b) target for `NotificationService::notifyAdmin()`; (c) bank account source for manual transfer display. `is_default=true` flag added to agents table in Phase 1 migration #1.
+
+**Status**: LOCKED ✅
+
+---
+
+## Decision 35: Referral Code Prefix (Configuration Decision 2026-05-04)
+
+**Question**: What prefix is used for auto-generated referral codes? The current system generates `REF-XXXXXXXX`.
+
+**Decision**: Change default prefix to **`PENURWILL-`**. Stored as `referral_code_prefix` string column (max 50 chars) in `system_settings`, default `'PENURWILL-'`. `ReferralCode` generation reads this setting. Migration #7 (Phase 1) adds the column. Admin can change the prefix on the System Settings page for future codes (existing codes are not renamed).
 
 **Status**: LOCKED ✅
