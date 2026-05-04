@@ -47,7 +47,9 @@ Create in order so FKs resolve:
    ```php
    $table->enum('agent_role', ['agent', 'agent_leader', 'business_partner'])->default('agent')->after('status');
    $table->foreignId('parent_agent_id')->nullable()->after('agent_role')->constrained('agents')->nullOnDelete();
+   $table->boolean('is_default')->default(false)->after('parent_agent_id'); // marks the canonical default BP (QNA-03)
    $table->index('agent_role');
+   $table->index('is_default');
    ```
 2. [N] `database/migrations/2026_04_29_000002_extend_commissions_for_hierarchy.php`
    ```php
@@ -69,9 +71,12 @@ Create in order so FKs resolve:
    foreach (['agent_own_sales','agent_leader_own_sales','agent_leader_override_agent',
              'business_partner_own_sales','business_partner_override_agent','business_partner_override_agent_leader'] as $key) {
        $table->decimal("{$key}_percentage", 5, 2)->default(0);
-       $table->decimal("{$key}_fixed_amount", 10, 2)->default(0);
+       $table->decimal("{$key}_fixed_amount", 10, 2)->default(0);  // DECIMAL(10,2) — Decision 25
    }
    $table->boolean('skip_zero_commissions')->default(true);
+   // Gap resolutions (Decision 18, 27)
+   $table->integer('reversal_time_limit')->default(60)->after('skip_zero_commissions'); // days
+   $table->integer('email_verification_max_retry')->default(10)->after('reversal_time_limit');
    ```
 5. [N] `database/migrations/2026_04_30_000005_restructure_agent_commission_rates.php` (Decision 6 + QNA-09 multi-row)
    ```php
@@ -81,13 +86,6 @@ Create in order so FKs resolve:
    $table->enum('commission_calc_type', ['percentage', 'fixed'])->default('percentage')->after('custom_fixed_amount'); // QNA-20
    $table->unique(['agent_id', 'kind']);
    ```
-6. [N] `database/migrations/2026_04_30_000006_drop_partner_tables.php` — **defer to PR2** (QNA-02)
-   ```php
-   Schema::table('agents', fn ($t) => $t->dropConstrainedForeignId('partner_id'));
-   Schema::dropIfExists('partner_users');
-   Schema::dropIfExists('partners');
-   ```
-
 #### CRD: Fee Management & Flexible Commission (Decision 13–17)
 
 7. [N] `database/migrations/2026_04_30_000007_add_fee_config_and_role_names_to_system_settings_table.php`
@@ -103,10 +101,14 @@ Create in order so FKs resolve:
    $table->boolean('renewal_fee_agent_enabled')->default(true)->after('renewal_fee_agent');
    // Renewal notification timing (QNA-17)
    $table->integer('renewal_reminder_days_before')->default(30)->after('renewal_fee_agent_enabled');
+   // Membership duration — how many days from approval until expiry (user decision 2026-05-04)
+   $table->integer('membership_duration_days')->default(365)->after('renewal_reminder_days_before');
    // Role name editability (Decision 15)
    $table->string('role_name_agent', 100)->default('Agent');
    $table->string('role_name_leader', 100)->default('Leader');
    $table->string('role_name_business_partner', 100)->default('Business Partner');
+   // Referral code prefix — default prefix for auto-generated codes (user decision 2026-05-04)
+   $table->string('referral_code_prefix', 50)->default('PENURWILL-');
    ```
 8. [N] `database/migrations/2026_04_30_000008_add_commission_calc_type_to_system_settings_table.php` (Decision 14)
    ```php
@@ -146,15 +148,44 @@ Create in order so FKs resolve:
         $table->enum('fee_type', ['entry', 'renewal']);
         $table->string('role', 50);
         $table->decimal('amount', 10, 2);
+        $table->enum('payment_method', ['stripe', 'bank_transfer', 'manual', 'waived'])->default('manual');
+        $table->string('payment_reference', 255)->nullable(); // Stripe Checkout Session ID or bank ref (Decision 21)
         $table->timestamp('paid_at')->nullable();
         $table->foreignId('recorded_by')->nullable()->constrained('users')->nullOnDelete();
         $table->timestamps();
+        $table->index(['agent_id', 'fee_type']);
     });
     ```
 13. [N] `database/migrations/2026_04_30_000013_add_company_representative_id_file_to_agents_table.php` (bug fix — Part 18)
     ```php
     $table->string('company_representative_id_file')->nullable()->after('company_reg_file');
     ```
+14. [N] `database/migrations/2026_04_30_000014_create_scheduler_logs_table.php`
+    ```php
+    Schema::create('scheduler_logs', function (Blueprint $table) {
+        $table->id();
+        $table->string('job_type', 100)->index();
+        $table->enum('status', ['success', 'failed']);
+        $table->timestamp('ran_at');
+        $table->text('error_message')->nullable();
+        $table->timestamps();
+    });
+    ```
+    > Note: Phase 7 migrations start at #15 (filename `2026_05_01_000015_…`). Laravel orders by full filename so no renaming required — just ensure Phase 7 filenames use date `2026_05_01` which alphabetically follows `2026_04_30`.
+
+---
+
+### ⚠ PR2-Only Migration (do NOT include in Phase 1 PR)
+
+Run this migration in the **second PR** after Phase 1 has soaked in production. This drops tables — irreversible.
+
+```php
+// database/migrations/2026_05_02_000001_drop_partner_tables.php  (PR2)
+Schema::table('agents', fn ($t) => $t->dropConstrainedForeignId('partner_id'));
+Schema::dropIfExists('partner_users');
+Schema::dropIfExists('partners');
+// Also: remove Spatie 'partner' role via a seeder/migration
+```
 
 ### Models
 
@@ -173,18 +204,22 @@ Create in order so FKs resolve:
   - Constants: `TYPE_OWN_SALES`, `TYPE_OVERRIDE`, `CAT_AGENT`, `CAT_AGENT_LEADER`, `CAT_BUSINESS_PARTNER`, `CALC_PERCENTAGE`, `CALC_FIXED`.
 - [M] [app/Models/PayoutItem.php](app/Models/PayoutItem.php) — add `commission_type`, `commission_category` to fillable; scopes `ownSales()`, `overrides()`.
 - [M] [app/Models/SystemSetting.php](app/Models/SystemSetting.php)
-  - Replace fillable/casts with the full list: 12 rate fields + `skip_zero_commissions` + 8 fee fields + `renewal_reminder_days_before` + 3 role name fields + 4 calc_type fields.
+  - Replace fillable/casts with the full list: 12 rate fields + `skip_zero_commissions` + 8 fee fields + `renewal_reminder_days_before` + `membership_duration_days` (int) + `referral_code_prefix` (string) + 3 role name fields + 4 calc_type fields.
   - Add typed accessor `getCommissionConfigAttribute()` returning a structured array used by services.
 - [M] [app/Models/AgentCommissionRate.php](app/Models/AgentCommissionRate.php)
   - Add `kind`, `custom_fixed_amount`, `commission_calc_type`; rename `custom_rate` → `custom_percentage`.
   - Constants `KIND_OWN_SALES`, `KIND_OVERRIDE_AGENT`, `KIND_OVERRIDE_AGENT_LEADER`. Scope `forKind($kind)`.
-- [N] [app/Models/FeePayment.php](app/Models/FeePayment.php) — fillable: `agent_id`, `fee_type`, `role`, `amount`, `paid_at`, `recorded_by`. Relations: `agent()`, `recordedBy()`.
+- [N] [app/Models/FeePayment.php](app/Models/FeePayment.php) — fillable: `agent_id`, `fee_type`, `role`, `amount`, `payment_method`, `payment_reference`, `paid_at`, `recorded_by`. Casts: `paid_at` → datetime. Relations: `agent()`, `recordedBy()`. Scope: `stripe()`, `manual()`, `forAgent($id)`.
 - [D] [app/Models/Partner.php](app/Models/Partner.php) — delete after Phase 4 refactor.
 
 ### Factories / Seeders
 
 - [M] `database/factories/AgentFactory.php` — add `agent_role` (default `agent`), `parent_agent_id` null, `fee_payment_status`, `registered_at`. States: `agentLeader()`, `businessPartner()`, `under(Agent $parent)`, `expired()`.
-- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — seed all new fields: rate defaults (agent 10%, AL override 5%, BP override 2%), fee defaults (BP 3000/1000, Leader 100/100, Agent 100/100), role names (Agent/Leader/Business Partner), `renewal_reminder_days_before = 30`, `skip_zero_commissions = true`.
+- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — seed all new fields with confirmed defaults (user decisions 2026-05-04):
+  - Commission rates: `agent_own_sales_percentage = 10`, `agent_leader_override_agent_percentage = 5`, `bp_override_agent_percentage = 2`, `bp_override_leader_percentage = 3`
+  - Fee config: `entry_fee_business_partner = 3000`, `renewal_fee_business_partner = 1000`, `entry_fee_leader = 100`, `renewal_fee_leader = 100`, `entry_fee_agent = 100`, `renewal_fee_agent = 100`
+  - Role labels: `role_name_agent = 'Agent'`, `role_name_leader = 'Leader'`, `role_name_business_partner = 'Business Partner'`
+  - General: `renewal_reminder_days_before = 30`, `skip_zero_commissions = true`, `membership_duration_days = 365`, `referral_code_prefix = 'PENURWILL-'`
 - [D] [database/seeders/PartnerSeeder.php](database/seeders/PartnerSeeder.php) — remove. Replace with `BusinessPartnerSeeder.php`.
 - [N] `database/seeders/BusinessPartnerSeeder.php` — creates Agent with `agent_role='business_partner'`, `is_default=true` (or id=1), as the default upline fallback (QNA-03).
 - [M] [database/seeders/DatabaseSeeder.php](database/seeders/DatabaseSeeder.php) — drop PartnerSeeder, add SystemUserSeeder + BusinessPartnerSeeder.
@@ -202,7 +237,7 @@ Create in order so FKs resolve:
   - `validateHierarchyChange(Agent $child, ?Agent $newParent): array` — checks role hierarchy, no cycles, no self-parent. Returns `[]` or list of errors.
   - `wouldCreateCycle(Agent $child, Agent $newParent): bool`
 - [M] [app/Services/CommissionCalculator.php](app/Services/CommissionCalculator.php)
-  - `getApplicableRate(Agent, string $kind, ?ReferralCode)` — resolves with Decision 7 priority: `AgentCommissionRate` (matched by kind) → ReferralCode (own_sales only) → `SystemSetting` (role-based). Returns `['percentage' => x, 'fixed_amount' => y, 'calc_type' => '…', 'source' => '…']`.
+  - `getApplicableRate(Agent, string $kind)` — resolves with Decision 7 updated priority: `AgentCommissionRate` (matched by kind) → `SystemSetting` (role-based). **ReferralCode is no longer in the calculation chain** (Decision 7 update). Returns `['percentage' => x, 'fixed_amount' => y, 'calc_type' => '…', 'source' => '…']`.
   - `calculate(saleAmount, percentage, fixed, calcType)` — when `calcType='percentage'`: `saleAmount * percentage/100`; when `calcType='fixed'`: returns fixed amount directly; additive fallback when both >0 (Decision 8 / QNA-01).
 - [M] [app/Services/CommissionGenerator.php](app/Services/CommissionGenerator.php) — full implementation:
   - `generateForSale(Sale $sale): Collection<Commission>` wrapped in `DB::transaction`.
@@ -219,7 +254,7 @@ Create in order so FKs resolve:
   - `transactions(Agent, …)` — flat list
   - All queries hit `payout_items` using denormalized `commission_type` (Decision 3).
 - [N] [app/Services/FeeService.php](app/Services/FeeService.php) — fee management (Part 12 / Decision 13):
-  - `applyEntryFee(Agent $agent, User $recordedBy): FeePayment` — creates `fee_payments` row for entry fee; sets `fee_payment_status = 'paid'`, `registered_at = today`, `expires_at = today + 365`, `renewal_due_at = expires_at - renewal_reminder_days_before`.
+  - `applyEntryFee(Agent $agent, User $recordedBy): FeePayment` — creates `fee_payments` row for entry fee; sets `fee_payment_status = 'paid'`, `registered_at = today`, `expires_at = today + membership_duration_days (read from SystemSetting, default 365)`, `renewal_due_at = expires_at - renewal_reminder_days_before`.
   - `applyRenewalFee(Agent $agent, User $recordedBy): FeePayment` — updates `expires_at`, `renewal_due_at`, `fee_payment_status = 'paid'`.
   - `getFeeAmountFor(string $agentRole, string $feeType): float` — reads from SystemSetting.
   - `isRenewalEnabled(string $agentRole): bool`.
@@ -227,15 +262,28 @@ Create in order so FKs resolve:
   - `sendRenewalReminders(): void` — finds agents where `renewal_due_at = today`; sends `AgentRenewalReminderNotification`.
   - `markExpiredAgents(): void` — finds agents where `expires_at < today AND fee_payment_status != 'paid'`; sets `status = 'expired'`.
   - `sendExpiryAlerts(): void` — finds agents where `expires_at = today AND status != 'paid'`; sends `AgentExpiryAlertNotification`.
-- [N] [app/Services/RefundService.php](app/Services/RefundService.php) — commission reversal (Decision 17 / QNA-18):
-  - `reverseSale(Sale $sale, User $admin): Collection<Commission>` — loads all commissions for the sale; creates a negative-amount reversal Commission row for each (`is_reversal=true`, `original_commission_id`, `status='cancelled'`, `amount=-original.amount`). Wrapped in `DB::transaction`. Activity-logs each reversal.
+- [N] [app/Services/RefundService.php](app/Services/RefundService.php) — commission reversal (Decision 17 / QNA-18 / Decision 18):
+  - `checkReversalEligibility(Sale $sale): void` — throws `ReversalWindowExpiredException` if `$sale->created_at < now()->subDays(SystemSetting::first()->reversal_time_limit ?? 60)`. Call before any reversal.
+  - `reverseSale(Sale $sale, User $admin): Collection<Commission>` — calls `checkReversalEligibility()` first; then loads all commissions for the sale; creates a negative-amount reversal Commission row for each (`is_reversal=true`, `original_commission_id`, `status='cancelled'`, `amount=-original.amount`). Wrapped in `DB::transaction`. Activity-logs each reversal.
   - Designed to be called from both admin UI controller AND a future payment gateway webhook.
 - [N] [app/Repositories/CommissionRepository.php](app/Repositories/CommissionRepository.php) (optional) — centralize raw aggregation queries.
 
 ### Scheduled Jobs [N]
 
-- [N] [app/Console/Commands/ProcessRenewals.php](app/Console/Commands/ProcessRenewals.php) — calls `RenewalService::sendRenewalReminders()` and `markExpiredAgents()` and `sendExpiryAlerts()`.
+- [N] [app/Console/Commands/ProcessRenewals.php](app/Console/Commands/ProcessRenewals.php) — calls `RenewalService::sendRenewalReminders()` and `markExpiredAgents()` and `sendExpiryAlerts()`. On completion writes a row to `scheduler_logs` table (`job_type = 'process_renewals'`, `status = 'success'|'failed'`, `ran_at = now()`, `error_message = null|message`).
 - [M] [routes/console.php](routes/console.php) or [app/Console/Kernel.php](app/Console/Kernel.php) — schedule `ProcessRenewals` to run `->daily()`.
+- [N] `database/migrations/2026_04_30_000014_create_scheduler_logs_table.php`
+  ```php
+  Schema::create('scheduler_logs', function (Blueprint $table) {
+      $table->id();
+      $table->string('job_type', 100)->index();
+      $table->enum('status', ['success', 'failed']);
+      $table->timestamp('ran_at');
+      $table->text('error_message')->nullable();
+      $table->timestamps();
+  });
+  ```
+- [M] [app/Http/Controllers/Admin/DashboardController.php](app/Http/Controllers/Admin/DashboardController.php) — pass `scheduler_alerts` to dashboard Inertia props: query `scheduler_logs` for each `job_type`; if the latest `ran_at` for any job is > 24 hours ago (or no row exists), flag it as stale and include in alert array. Also pass `failed_jobs_count` from Laravel's `failed_jobs` table.
 
 ### Notifications [N]
 
@@ -263,7 +311,8 @@ Create in order so FKs resolve:
 
 - [M] [app/Http/Controllers/Admin/AgentController.php](app/Http/Controllers/Admin/AgentController.php)
   - `store` / `update`: validate `agent_role`, `parent_agent_id`. Call `AgentHierarchy::validateHierarchyChange` and reject 422 with errors.
-  - On approval: call `FeeService::applyEntryFee($agent, auth()->user())`.
+  - `update`: detect role **downgrade** (new role rank < current role rank). If agent has subordinates (`subordinates()->count() > 0`), return a JSON response with `downgrade_warning: true` and subordinate count — Vue shows a blocking confirmation modal before resubmitting (Decision 20).
+  - On approval (`approve()` action): if `fee_payment_status` is already `paid`, call `FeeService::applyEntryFee($agent, auth()->user())`. If fee is NOT paid, set `fee_payment_status = 'waived'` and set `registered_at`, `expires_at` directly — skip `FeeService` fee logic (Decision 22). Either path: set `status = active`.
   - Show `registered_at`, `expires_at`, `renewal_due_at`, `fee_payment_status` in responses.
   - Handle `company_representative_id_file` upload (mirror `individual_id_file` pattern) — bug fix Part 18.
   - Add `downloadFile` support for `company_representative_id_file` field.
@@ -285,12 +334,15 @@ Create in order so FKs resolve:
 - [M] [app/Http/Controllers/Agent/CommissionController.php](app/Http/Controllers/Agent/CommissionController.php) — switch query to `earning_agent_id`. Pass breakdown via `PayoutReportGenerator`. Send `CommissionEarnedNotification` on new commission.
 - [M] [app/Http/Controllers/Agent/SalesController.php](app/Http/Controllers/Agent/SalesController.php) — for Agent Leaders / Business Partners, include subordinate sales (filter by `AgentHierarchy::getSubordinates`).
 - [M] [app/Http/Controllers/Agent/PayoutController.php](app/Http/Controllers/Agent/PayoutController.php) and [RequestPayoutController.php](app/Http/Controllers/Agent/RequestPayoutController.php) — switch eligibility query to `earning_agent_id`. Drop `Partner::find(1)` fallback.
+  - `RequestPayoutController::store()`: include any `is_reversal = true` commissions with `status = 'pending'` for the agent in the payout batch (they carry negative amounts). The net total shown to agent and stored on the Payout is the sum including reversals. Block submission if net total ≤ 0 with error "Net payout amount is zero or negative due to pending reversals." (Decision 19).
 - [M] [app/Http/Controllers/Agent/DashboardController.php](app/Http/Controllers/Agent/DashboardController.php) — show summary tiles per commission type + subordinate count + renewal/expiry status for the logged-in agent.
 - [M] [app/Http/Controllers/AgentProfileController.php](app/Http/Controllers/AgentProfileController.php) — handle `company_representative_id_file` upload + download (bug fix Part 18, visible only when `profile_type='company'`).
 - [D] [app/Http/Controllers/Partner/DashboardController.php](app/Http/Controllers/Partner/DashboardController.php) — remove; `/dashboard` redirect handles `agent_role='business_partner'` (QNA-12).
 
 ### Public
 
+- [N] `resources/js/Pages/Terms.vue` — static Terms & Conditions page with placeholder content. No auth required. Route: `GET /terms`. Text to be replaced before go-live; page must exist so registration Step 5 T&C checkbox can link to it (user decision 2026-05-04).
+- [M] [routes/web.php](routes/web.php) — add `Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');` outside auth middleware.
 - [M] [app/Http/Controllers/AgentRegistrationController.php](app/Http/Controllers/AgentRegistrationController.php)
   - Replace `Partner::where('code', …)` + `Partner::find(1)` with Agent lookup by `agent_role='business_partner'`. Default upline = seeded BP agent (QNA-03).
   - Set `parent_agent_id` instead of `partner_id`.
@@ -309,6 +361,16 @@ Create in order so FKs resolve:
 
 ---
 
+## Phase 3.5 — Design System Pre-flight (before any Vue work)
+
+> **Do this before writing a single new Vue page.** The design reference file may need gaps filled so the team has a complete visual spec to work from.
+
+- [ ] Open `/design/design-01` in the browser and review the current state.
+- [ ] Work through the `@TODO` comments inside `resources/js/Pages/Design/Design01.vue` — complete any sections marked critical before Phase 4 begins (especially: form elements, all button variants, status badges, modal pattern).
+- [ ] After Design01.vue is updated, get stakeholder sign-off that the visual language is correct before Phase 4 coding starts.
+
+---
+
 ## Phase 4 — Frontend (Inertia/Vue) (≈3 days)
 
 ### Admin — System Settings
@@ -319,7 +381,11 @@ Create in order so FKs resolve:
   - **New "Role Names" section**: editable text inputs for Agent/Leader/Business Partner labels (Decision 15).
   - `renewal_reminder_days_before` input.
   - `skip_zero_commissions` toggle.
-  - Live commission preview using `CommissionGenerator::regenerateConfigPreview` JSON endpoint.
+  - `reversal_time_limit` input (integer, days, default 60) — Decision 18.
+  - `email_verification_max_retry` input (integer, default 10) — Decision 27.
+  - `min_payout_amount` input (decimal, default 1.00).
+  - Live commission preview using `CommissionGenerator::regenerateConfigPreview` JSON endpoint (Decision 17 admin preview).
+- [N] `resources/js/Pages/Admin/CommissionRatePreview.vue` — standalone preview page: admin enters a hypothetical sale amount, selects agent + sale source agent; system calls `CommissionGenerator::regenerateConfigPreview()` endpoint and renders a table showing each commission row that would be created (role, type, rate source, calc_type, amount). Linked from SystemSettingsUpdate form.
 - [M] [resources/js/Pages/Admin/SystemSettings.vue](resources/js/Pages/Admin/SystemSettings.vue) — render new fields read-only in same sections.
 
 ### Admin — Agents
@@ -349,6 +415,7 @@ Create in order so FKs resolve:
 - [M] [resources/js/Pages/Agent/Commissions.vue](resources/js/Pages/Agent/Commissions.vue), [CommissionDetail.vue](resources/js/Pages/Agent/CommissionDetail.vue) — 4-tab breakdown (Decision 10). Show `commission_calc_type` label.
 - [M] [Agent/Sales.vue](resources/js/Pages/Agent/Sales.vue) — for leaders/BPs, show "source agent" column for subordinate sales.
 - [M] [Agent/Dashboard.vue](resources/js/Pages/Agent/Dashboard.vue) — tiles per commission type, subordinate count, renewal/expiry alert banner.
+  - Add **payout progress indicator**: a card showing "Available to Request: RM X.XX / Minimum: RM Y.YY" with a progress bar toward `min_payout_amount`. Show [Request Payout] button as disabled with tooltip when below threshold (Decision 18 → Phase 7 migration 18).
 - [M] [Agent/RequestPayout.vue](resources/js/Pages/Agent/RequestPayout.vue) — pulls pending list by `earning_agent_id`.
 - [M] [resources/js/Pages/Agent/Profile/Edit.vue](resources/js/Pages/Agent/Profile/Edit.vue) — add `company_representative_id_file` upload visible only when `profile_type === 'company'` (bug fix Part 18).
 
@@ -456,12 +523,12 @@ Create in order so FKs resolve:
         $table->string('type', 100);
         $table->string('subject', 255);
         $table->text('body');
-        $table->boolean('is_read')->default(false);
+        $table->enum('status', ['unread', 'read', 'pending', 'archived'])->default('unread'); // Inbox tabs (Decision 19 gap)
         $table->timestamp('read_at')->nullable();
         $table->string('related_model', 100)->nullable();
         $table->unsignedBigInteger('related_id')->nullable();
         $table->timestamps();
-        $table->index(['agent_id', 'is_read']);
+        $table->index(['agent_id', 'status']);
     });
     ```
 
@@ -479,11 +546,13 @@ Create in order so FKs resolve:
 ### Models [N/M]
 
 - [N] [app/Models/AgentNotification.php](app/Models/AgentNotification.php)
-  - Fillable: `agent_id`, `type`, `subject`, `body`, `is_read`, `read_at`, `related_model`, `related_id`
+  - Fillable: `agent_id`, `type`, `subject`, `body`, `status`, `read_at`, `related_model`, `related_id`
+  - Casts: `status` → string, `read_at` → datetime
   - Relations: `agent()`
-  - Scopes: `unread()`, `forAgent($agentId)`
-  - Helper: `markRead()` sets `is_read=true`, `read_at=now()`
-  - Constants: `TYPE_*` for each event type
+  - Scopes: `unread()` → `where('status', 'unread')`, `pending()` → `where('status', 'pending')`, `archived()` → `where('status', 'archived')`, `forAgent($agentId)`
+  - Helpers: `markRead()` → sets `status='read'`, `read_at=now()`; `archive()` → sets `status='archived'`; `markPending()` → sets `status='pending'`
+  - Constants: `STATUS_UNREAD`, `STATUS_READ`, `STATUS_PENDING`, `STATUS_ARCHIVED`; `TYPE_*` for each event type
+  - Note: `is_read` column does NOT exist — migration #16 uses `status` enum. Do not add `is_read`.
 
 - [N] [app/Models/RegistrationVerification.php](app/Models/RegistrationVerification.php)
   - Fillable: `email`, `code`, `expires_at`, `attempts`, `verified`
@@ -507,12 +576,14 @@ Create in order so FKs resolve:
   - `notifyAdmin(string $type, string $subject, string $body, ?string $relatedModel = null, ?int $relatedId = null): AgentNotification` — sends to Agent#1
   - `notifyChain(Commission $commission, string $type, string $subject, string $body)` — notifies all earners in commission chain
   - All methods wrapped in try/catch — notification failure must never block the primary action
+  - **After every `AgentNotification` creation**: dispatch a queued job to send an email to the agent (`Mail::to($agent->user)->queue(new InboxNotificationEmail($notification))`). Email failure must not block notification creation.
 
 - [N] [app/Services/RegistrationVerificationService.php](app/Services/RegistrationVerificationService.php)
   - `generate(string $email): RegistrationVerification` — creates 6-digit code, 15-min expiry, sends email
-  - `verify(string $email, string $code): bool` — checks code + expiry + increments attempts
-  - `resend(string $email): RegistrationVerification` — invalidates old code, generates new one
-  - `isExhausted(string $email): bool`
+  - `verify(string $email, string $code): bool` — checks code + expiry + increments attempts on the current code row
+  - `resend(string $email): RegistrationVerification` — checks daily attempt total across all codes for that email; if >= `email_verification_max_retry` (SystemSetting) throw `VerificationDailyLimitException`; otherwise invalidates old code, generates new one (resets per-code attempts)
+  - `isExhausted(string $email): bool` — checks daily total attempts >= SystemSetting limit
+  - `getDailyAttemptCount(string $email): int` — counts all attempts for email today
 
 - [M] [app/Services/RefundService.php](app/Services/RefundService.php)
   - After reversal: call `NotificationService::notifyChain()` for all earners
@@ -522,18 +593,24 @@ Create in order so FKs resolve:
 
 ### Seeders
 
-- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — add `min_payout_amount = 1.00`
+- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — add Phase 7 fields: `min_payout_amount = 1.00`, `reversal_time_limit = 60`, `email_verification_max_retry = 10`
 
 ### Controllers [N/M]
+
+#### Dependencies
+
+- [M] `composer.json` — add `laravel/cashier` (Decision 23). Run `composer require laravel/cashier`. Publish migrations: `php artisan vendor:publish --tag="cashier-migrations"`. Add `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` to `.env.example`. Wrap all Cashier calls inside `FeeService` — no direct Cashier usage outside that class.
+  > **⚠ Before Phase 7 dev**: populate `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` in `.env` with live/test keys. Stripe account exists; credentials provided separately by owner (user decision 2026-05-04).
+- [M] `app/Models/Agent.php` — add `use Billable` trait from Cashier (or create a proxy via FeeService that references `agent->user` as the Billable entity).
 
 #### Registration (rebuild)
 
 - [M] [app/Http/Controllers/AgentRegistrationController.php](app/Http/Controllers/AgentRegistrationController.php)
   - Rebuild as 6-step multi-step form controller
-  - `show()` → serves current step from session/cookie; defaults to Step 1
+  - `show()` → serves current step from session/cookie; defaults to Step 1 and pre-fills from `reg_wizard_state` cookie (Decision 12 - resume from Step 1)
   - `store()` → handles step submission, advances step counter, validates per-step
   - `verifyEmail()` POST → delegates to `RegistrationVerificationService::verify()`; on success creates User+Agent
-  - `resendCode()` POST → delegates to `RegistrationVerificationService::resend()`
+  - `resendCode()` POST → delegates to `RegistrationVerificationService::resend()`; enforces 60s cooldown and daily max from `email_verification_max_retry` (Decision 27)
   - `completePayment()` GET/POST (authenticated) → `/agent/payment/complete`
   - `stripeSuccess()` GET → `/register-as-agent/payment/success`
   - `stripeCancelled()` GET → `/register-as-agent/payment/cancelled`
@@ -562,6 +639,8 @@ Create in order so FKs resolve:
   - `approve()` — after setting `status=active`: call `NotificationService::notify()` for agent (approved) + parent (new team member)
   - `store()` — admin-created agents: create User with temp password + send `AccountCreatedByAdminNotification`
   - `requestApproval()` POST from agent side → resets status to pending + notifies admin inbox
+  - `reject()` — if `fee_payment_status = paid` OR `fee_payments` row exists for this agent, return additional field `has_paid_fee: true` in response. Vue shows blocking modal: "⚠ This agent has a fee payment on record. Please process a refund via the Stripe dashboard before confirming rejection." [Confirm Rejection] still available. (Decision 21 — automation is a future TODO, tracked below)
+  - **TODO (backlog, post-Phase 7)**: auto-trigger Stripe refund via Cashier on rejection when `fee_payment_status = paid` and payment was via Stripe. Store Stripe Checkout Session ID in `fee_payments.payment_reference` for this purpose.
 
 #### Agent Appeal
 
@@ -583,7 +662,9 @@ Create in order so FKs resolve:
 
 - [N] [app/Http/Controllers/Agent/ReferralController.php](app/Http/Controllers/Agent/ReferralController.php)
   - `index()` GET `/agent/referral` → referral code + visit stats + paginated visits table
+  - Stats computed: total visits, converted visits (have linked Sale), conversion rate (converted/total × 100), avg time to conversion (sale.created_at - visit.created_at), visits this month, conversions this month
   - Filter by date range + converted status
+  - Attribution window: a visit is "converted" if a Sale exists with matching `referral_code_id` regardless of time gap (no window cutoff — attributable forever unless sale is refunded)
 
 #### First Login
 
@@ -660,14 +741,28 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 
 #### New Agent Pages
 
-- [N] `resources/js/Pages/Agent/Inbox.vue` — notifications list, unread badge, mark-read actions
-- [N] `resources/js/Pages/Agent/Referral.vue` — referral code card + stats + visits table
+- [N] `resources/js/Pages/Agent/Inbox.vue` — fully-featured notifications inbox:
+  - Three tabs: **Unread** | **Pending** (action required — appeals, approval requests) | **Archived**
+  - Default view: Unread tab
+  - Each notification row: icon, subject, body excerpt, timestamp, [Mark Read] button
+  - Bulk actions: [Mark All Read], [Archive Selected]
+  - Unread count badge in nav synced from shared Inertia prop `unread_inbox_count`
+  - `AgentNotification.status` enum: `unread`, `read`, `pending`, `archived` — add to migration 16
+- [N] `resources/js/Pages/Agent/Referral.vue` — referral code card + stats + visits table:
+  - **Stats cards**: Total Visits, Converted (Sales), Conversion Rate %, Avg Days to Convert
+  - **Date range filter** (defaults to last 30 days)
+  - **Referral Code section**: code display, copy button, shareable URL, QR code (optional)
+  - **Visits table**: Date, IP/Browser (anonymised), Converted badge (Yes/No), Linked Sale (if any), Time to Convert
 - [N] `resources/js/Pages/GetStartedGuide.vue` — full-screen slide onboarding (5–6 slides, role-adaptive)
 - [N] `resources/js/Pages/Agent/PaymentComplete.vue` — payment resume screen (same UI as wizard Step 5)
 
 #### Admin Pages
 
 - [N] `resources/js/Pages/Admin/ActivityLog.vue` — filterable activity log table + CSV export
+- [M] `resources/js/Pages/Admin/Dashboard.vue` — add scheduler health section:
+  - Warning banner if any job in `scheduler_logs` has `ran_at` > 24h ago or has no row at all: "⚠ Scheduler may not be running. Last ProcessRenewals: X ago."
+  - Failed Jobs count card: pulls `failed_jobs_count` from Inertia props; [View Failed Jobs →] link.
+  - Scheduler log table: job type, last ran, status badge (OK / STALE / FAILED).
 - [M] [resources/js/Pages/Admin/PayoutDetail.vue](resources/js/Pages/Admin/PayoutDetail.vue) — add [Cancel Payout] button + admin note field + agent note display
 - [M] [resources/js/Pages/Admin/AgentView.vue](resources/js/Pages/Admin/AgentView.vue) — show suspension_reason, rejection_reason; status override dropdown
 
@@ -700,12 +795,42 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 
 ### Tests [N]
 
-- [N] `tests/Feature/RegistrationWizardTest.php` — 6-step happy path, email verify, skip payment, resume
-- [N] `tests/Feature/EmailVerificationTest.php` — code expiry, wrong code, exhausted attempts, resend
-- [N] `tests/Feature/NotificationServiceTest.php` — notify, notifyAdmin, notifyChain, read/unread
+- [N] `tests/Feature/RegistrationWizardTest.php`
+  - Happy path: complete all 6 steps, Stripe paid, admin approves
+  - Email pre-check: existing email with password → blocked; no password → reset prompt
+  - Cookie resume: step 3 data pre-fills from cookie on revisit
+  - Skip payment: auto-login, `fee_payment_status = pending`, dashboard banner visible
+  - Admin-created agent approval: fee waived when no payment exists
+- [N] `tests/Feature/EmailVerificationTest.php`
+  - Code expiry: expired code rejected, fresh resend succeeds
+  - Wrong code: attempts incremented, error returned
+  - Daily limit: after `email_verification_max_retry` total daily attempts, all requests rejected
+  - Resend resets per-code attempts but not daily total
+- [N] `tests/Feature/NotificationServiceTest.php`
+  - `notify()` creates `AgentNotification` row + dispatches email job
+  - `notifyAdmin()` targets Agent#1
+  - `notifyChain()` creates one notification per earner in commission chain
+  - Notification failure does not throw exception to caller
+  - Inbox tabs: unread, pending, archived filtering correct
 - [N] `tests/Feature/PayoutNotesTest.php` — agent note stored, admin note on cancel, notification sent
 - [N] `tests/Feature/SuspensionAppealTest.php` — appeal sends email + creates inbox notification
 - [N] `tests/Feature/OnboardingTest.php` — first login redirects to guide, completion sets timestamp
+- [N] `tests/Feature/CommissionReversalWindowTest.php`
+  - Sale within 60 days: reversal succeeds
+  - Sale older than `reversal_time_limit`: `ReversalWindowExpiredException` thrown, no rows created
+  - Clawback: reversal row appears as negative in next payout request; net below zero blocks submission
+- [N] `tests/Feature/RoleDowngradeTest.php`
+  - Downgrade with no subordinates: succeeds silently
+  - Downgrade with subordinates: returns `downgrade_warning: true` + subordinate count (no save)
+  - After downgrade confirmed: future sales generate no override for downgraded agent
+- [N] `tests/Feature/ReferralStatsTest.php`
+  - Visits with no sales: conversion rate = 0%
+  - Visits with linked sales: correct conversion rate, avg days to convert
+  - Date range filter: only counts visits in range
+- [N] `tests/Feature/SchedulerMonitorTest.php`
+  - Fresh log: dashboard shows OK status
+  - Log older than 24h: dashboard shows STALE warning
+  - No log row: dashboard shows "Never ran" warning
 
 ---
 

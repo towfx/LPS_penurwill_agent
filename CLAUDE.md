@@ -205,13 +205,35 @@ Pages are resolved from `resources/js/Pages/{name}.vue`. Always include:
 
 ## Styling Guidelines
 
+### Design Reference
+**Before building any new page, visit `/design/design-01` in the browser.** The source file `resources/js/Pages/Design/Design01.vue` is the design system reference. It shows the component library, color palette, typography, and layout patterns in use.
+
+- Components live in `resources/js/Pages/Design/Components/` — use these directly in production pages
+- Icons: lucide-vue-next only (no other icon libraries)
+- Layouts: `AdminLayout.vue` for admin pages, `AgentLayout.vue` for agent pages
+- `@TODO` comments inside Design01.vue mark elements still to be added — complete these before starting frontend work
+
+### Component Usage
+| Need | Use |
+|------|-----|
+| Buttons | `Design/Components/Button.vue` — variants: `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` |
+| Cards | `Design/Components/Card.vue` + `CardHeader`, `CardContent`, `CardTitle` |
+| Status badges | `Design/Components/Badge.vue` — variants: `default`, `secondary`, `destructive`, `success`, `warning`, `outline` |
+| Tabs | `Design/Components/Tabs.vue` + `TabsList`, `TabsTrigger`, `TabsContent` |
+| Progress bars | `Design/Components/Progress.vue` |
+| Stat cards | `Design/Components/StatsCard.vue` |
+| Alerts | `Design/Components/Alert.vue` |
+| Charts | `Design/Components/LineChart.vue`, `BarChart.vue`, `PieChart.vue` |
+| Class merging | `cn()` from `lib/utils.js` |
+
 ### Color Palette
-Pre-defined colors for consistency (see `.cursorrules` for complete list):
-- Forest Dark: #162d25
-- Forest Light: #5d775f
-- Gold: #bc9c5f
-- Cream: #eae1d0
-- Accent colors: Red (#d4423f), Orange (#e07b39), Green (#7a9b7d), Blue (#4a6b73), Gray (#8a9ba8)
+Defined as CSS variables in `resources/css/app.css` and as Tailwind tokens:
+- `text-forest-dark` / `bg-forest-dark`: #162d25 — primary headings, sidebar
+- `text-forest-light` / `bg-forest-light`: #5d775f — icons, avatars
+- `text-gold` / `bg-gold`: #bc9c5f — highlights, stat icons
+- `bg-cream`: #eae1d0 — page backgrounds
+- Accents: `accent-red` (#d4423f), `accent-orange` (#e07b39), `accent-green` (#7a9b7d), `accent-blue` (#4a6b73), `accent-gray` (#8a9ba8)
+- Neutral scale: `stone-50` through `stone-900` for borders, text, backgrounds
 
 ### Currency Formatting
 **Always use the global formatCurrency helper for currency values:**
@@ -250,7 +272,7 @@ Tests use sqlite in-memory database. Feature tests can test full request flows w
 2. Create `.vue` file in `resources/js/Pages/` with proper layout
 3. Include breadcrumbs, title, description
 4. Add route in `routes/web.php`
-5. Polish UI with colors and icons from palette
+5. **Polish UI using the design system** — see `resources/js/Pages/Design/Design01.vue` for the reference implementation. Use components from `resources/js/Pages/Design/Components/` for consistency. Visit `/design/design-01` in browser to preview.
 
 ### Adding a New Model/Migration
 1. Create migration: `php artisan make:migration create_table_name`

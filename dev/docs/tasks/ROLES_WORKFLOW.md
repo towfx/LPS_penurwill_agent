@@ -848,9 +848,37 @@ Admin can upgrade an approved agent's role at any time. This is done from the ag
 | Agent | Agent Leader | No extra constraint |
 | Agent | Business Partner | Agent must have company profile |
 | Agent Leader | Business Partner | Agent must have company profile |
-| Any | Downgrade | Admin can downgrade; forward-only commission history preserved |
+| Any | Downgrade | Admin can downgrade; see downgrade consequences below |
 
 > **Note**: Role change is **not retroactive** on commissions. Override commissions only apply to sales made **after** the role upgrade date (per DECISION_OUTCOMES.md Decision 4).
+
+**Role Downgrade Consequences** (Decision 20):
+
+When admin selects a lower role (e.g. Agent Leader → Agent, or BP → Agent Leader):
+
+1. **Subordinates preserved**: All agents with `parent_agent_id` pointing to this agent are NOT automatically reassigned. They remain linked.
+2. **Override commissions stop**: After the downgrade, `CommissionGenerator` will not create override commissions for this agent on future sales (role check fails). Past pending commissions are untouched.
+3. **Admin warning popup**: If the agent being downgraded has direct subordinates, a blocking modal appears before saving:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  ⚠ Downgrade Warning                                     │
+│                                                          │
+│  This agent has 4 subordinate(s).                        │
+│                                                          │
+│  After downgrading:                                      │
+│  • They will no longer earn override commissions         │
+│    from their subordinates.                              │
+│  • Subordinates remain assigned to this agent            │
+│    but will not generate override commissions.           │
+│  • Subordinates must be manually reassigned if           │
+│    desired.                                              │
+│                                                          │
+│  [Cancel]                    [Confirm Downgrade →]       │
+└──────────────────────────────────────────────────────────┘
+```
+
+4. **Payout at current role**: Payout calculations always use the agent's `agent_role` at request time — no retroactive adjustment.
 
 ---
 
@@ -2222,13 +2250,26 @@ CREATE TABLE agent_notifications (
 └─────────────────────────────────────────────────────────┘
 ```
 
+**Inbox Tabs:**
+```
+─────────────────────────────────────────────────────────
+  [ Unread (3) ]  |  [ Pending (1) ]  |  [ Archived ]
+─────────────────────────────────────────────────────────
+```
+- **Unread**: All notifications with `status = 'unread'` — default view
+- **Pending**: Notifications with `status = 'pending'` — action-required items (appeals, approval requests, manual receipt verifications). These remain in Pending until admin/agent takes action.
+- **Archived**: Notifications with `status = 'archived'` — dismissed/actioned items
+- Bulk actions: [Mark All Read], [Archive Selected]
+- `AgentNotification.status` enum: `unread`, `read`, `pending`, `archived`
+
 **Behaviour**:
-- Clicking a notification marks it as read
+- Clicking a notification marks it as read (`status → 'read'`)
+- Clicking "action-required" type notifications moves them to Pending
 - If notification has a `related_model`, a [View →] link is shown
-- Unread count shown as badge on sidebar Inbox icon
+- Unread count (Unread + Pending combined) shown as badge on sidebar Inbox icon
 - Inbox for Agent#1 shows admin-relevant events (new registrations, payout requests, appeals)
 
-**Email parallel**: Every notification that creates an inbox entry also sends a corresponding email (existing mailable classes or new ones). The inbox subject/body mirror the email content.
+**Email parallel**: Every `AgentNotification` row created by `NotificationService::notify()` also dispatches a queued email job (`InboxNotificationEmail` mailable). Email failure must not block or revert the in-app notification. This is automatic — no separate call needed from callers of `NotificationService`.
 
 ---
 
@@ -2325,26 +2366,30 @@ On first login (detected by `agent.first_login_at IS NULL`), the authenticated a
 └────────────────────────────────────────────────────────┘
 ```
 
-**Stats Summary (90-day window, configurable):**
-| Card | Data |
-|------|------|
-| Total Visits | Count of unique referral visits |
-| Unique Visitors | Distinct IPs or sessions |
-| Conversions (Sales) | Count of sales generated |
-| Conversion Rate | Sales / Visits % |
-| Total Commission Earned | RM from this code |
+**Stats Cards (date range: last 30 days by default, configurable):**
+| Card | Formula | Notes |
+|------|---------|-------|
+| Total Visits | COUNT(`agent_visits` WHERE `referral_code_id` = this code) | Raw traffic count |
+| Conversions | COUNT(`sales` WHERE `referral_code_id` = this code) | Visits that led to a sale |
+| Conversion Rate | Conversions ÷ Total Visits × 100 | % (shown as 0% if no visits) |
+| Avg Days to Convert | AVG(`sale.created_at` - linked `agent_visit.created_at`) | In days (rounded to 1 decimal) |
+| Total Commission Earned | SUM(`commissions.amount` WHERE `earning_agent_id` = this agent AND source via this code) | RM |
+
+**Attribution**: A visit is "converted" if a Sale exists linked via `referral_code_id`. **No time window cutoff** — attribution is permanent unless the sale is reversed. After reversal, the Sale still links but the commission amount is net zero.
 
 **Visits Table (paginated, 20/page):**
 | Column | Notes |
 |--------|-------|
 | Date/Time | Visit timestamp |
-| IP Address | Visitor IP |
-| Referral Source | UTM medium / source if tracked |
+| IP Address | Anonymised (show first 2 octets: `192.168.x.x`) |
+| Browser / Device | User agent simplified (Mobile / Desktop) |
+| Referral Source | UTM medium / source if tracked (else "—") |
 | Converted | ✓ Sale / — No sale |
+| Days to Convert | Number (if converted, else "—") |
 | Sale Amount | RM (if converted) |
-| Commission | RM (if converted) |
+| Commission | RM (if converted, else "—") |
 
-**Filter Bar:** Date range, Converted (All / Yes / No)
+**Filter Bar:** Date range (From/To), Converted (All / Yes / No)
 
 **Sidebar link**: "🔗 My Referral" added to agent sidebar (see GAP-07).
 
@@ -2518,3 +2563,131 @@ On first login (detected by `agent.first_login_at IS NULL`), the authenticated a
 | P2 | My Network: Tree View / Flat List toggle | `/agent/team` |
 | P3 | Network Report (new) — leader + agent breakdown, multi-level charts, CSV | NEW `/agent/reports/network` |
 | P3 | Commission Report (new) — L1/L2 breakdown, full paginated table, CSV | NEW `/agent/reports/commissions` |
+
+---
+
+## 12. Gap Resolutions — Round 2 (2026-05-03)
+
+> Items G01–G23 resolved by project owner. Backend decisions in DECISION_OUTCOMES.md (Decisions 18–27).
+
+---
+
+### GAP-19 — Commission Reversal Time Limit
+
+**Resolution**: Admin can only reverse sales within `reversal_time_limit` days (SystemSetting, default 60). Outside the window, [Mark as Reversed] is disabled with tooltip: "Reversal window expired ({N} days)."
+
+**UI change on `/admin/commission/detail`** or `/admin/commissions/list`:
+- [Mark as Reversed] button: enabled only if `sale.created_at >= today - reversal_time_limit`
+- Disabled state shows: "Reversal window closed (exceeded {N}-day limit)"
+
+**System Settings edit**: Add field "Commission Reversal Window (days): [ 60 ]" in the Fee Management section.
+
+---
+
+### GAP-20 — Clawback from Already-Paid Commissions
+
+**Resolution**: No separate clawback screen. Reversal rows (negative amounts) are automatically included in the agent's next payout request.
+
+**Agent Request Payout screen update**:
+```
+┌──────────────────────────────────────────────────────────┐
+│  Available to Request                                    │
+│                                                          │
+│  Eligible commissions:    RM 500.00  (5 items)          │
+│  Pending reversals:     - RM 120.00  (1 reversal)       │
+│  ─────────────────────────────────────────────────       │
+│  Net payout amount:       RM 380.00                     │
+│                                                          │
+│  ⚠ A commission reversal from Sale #42 has been        │
+│    deducted from this request.                           │
+└──────────────────────────────────────────────────────────┘
+```
+- If net total ≤ 0, [Request Payout] is disabled: "Net payout is zero or negative due to pending reversals. Contact admin."
+- Reversal items shown in the commission table with a "REVERSAL" badge and negative amount in red.
+
+---
+
+### GAP-21 — Admin Reject After Stripe Payment
+
+**Resolution**: No automated refund in the system (yet). Rejection of a fee-paid agent shows a warning popup.
+
+**Admin `/admin/agents/{id}/view` — Reject flow (when fee is paid)**:
+```
+┌──────────────────────────────────────────────────────────┐
+│  ⚠ Fee Payment on Record                                │
+│                                                          │
+│  This agent has a completed payment:                     │
+│  • Amount: RM 100.00                                     │
+│  • Method: Stripe (Session ID: cs_xxxx)                 │
+│  • Date: 2026-04-28                                      │
+│                                                          │
+│  Please process a manual refund via the Stripe           │
+│  dashboard before or after rejection.                    │
+│  Stripe Dashboard → Payments → Search Session ID        │
+│                                                          │
+│  [Cancel]          [Confirm Rejection Anyway →]          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Future TODO**: Auto-trigger Stripe refund via Cashier on rejection. `fee_payments.payment_reference` stores the Stripe Checkout Session ID for this purpose.
+
+---
+
+### GAP-22 — Admin-Created Agent Fee Flow
+
+**Resolution**: When admin creates an agent directly, the fee is optional. Admin approval always overrides fee status.
+
+**Admin `/admin/agents/add` — Fee section**:
+```
+┌──────────────────────────────────────────────────────────┐
+│  Fee Payment (optional)                                  │
+│                                                          │
+│  ○  Agent paid via bank transfer — upload receipt:      │
+│     [ Choose File ] (PDF/JPG/PNG)                       │
+│                                                          │
+│  ○  No payment collected                                │
+│                                                          │
+│  Note: Clicking [Approve Agent] will activate the       │
+│  agent regardless of fee status. Fee will be marked     │
+│  as "Waived" if no payment is recorded.                 │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Approval button behaviour** (Section 4.6.1 update):
+| Fee Status | [Approve Agent] Action |
+|------------|----------------------|
+| `paid` (Stripe or verified manual) | Normal approval: `FeeService::applyEntryFee()` |
+| `pending_verification` (receipt uploaded) | Mark as verified + apply fee |
+| `pending` (no payment) | Set `fee_payment_status = 'waived'`; no `fee_payments` row |
+
+---
+
+### GAP-23 — Scheduler Monitor in Admin Dashboard
+
+**Resolution**: Admin dashboard shows scheduler health status and failed job counts.
+
+**Admin Dashboard — new "System Health" section**:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  System Health                                           │
+│                                                          │
+│  Scheduler Jobs:                                         │
+│  ┌─────────────────────┬────────────┬──────────────────┐│
+│  │  Job                │ Last Run   │ Status           ││
+│  ├─────────────────────┼────────────┼──────────────────┤│
+│  │  ProcessRenewals    │  2h ago    │  ✓ OK            ││
+│  └─────────────────────┴────────────┴──────────────────┘│
+│                                                          │
+│  ⚠ ProcessRenewals has not run in 26 hours!             │  ← alert banner
+│  Check that the Laravel scheduler is running.           │                                                          │
+│  Failed Jobs: 2  [View Failed Jobs →]                   │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Alert conditions**:
+- **STALE**: `scheduler_logs` latest row for a job type has `ran_at < now() - 24h`
+- **NEVER RAN**: No `scheduler_logs` row exists for that job type
+- **FAILED**: Latest row has `status = 'failed'`
+
+**Failed Jobs link**: points to a filtered view of Laravel's `failed_jobs` table (read-only admin screen, or external Horizon/Telescope if available).

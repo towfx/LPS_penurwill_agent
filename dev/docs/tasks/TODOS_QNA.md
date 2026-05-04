@@ -190,3 +190,35 @@
 | 18 | Refund trigger mechanism | Manual now, webhook-ready service method |
 | 19 | `commission_calc_type` storage | Explicit enum column |
 | 20 | `commission_calc_type` on AgentCommissionRate | Yes, add column |
+
+---
+
+## GAP RESOLUTIONS (2026-05-03)
+
+These items were identified as gaps after the initial QNA round and have been resolved by the project owner.
+
+| # | Gap | Decision |
+|---|-----|----------|
+| G01 | Commission reversal time limit | `reversal_time_limit` in SystemSetting, default 60 days; `RefundService` enforces window |
+| G02 | Clawback from already-paid commissions | Negative reversal rows auto-included in next payout request; block if net ≤ 0 |
+| G03 | Role downgrade consequences | Keep subordinates; override stops; admin confirmation modal when downgrading leader with team |
+| G04 | Admin reject after Stripe payment | Last resort; manual refund via Stripe dashboard; popup reminder on rejection; automation as future TODO |
+| G05 | Admin-created agent fee | Admin approval always skips fee (waived); admin may upload receipt; fee mandatory until approved via any path |
+| G06 | Stripe package | Laravel Cashier; all calls wrapped in FeeService |
+| G07 | No index definitions | Add indexes with each new query — already in Phase 1 migrations; add as needed in later phases |
+| G08 | Backfill existing Commission rows | Mark as TODO; no prod data exists |
+| G09 | Existing Partner users | No partners to migrate; deprecation is clean |
+| G10 | ReferralCode rate priority | Removed from calculation chain entirely; new order: AgentCommissionRate → SystemSetting |
+| G11 | ProcessRenewals scheduling | Add to console.php; add `scheduler_logs` table; admin dashboard alert if stale > 24h; show failed jobs |
+| G12 | Registration wizard resume | Cookie-based persistence (`reg_wizard_state`); resume pre-fills from Step 1 |
+| G13 | Email verification resend | Max attempts from `email_verification_max_retry` (SystemSetting, default 10); resets next calendar day |
+| G14 | Cache invalidation | Always flush all SystemSetting cache on every update (no TTL dependency for correctness) |
+| G15 | API response backward compat | No v2; return first `own_sales` commission only; override rows not surfaced to external callers |
+| G16 | First-login onboarding content | Add as TODO; content to be decided after product is complete |
+| G17 | Admin commission rate preview | Add `CommissionRatePreview.vue` page; linked from SystemSettingsUpdate form |
+| G18 | Payout minimum threshold UX | Progress indicator card in agent dashboard; payout request blocked below threshold |
+| G19 | Appeal workflow + notification system | Fully-featured `agent_notifications` with Unread/Pending/Archived tabs; email dispatched on every notification creation |
+| G20 | Referral stats page | Add to TODOS.md and ROLES_WORKFLOW.md; stats: visits, conversions, rate, avg days to convert |
+| G21 | Phase 7 test coverage | Test plan added to TODOS.md Phase 7 section (8 new test files) |
+| G22 | commission_fixed_amount precision | DECIMAL(10,2) for all transaction fields; SystemSetting amounts stored as DECIMAL(10,2) too |
+| G23 | Partner deprecation rollback plan | No rollback needed; no production partner data exists |
