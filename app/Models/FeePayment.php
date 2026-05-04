@@ -24,6 +24,7 @@ class FeePayment extends Model
         'amount',
         'payment_method',
         'payment_reference',
+        'receipt_file',
         'paid_at',
         'recorded_by',
     ];

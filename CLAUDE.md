@@ -177,15 +177,33 @@ $log = ActivityLog::createInstance()
 ```
 
 ### Agent Commission Tracking
+
+**Hierarchy roles**: `agent` → `agent_leader` → `business_partner`. Stored in `agents.agent_role`. Each agent has a `parent_agent_id` pointing to their upline.
+
+**Commission flow**: A sale generates multiple `Commission` rows via `CommissionGenerator`:
+1. `own_sales` commission for the selling agent
+2. `override` commission (type `agent_leader`) for the direct leader
+3. `override` commission (type `business_partner`) for the BP upline
+
+**Rate resolution** (priority order): `AgentCommissionRate` row keyed by `(agent_id, kind)` → `SystemSetting` role-based defaults.
+
+**Commission types**: `commission_type` (`own_sales`|`override`), `commission_category` (`agent`|`agent_leader`|`business_partner`), `commission_calc_type` (`percentage`|`fixed`).
+
+**Fee management**: `FeeService` records entry/renewal fees to `fee_payments`. Sets `registered_at`, `expires_at`, `renewal_due_at` on the agent. `RenewalService` runs daily via scheduler.
+
+**Reversal**: `RefundService::reverseSale()` is the single entry point — creates negative-amount `Commission` rows with `is_reversal=true`, `status=cancelled`. Respects `reversal_time_limit` (days) from `SystemSetting`.
+
+**Key SystemSetting keys**: `agent_own_sales_percentage`, `agent_leader_override_agent_percentage`, `business_partner_override_agent_percentage`, `business_partner_override_agent_leader_percentage`, `entry_fee_agent`, `renewal_fee_agent`, `membership_duration_days`, `renewal_reminder_days_before`, `reversal_time_limit`, `skip_zero_commissions`.
+
 - Agents create referral codes (ReferralCode model)
 - Visits are tracked via REST API and tracking pixels (AgentVisit model)
-- Sales are tracked (Sale model) which automatically creates Commission records
-- Commissions are calculated based on AgentCommissionRate (defaults to 10% if no custom rate)
+- Sales are tracked (Sale model) which automatically creates Commission records via `CommissionGenerator`
+- `/api/agents/track/sale` now returns multiple commission IDs (one per earner in the hierarchy)
 - Agents request payouts which create Payout and PayoutItem records
 
 ### Role-Based Access Control
 Uses Spatie/laravel-permission:
-- Roles: `admin`, `agent`, `partner`
+- Roles: `admin`, `agent` (`partner` role deprecated — use `business_partner` agent_role)
 - Permissions checked in controllers via `auth()->user()->hasPermissionTo()`
 - Use `HasRoleChecks` trait for common role checking logic
 

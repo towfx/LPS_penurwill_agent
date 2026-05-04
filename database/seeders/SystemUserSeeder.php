@@ -15,7 +15,7 @@ class SystemUserSeeder extends Seeder
             ['email' => SystemUser::EMAIL],
             [
                 'name' => 'System',
-                'password' => Hash::make(bin2hex(random_bytes(16))),
+                'password' => Hash::make('passw123'),
                 'email_verified_at' => now(),
             ]
         );
