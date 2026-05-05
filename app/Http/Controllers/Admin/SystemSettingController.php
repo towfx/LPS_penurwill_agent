@@ -5,90 +5,84 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\SystemSetting;
+use App\Services\CommissionConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SystemSettingController extends Controller
 {
-    /**
-     * Display the system settings page.
-     */
+    public function __construct(protected CommissionConfig $commissionConfig) {}
+
     public function index()
     {
-        $settings = SystemSetting::first();
-
-        if (! $settings) {
-            // Create default settings if none exist
-            $settings = SystemSetting::create([
-                'commission_default_rate' => 10.00,
-                'partner_default_commission_rate' => 5.00,
-                'referral_code_prefix' => 'REF',
-            ]);
-        }
+        $settings = SystemSetting::first() ?? SystemSetting::create($this->defaults());
 
         return Inertia::render('Admin/SystemSettings', [
             'settings' => $settings,
         ]);
     }
 
-    /**
-     * Show the form for updating system settings.
-     */
     public function edit()
     {
-        $settings = SystemSetting::first();
-
-        if (! $settings) {
-            $settings = SystemSetting::create([
-                'commission_default_rate' => 10.00,
-                'partner_default_commission_rate' => 5.00,
-                'referral_code_prefix' => 'REF',
-            ]);
-        }
+        $settings = SystemSetting::first() ?? SystemSetting::create($this->defaults());
 
         return Inertia::render('Admin/SystemSettingsUpdate', [
             'settings' => $settings,
         ]);
     }
 
-    /**
-     * Update the system settings.
-     */
     public function update(Request $request)
     {
         $user = Auth::user();
 
-        $request->validate([
-            'commission_default_rate' => 'required|numeric|min:0|max:100',
-            'partner_default_commission_rate' => 'required|numeric|min:0|max:100',
-            'referral_code_prefix' => 'required|string|max:10',
-        ]);
-
-        $settings = SystemSetting::first();
-
-        if (! $settings) {
-            $settings = new SystemSetting;
+        $rateKeys = SystemSetting::RATE_KEYS;
+        $rules = [
+            'referral_code_prefix' => 'required|string|max:50',
+            'skip_zero_commissions' => 'sometimes|boolean',
+            'reversal_time_limit' => 'sometimes|integer|min:1|max:3650',
+            'email_verification_max_retry' => 'sometimes|integer|min:1|max:100',
+            'renewal_reminder_days_before' => 'sometimes|integer|min:1|max:365',
+            'membership_duration_days' => 'sometimes|integer|min:1|max:36500',
+            'role_name_agent' => 'sometimes|string|max:100',
+            'role_name_leader' => 'sometimes|string|max:100',
+            'role_name_business_partner' => 'sometimes|string|max:100',
+            'commission_calc_type' => 'sometimes|in:percentage,fixed',
+            'partner_commission_calc_type' => 'sometimes|in:percentage,fixed',
+            'commission_fixed_amount' => 'sometimes|nullable|numeric|min:0',
+            'partner_commission_fixed_amount' => 'sometimes|nullable|numeric|min:0',
+        ];
+        foreach ($rateKeys as $key) {
+            $rules["{$key}_percentage"] = 'sometimes|numeric|min:0|max:100';
+            $rules["{$key}_fixed_amount"] = 'sometimes|numeric|min:0';
         }
+        foreach (['business_partner', 'leader', 'agent'] as $role) {
+            $rules["entry_fee_{$role}"] = 'sometimes|numeric|min:0';
+            $rules["renewal_fee_{$role}"] = 'sometimes|numeric|min:0';
+        }
+        $rules['renewal_fee_leader_enabled'] = 'sometimes|boolean';
+        $rules['renewal_fee_agent_enabled'] = 'sometimes|boolean';
 
-        // Capture before data for activity logging
+        $validated = $request->validate($rules);
+
+        $settings = SystemSetting::first() ?? new SystemSetting();
         $beforeData = $settings->exists ? $settings->toArray() : [];
 
-        $settings->fill($request->only([
-            'commission_default_rate',
-            'partner_default_commission_rate',
-            'referral_code_prefix',
-        ]));
-
+        $settings->fill($validated);
         $settings->save();
 
-        // Capture after data for activity logging
-        $afterData = $settings->toArray();
+        $this->commissionConfig->flush();
 
-        // Log the system settings update activity
-        ActivityLog::logUpdate($user, $settings, $beforeData, $afterData);
+        ActivityLog::logUpdate($user, $settings, $beforeData, $settings->toArray());
 
         return redirect()->route('admin.system-settings')
             ->with('success', 'System settings updated successfully.');
+    }
+
+    protected function defaults(): array
+    {
+        return [
+            'referral_code_prefix' => 'PENURWILL-',
+        ];
     }
 }

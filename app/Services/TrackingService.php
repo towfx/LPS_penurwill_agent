@@ -10,6 +10,7 @@ use App\Models\Referral;
 use App\Models\ReferralCode;
 use App\Models\Sale;
 use App\Models\User;
+use App\Support\SystemUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -17,6 +18,11 @@ use Illuminate\Validation\ValidationException;
 
 class TrackingService
 {
+    public function __construct(
+        protected ?CommissionGenerator $commissionGenerator = null,
+        protected ?CommissionCalculator $commissionCalculator = null,
+    ) {}
+
     /**
      * Track a new referral
      *
@@ -239,57 +245,56 @@ class TrackingService
         DB::beginTransaction();
 
         try {
-            // Calculate commission amount before creating sale
-            $commissionRate = $agent->commissionRate;
-            $commissionPercentage = $commissionRate ? $commissionRate->custom_rate : 10; // Default 10%
-            $commissionAmount = ($validatedData['sale_amount'] * $commissionPercentage) / 100;
+            $generator = $this->commissionGenerator ?? app(CommissionGenerator::class);
+            $calculator = $this->commissionCalculator ?? app(CommissionCalculator::class);
 
-            // Create the sale
+            $rate = $calculator->getApplicableRate($agent, CommissionCalculator::KIND_OWN_SALES);
+            $estimatedCommission = $calculator->calculate(
+                (float) $validatedData['sale_amount'],
+                (float) $rate['percentage'],
+                (float) $rate['fixed_amount'],
+                $rate['calc_type'],
+            );
+
             $sale = Sale::create([
                 'agent_id' => $agent->id,
                 'amount' => $validatedData['sale_amount'],
-                'commission_amount' => $commissionAmount,
+                'commission_amount' => $estimatedCommission,
                 'sale_date' => $validatedData['sale_date'],
                 'buyer_email' => $validatedData['customer_email'],
                 'description' => $validatedData['product_name'],
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-                'invoice_number' => $validatedData['invoice_number'],
+                'invoice_number' => $validatedData['invoice_number'] ?? null,
             ]);
 
-            // Create commission
-            $commission = Commission::create([
-                'commission_source' => $commissionRate ? 'agent_rate' : 'system_default',
-                'applied_rate' => $commissionPercentage,
-                'sale_id' => $sale->id,
-                'agent_id' => $agent->id,
-                'commission_rate' => $commissionPercentage,
-                'amount' => $commissionAmount,
-                'status' => 'pending',
-            ]);
+            $commissions = $generator->generateForSale($sale);
 
-            // Log activity (using system user for API tracking)
-            $systemUser = User::where('email', 'system@penurwill.com')->first();
+            $systemUser = SystemUser::resolve();
             if ($systemUser) {
                 ActivityLog::logCreate($systemUser, $sale, $sale->toArray());
-                ActivityLog::logCreate($systemUser, $commission, $commission->toArray());
             }
 
             DB::commit();
+
+            $primaryCommission = $commissions->firstWhere('commission_type', 'own_sales')
+                ?? $commissions->first();
 
             return [
                 'success' => true,
                 'message' => 'Sale tracked successfully',
                 'data' => [
                     'sale_id' => $sale->id,
-                    'commission_id' => $commission->id,
+                    'commission_id' => $primaryCommission?->id,
+                    'commission_ids' => $commissions->pluck('id')->all(),
                     'agent_name' => $agent->name,
-                    'customer_name' => $sale->customer_name,
-                    'sale_amount' => $sale->sale_amount,
-                    'commission_amount' => $commission->amount,
-                    'commission_percentage' => $commission->percentage,
-                    'status' => $sale->status,
-                    'tracked_at' => $sale->tracked_at,
+                    'customer_name' => $validatedData['customer_name'],
+                    'sale_amount' => $sale->amount,
+                    'commission_amount' => $primaryCommission?->amount,
+                    'commission_percentage' => $primaryCommission?->commission_rate,
+                    'commission_total' => $commissions->sum('amount'),
+                    'status' => 'pending',
+                    'tracked_at' => $sale->created_at,
                 ],
             ];
 

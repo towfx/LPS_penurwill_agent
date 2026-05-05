@@ -192,7 +192,8 @@ class AgentTrackingTest extends TestCase
         ]);
         AgentCommissionRate::factory()->create([
             'agent_id' => $agent->id,
-            'custom_rate' => 15.0
+            'kind' => 'own_sales',
+            'custom_percentage' => 15.0,
         ]);
 
         $data = [

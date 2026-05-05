@@ -139,6 +139,22 @@ class AgentSeeder extends Seeder
             'Morgan Stanley',
         ];
 
+        // Default Business Partner (created by BusinessPartnerSeeder) — used as upline.
+        $defaultBp = Agent::where('is_default', true)
+            ->where('agent_role', Agent::ROLE_BUSINESS_PARTNER)
+            ->first();
+
+        $hierarchyDefaults = function () use ($defaultBp): array {
+            return [
+                'agent_role' => Agent::ROLE_AGENT,
+                'parent_agent_id' => $defaultBp?->id,
+                'registered_at' => now()->toDateString(),
+                'expires_at' => now()->addYear()->toDateString(),
+                'renewal_due_at' => now()->addYear()->subDays(30)->toDateString(),
+                'fee_payment_status' => Agent::FEE_STATUS_PAID,
+            ];
+        };
+
         // Create individual agents
         foreach ($individualAgents as $agentData) {
             $userEmail = $agentData['user_email'];
@@ -155,7 +171,7 @@ class AgentSeeder extends Seeder
             );
 
             // Create agent
-            $agent = Agent::create($agentData);
+            $agent = Agent::create($agentData + $hierarchyDefaults());
 
             // Link user to agent
             $user->agents()->attach($agent->id);
@@ -190,7 +206,7 @@ class AgentSeeder extends Seeder
             );
 
             // Create agent
-            $agent = Agent::create($agentData);
+            $agent = Agent::create($agentData + $hierarchyDefaults());
 
             // Link user to agent
             $user->agents()->attach($agent->id);
