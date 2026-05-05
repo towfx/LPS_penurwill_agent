@@ -16,6 +16,9 @@ Route::get('/get-started', function () {
 Route::get('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'show'])->name('register-as-agent');
 Route::post('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'store'])->name('register-as-agent.store');
 
+// Static Terms & Conditions page (linked from registration Step 5 T&C checkbox).
+Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -28,10 +31,7 @@ Route::middleware([
             return redirect()->route('admin.dashboard');
         }
 
-        if ($user->hasRole('partner')) {
-            return redirect()->route('partner.dashboard');
-        }
-
+        // QNA-12: business_partner agents share the agent dashboard.
         if ($user->hasRole('agent')) {
             return redirect()->route('agent.dashboard');
         }
@@ -67,6 +67,15 @@ Route::middleware([
         Route::post('/agents/{id}/approve', [AgentController::class, 'approve'])->name('agents.approve');
         Route::get('/agents/{id}/file/{field}', [AgentController::class, 'downloadFile'])->name('agents.file.download');
         Route::get('/agents/agents.xls', [AgentController::class, 'export'])->name('agents.export');
+        Route::get('/agents/parents', [AgentController::class, 'parents'])->name('agents.parents');
+
+        // Sales — refund (commission reversal)
+        Route::post('/sales/{sale}/refund', [App\Http\Controllers\Admin\SaleController::class, 'markAsRefunded'])
+            ->name('sales.refund');
+
+        // Fee payments
+        Route::get('/fee-payments', [App\Http\Controllers\Admin\FeePaymentController::class, 'index'])->name('fee-payments.index');
+        Route::post('/fee-payments', [App\Http\Controllers\Admin\FeePaymentController::class, 'store'])->name('fee-payments.store');
 
         // Commissions
         Route::get('/commissions/list', [App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('commissions.list');
@@ -120,12 +129,4 @@ Route::middleware([
         Route::get('/payout/{id}/detail', [App\Http\Controllers\Agent\PayoutController::class, 'show'])->name('payout.detail');
     });
 
-    // Partner routes (require partner role)
-    Route::middleware(['partner'])->prefix('partner')->name('partner.')->group(function () {
-        Route::get('/', function () {
-            return redirect()->route('partner.dashboard');
-        })->name('index');
-
-        Route::get('/dashboard', [\App\Http\Controllers\Partner\DashboardController::class, 'index'])->name('dashboard');
-    });
 });

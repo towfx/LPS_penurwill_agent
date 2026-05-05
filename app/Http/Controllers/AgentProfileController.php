@@ -65,6 +65,7 @@ class AgentProfileController extends Controller
             'company_phone' => 'nullable|string|max:255',
             'company_email_address' => 'nullable|email|max:255',
             'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
+            'company_representative_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'about' => 'nullable|string|max:1000',
             // Bank account fields
             'bank_account_name' => 'nullable|string|max:255',
@@ -87,6 +88,7 @@ class AgentProfileController extends Controller
             $data['company_phone'] = null;
             $data['company_email_address'] = null;
             $data['company_reg_file'] = null;
+            $data['company_representative_id_file'] = null;
         } else {
             $data['individual_name'] = null;
             $data['individual_phone'] = null;
@@ -102,6 +104,7 @@ class AgentProfileController extends Controller
         // Remove file fields from data - we handle them separately to preserve existing files
         unset($data['individual_id_file']);
         unset($data['company_reg_file']);
+        unset($data['company_representative_id_file']);
 
         // Handle file uploads - only update if a new file is provided
         if ($data['profile_type'] === 'individual' && $request->hasFile('individual_id_file')) {
@@ -140,6 +143,23 @@ class AgentProfileController extends Controller
                 // Keep existing company_reg_file if no new file uploaded and staying as company
                 $data['company_reg_file'] = $agent->company_reg_file;
             }
+        }
+
+        // Handle company representative ID file (company profile only — bug fix Part 18)
+        if ($data['profile_type'] === 'company' && $request->hasFile('company_representative_id_file')) {
+            if ($agent->company_representative_id_file && Storage::disk('local')->exists($agent->company_representative_id_file)) {
+                Storage::disk('local')->delete($agent->company_representative_id_file);
+            }
+
+            $file = $request->file('company_representative_id_file');
+            $extension = $file->getClientOriginalExtension();
+            $filename = Str::random(40).'.'.$extension;
+            $path = "agents/{$agent->id}/{$filename}";
+
+            Storage::disk('local')->put($path, file_get_contents($file));
+            $data['company_representative_id_file'] = $path;
+        } elseif ($data['profile_type'] === 'company' && $agent->company_representative_id_file) {
+            $data['company_representative_id_file'] = $agent->company_representative_id_file;
         }
 
         $agent->update($data);
@@ -193,7 +213,7 @@ class AgentProfileController extends Controller
             abort(404);
         }
 
-        $allowedFields = ['individual_id_file', 'company_reg_file'];
+        $allowedFields = ['individual_id_file', 'company_reg_file', 'company_representative_id_file'];
         if (!in_array($field, $allowedFields)) {
             abort(404);
         }

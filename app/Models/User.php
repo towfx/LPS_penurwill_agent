@@ -81,14 +81,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the partners associated with this user.
-     */
-    public function partners()
-    {
-        return $this->belongsToMany(Partner::class, 'partner_users');
-    }
-
-    /**
      * Get the activity logs for this user.
      */
     public function activityLogs()

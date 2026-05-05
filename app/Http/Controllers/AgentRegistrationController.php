@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Agent;
-use App\Models\Partner;
 use App\Models\ReferralCode;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -67,7 +66,7 @@ class AgentRegistrationController extends Controller
                 'confirmed',
                 // 'regex:#^(?=.*[0-9])(?=.*[!@#\\$%^&*()_+\-=\[\]{}|;:,.<>?])#'
             ],
-            'referral_code' => 'nullable|string|exists:partners,code',
+            'referral_code' => 'nullable|string|exists:referral_codes,code',
             'terms' => 'required|accepted',
         ], [
             'password.regex' => 'Password must contain at least one number and one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)',
@@ -100,10 +99,19 @@ class AgentRegistrationController extends Controller
             // Log role assignment
             ActivityLog::logCustom($user, 'role_assigned', "Assigned 'agent' role to user {$user->email}");
 
-            // Find partner if referral code provided
-            $partner = null;
+            // Resolve upline agent: explicit referral code → owner; otherwise default BP agent (QNA-03)
+            $uplineAgent = null;
             if ($request->filled('referral_code')) {
-                $partner = Partner::where('code', $request->referral_code)->first();
+                $uplineCode = ReferralCode::where('code', $request->referral_code)->first();
+                if ($uplineCode) {
+                    $uplineAgent = Agent::find($uplineCode->agent_id);
+                }
+            }
+            if (! $uplineAgent) {
+                $uplineAgent = Agent::query()
+                    ->where('agent_role', Agent::ROLE_BUSINESS_PARTNER)
+                    ->orderBy('id')
+                    ->first();
             }
 
             // Create agent
@@ -111,14 +119,9 @@ class AgentRegistrationController extends Controller
                 'profile_type' => $request->profile_type,
                 'status' => 'inactive',
                 'about' => $request->about,
+                'agent_role' => Agent::ROLE_AGENT,
+                'parent_agent_id' => $uplineAgent?->id,
             ];
-
-            if ($partner) {
-                $agentData['partner_id'] = $partner->id;
-            }
-            else{
-                $agentData['partner_id'] = 1;
-            }
 
             if ($request->profile_type === 'individual') {
                 $agentData['individual_name'] = $request->individual_name;
@@ -156,41 +159,43 @@ class AgentRegistrationController extends Controller
                 $agent->update(['company_reg_file' => $path]);
             }
 
-            // Log partner assignment if applicable
-            if ($partner) {
-                ActivityLog::logCustom($user, 'partner_assigned', "Assigned agent {$agent->id} to partner {$partner->company_name}", $agent);
+            // Log upline assignment
+            if ($uplineAgent) {
+                ActivityLog::logCustom($user, 'upline_assigned', "Assigned agent {$agent->id} to upline agent #{$uplineAgent->id}", $agent);
             }
 
             // Log agent creation
             ActivityLog::logCreate($user, $agent, $agent->toArray());
 
-            // Send email notification
+            // Send email notification (QNA-05: CC company_email_address + linked user email; dedupe)
             try {
-                $agent->load('partner');
                 $recipientEmail = null;
-                $ccEmail = null;
+                $ccEmails = [];
 
-                // Get recipient email from agent's partner
-                if ($agent->partner && $agent->partner->company_email) {
-                    $recipientEmail = $agent->partner->company_email;
+                if ($uplineAgent) {
+                    $recipientEmail = $uplineAgent->company_email_address
+                        ?: $uplineAgent->users()->first()?->email;
                 }
 
-                // Get CC email from partner_id=1 if different from agent's partner
-                if ($agent->partner_id != 1) {
-                    $mainPartner = Partner::find(1);
-                    if ($mainPartner && $mainPartner->company_email) {
-                        $ccEmail = $mainPartner->company_email;
-                    }
+                // Build CC list from agent's own contact emails
+                if ($agent->company_email_address) {
+                    $ccEmails[] = $agent->company_email_address;
                 }
+                if ($user->email) {
+                    $ccEmails[] = $user->email;
+                }
+                $ccEmails = collect($ccEmails)
+                    ->filter()
+                    ->unique()
+                    ->reject(fn ($e) => $e === $recipientEmail)
+                    ->values()
+                    ->all();
 
-                // Send email if we have at least one recipient
                 if ($recipientEmail) {
                     $mail = Mail::to($recipientEmail);
-
-                    if ($ccEmail) {
-                        $mail->cc($ccEmail);
+                    if (! empty($ccEmails)) {
+                        $mail->cc($ccEmails);
                     }
-
                     $mail->send(new \App\Mail\AgentRegisteredNotification($agent));
                 }
             } catch (\Exception $e) {

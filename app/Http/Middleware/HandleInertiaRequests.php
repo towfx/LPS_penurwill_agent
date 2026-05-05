@@ -44,7 +44,35 @@ class HandleInertiaRequests extends Middleware
                 'success' => session('success'),
                 'error' => session('error'),
             ],
+            'systemSettings' => fn () => $this->systemSettings(),
         ]);
+    }
+
+    /**
+     * Expose role-name labels and key flags so Vue can render them
+     * without hardcoding (Decision 15). Cached per request via the closure.
+     */
+    protected function systemSettings(): array
+    {
+        try {
+            $settings = \App\Models\SystemSetting::first();
+        } catch (\Throwable $e) {
+            return [];
+        }
+        if (! $settings) {
+            return [];
+        }
+
+        return [
+            'role_name_agent' => $settings->role_name_agent ?? 'Agent',
+            'role_name_leader' => $settings->role_name_leader ?? 'Agent Leader',
+            'role_name_business_partner' => $settings->role_name_business_partner ?? 'Business Partner',
+            'min_payout_amount' => $settings->min_payout_amount ?? null,
+            'reversal_time_limit' => $settings->reversal_time_limit ?? null,
+            'membership_duration_days' => $settings->membership_duration_days ?? null,
+            'renewal_reminder_days_before' => $settings->renewal_reminder_days_before ?? null,
+            'referral_code_prefix' => $settings->referral_code_prefix ?? null,
+        ];
     }
 
     /**

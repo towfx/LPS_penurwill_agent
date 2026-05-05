@@ -60,13 +60,13 @@ class PayoutController extends Controller
     /**
      * Display the payout detail page
      */
-    public function show(Request $request, $id)
+    public function show(Request $request, $id, \App\Services\PayoutReportGenerator $reportGenerator)
     {
         $payout = Payout::with(['agent.bankAccount', 'payoutItems.commission.sale'])
             ->findOrFail($id);
 
-        $year = $payout->created_at->format('Y');
-        $month = $payout->created_at->format('n');
+        $year = (int) $payout->created_at->format('Y');
+        $month = (int) $payout->created_at->format('n');
 
         // Get months for display
         $months = [
@@ -78,9 +78,14 @@ class PayoutController extends Controller
         return Inertia::render('Admin/PayoutDetail', [
             'payout' => $payout,
             'agent' => $payout->agent,
-            'year' => (int) $year,
-            'month' => (int) $month,
+            'year' => $year,
+            'month' => $month,
             'monthName' => $months[$month] ?? 'Unknown',
+            'breakdown' => [
+                'by_commission_type' => $reportGenerator->byCommissionType($payout->agent, $year, $month),
+                'by_sales_source' => $reportGenerator->bySalesSource($payout->agent, $year, $month),
+                'transactions' => $reportGenerator->transactions($payout->agent, $year, $month),
+            ],
         ]);
     }
 
@@ -192,6 +197,28 @@ class PayoutController extends Controller
         // Log activity
         if ($user) {
             ActivityLog::logUpdate($user, $payout, $before, $payout->toArray());
+        }
+
+        // Send CommissionPaidNotification per commission earner
+        try {
+            $payout->load('payoutItems.commission.earningAgent.users');
+            foreach ($payout->payoutItems as $item) {
+                $commission = $item->commission;
+                if (! $commission) {
+                    continue;
+                }
+                $earner = $commission->earningAgent;
+                $earnerEmail = $earner?->users?->first()?->email;
+                if ($earnerEmail) {
+                    \Illuminate\Support\Facades\Mail::to($earnerEmail)
+                        ->send(new \App\Mail\CommissionPaidNotification($commission));
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send CommissionPaidNotification', [
+                'payout_id' => $payout->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         // Send email notification to Agent
@@ -316,11 +343,20 @@ class PayoutController extends Controller
 
         $user = auth()->user();
 
+        // Block if any selected commission is cancelled
+        $cancelledCount = Commission::whereIn('id', $request->commission_ids)
+            ->where('status', Commission::STATUS_CANCELLED)
+            ->count();
+        if ($cancelledCount > 0) {
+            return back()->withErrors(['error' => "Cannot create payout: {$cancelledCount} selected commission(s) are cancelled."])->withInput();
+        }
+
         return DB::transaction(function () use ($request, $user) {
             // Update commission approval statuses
-            $allCommissions = Commission::where('agent_id', $request->agent_id)
+            $allCommissions = Commission::where('earning_agent_id', $request->agent_id)
                 ->whereYear('created_at', $request->year)
                 ->whereMonth('created_at', $request->month)
+                ->where('status', '!=', Commission::STATUS_CANCELLED)
                 ->get();
 
             foreach ($allCommissions as $commission) {
@@ -345,7 +381,7 @@ class PayoutController extends Controller
                 'created_by' => $user ? $user->id : null,
             ]);
 
-            // Create payout items only for selected commissions
+            // Create payout items, copying commission_type / commission_category for breakdown reports
             foreach ($request->commission_ids as $commissionId) {
                 $commission = Commission::find($commissionId);
                 if ($commission && $commission->status === 'approved') {
@@ -353,6 +389,8 @@ class PayoutController extends Controller
                         'payout_id' => $payout->id,
                         'commission_id' => $commissionId,
                         'amount' => $commission->amount,
+                        'commission_type' => $commission->commission_type,
+                        'commission_category' => $commission->commission_category,
                     ]);
                 }
             }
@@ -475,6 +513,8 @@ class PayoutController extends Controller
                         'payout_id' => $payout->id,
                         'commission_id' => $commissionId,
                         'amount' => $commission->amount,
+                        'commission_type' => $commission->commission_type,
+                        'commission_category' => $commission->commission_category,
                     ]);
                 }
             }
