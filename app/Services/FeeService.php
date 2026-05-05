@@ -169,4 +169,58 @@ class FeeService
     {
         return (int) (SystemSetting::first()?->renewal_reminder_days_before ?? 30);
     }
+
+    /**
+     * Create a Stripe Checkout Session for a one-time agent registration fee.
+     * Returns the session URL, or null if Stripe is not configured.
+     */
+    public function createCheckoutSession(Agent $agent, string $successUrl, string $cancelUrl): ?string
+    {
+        $stripeSecret = config('cashier.secret');
+        if (! $stripeSecret) {
+            return null;
+        }
+
+        $role = $agent->agent_role ?? Agent::ROLE_AGENT;
+        $amount = $this->getFeeAmountFor($role, FeePayment::TYPE_ENTRY);
+        $amountCents = (int) round($amount * 100);
+
+        if ($amountCents <= 0) {
+            return null;
+        }
+
+        try {
+            $session = \Laravel\Cashier\Cashier::stripe()->checkout->sessions->create([
+                'mode' => 'payment',
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => config('cashier.currency', 'myr'),
+                        'unit_amount' => $amountCents,
+                        'product_data' => [
+                            'name' => 'Agent Registration Fee',
+                            'description' => 'One-time entry fee — ' . ucwords(str_replace('_', ' ', $role)),
+                        ],
+                    ],
+                    'quantity' => 1,
+                ]],
+                'customer_email' => $agent->users()->first()?->email,
+                'success_url' => $successUrl,
+                'cancel_url' => $cancelUrl,
+                'metadata' => [
+                    'agent_id' => $agent->id,
+                    'fee_type' => FeePayment::TYPE_ENTRY,
+                    'agent_role' => $role,
+                ],
+            ]);
+
+            return $session->url;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('FeeService: Stripe checkout creation failed', [
+                'agent_id' => $agent->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
 }
