@@ -27,7 +27,10 @@ class AgentCommissionRateFactory extends Factory
     {
         return [
             'agent_id' => Agent::factory(),
-            'custom_rate' => $this->faker->optional()->randomFloat(2, 5, 25),
+            'kind' => AgentCommissionRate::KIND_OWN_SALES,
+            'custom_percentage' => $this->faker->optional()->randomFloat(2, 5, 25),
+            'custom_fixed_amount' => 0,
+            'commission_calc_type' => AgentCommissionRate::CALC_PERCENTAGE,
             'effective_from' => $this->faker->date(),
             'notes' => $this->faker->optional()->sentence(),
             'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
@@ -51,7 +54,7 @@ class AgentCommissionRateFactory extends Factory
     public function withRate(float $rate): static
     {
         return $this->state(fn (array $attributes) => [
-            'rate' => $rate,
+            'custom_percentage' => $rate,
         ]);
     }
 }

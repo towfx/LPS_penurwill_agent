@@ -20,7 +20,17 @@ class AgentRegistrationTest extends TestCase
         // Create system settings
         SystemSetting::create([
             'referral_code_prefix' => 'TEST',
-            'commission_default_rate' => 10.0,
+            'agent_own_sales_percentage' => 10.0,
+        ]);
+
+        // Create default Business Partner for upline fallback
+        Agent::create([
+            'profile_type' => 'company',
+            'company_name' => 'Default BP',
+            'status' => 'active',
+            'agent_role' => Agent::ROLE_BUSINESS_PARTNER,
+            'is_default' => true,
+            'fee_payment_status' => Agent::FEE_STATUS_WAIVED,
         ]);
 
         // Create system user for activity logging

@@ -10,22 +10,14 @@ class PayoutItem extends Model
 {
     use HasFactory, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'payout_id',
         'commission_id',
+        'commission_type',
+        'commission_category',
         'amount',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -33,19 +25,23 @@ class PayoutItem extends Model
         ];
     }
 
-    /**
-     * Get the payout that contains this item.
-     */
     public function payout()
     {
         return $this->belongsTo(Payout::class);
     }
 
-    /**
-     * Get the commission associated with this payout item.
-     */
     public function commission()
     {
         return $this->belongsTo(Commission::class);
+    }
+
+    public function scopeOwnSales($query)
+    {
+        return $query->where('commission_type', 'own_sales');
+    }
+
+    public function scopeOverrides($query)
+    {
+        return $query->where('commission_type', 'override');
     }
 }

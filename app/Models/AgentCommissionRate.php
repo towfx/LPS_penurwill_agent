@@ -9,36 +9,51 @@ class AgentCommissionRate extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    public const KIND_OWN_SALES = 'own_sales';
+    public const KIND_OVERRIDE_AGENT = 'override_agent';
+    public const KIND_OVERRIDE_AGENT_LEADER = 'override_agent_leader';
+
+    public const CALC_PERCENTAGE = 'percentage';
+    public const CALC_FIXED = 'fixed';
+
     protected $fillable = [
         'agent_id',
-        'custom_rate',
+        'kind',
+        'custom_percentage',
+        'custom_fixed_amount',
+        'commission_calc_type',
         'effective_from',
         'notes',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
-            'custom_rate' => 'decimal:2',
+            'custom_percentage' => 'decimal:2',
+            'custom_fixed_amount' => 'decimal:2',
             'effective_from' => 'date',
+            'kind' => 'string',
+            'commission_calc_type' => 'string',
         ];
     }
 
-    /**
-     * Get the agent who has this commission rate.
-     */
     public function agent()
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function scopeForKind($query, string $kind)
+    {
+        return $query->where('kind', $kind);
+    }
+
+    /**
+     * Backwards-compat accessor for legacy `custom_rate` reads.
+     */
+    public function getCustomRateAttribute()
+    {
+        return $this->attributes['custom_percentage']
+            ?? $this->attributes['custom_rate']
+            ?? null;
     }
 }

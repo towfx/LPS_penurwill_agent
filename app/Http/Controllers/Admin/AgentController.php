@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Agent;
 use App\Models\User;
+use App\Services\AgentHierarchy;
+use App\Services\FeeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -501,23 +503,33 @@ class AgentController extends Controller
     /**
      * Approve agent application
      */
-    public function approve($id)
+    public function approve($id, FeeService $feeService)
     {
         $adminUser = Auth::user();
         $agent = Agent::findOrFail($id);
 
         DB::beginTransaction();
         try {
-            // Capture before data for activity logging
             $beforeData = $agent->toArray();
 
-            // Update agent status to active
             $agent->update(['status' => 'active']);
 
-            // Capture after data for activity logging
-            $afterData = $agent->toArray();
+            // Decision 22: if fee is already paid, record an entry-fee row.
+            // Otherwise mark fee as waived and set the lifecycle dates manually.
+            if ($agent->fee_payment_status === Agent::FEE_STATUS_PAID) {
+                $feeService->applyEntryFee($agent, $adminUser);
+            } else {
+                $duration = (int) (\App\Models\SystemSetting::first()?->membership_duration_days ?? 365);
+                $reminder = (int) (\App\Models\SystemSetting::first()?->renewal_reminder_days_before ?? 30);
+                $agent->update([
+                    'fee_payment_status' => Agent::FEE_STATUS_WAIVED,
+                    'registered_at' => now()->toDateString(),
+                    'expires_at' => now()->addDays($duration)->toDateString(),
+                    'renewal_due_at' => now()->addDays(max(1, $duration - $reminder))->toDateString(),
+                ]);
+            }
 
-            // Log the agent approval activity
+            $afterData = $agent->fresh()->toArray();
             ActivityLog::logUpdate($adminUser, $agent, $beforeData, $afterData);
             ActivityLog::logCustom($adminUser, 'agent_approved', "Admin approved agent application for agent {$agent->id}", $agent);
 
@@ -529,6 +541,20 @@ class AgentController extends Controller
 
             return back()->withErrors(['error' => 'Failed to approve agent. '.$e->getMessage()]);
         }
+    }
+
+    /**
+     * JSON endpoint listing agents eligible to be a parent (Agent Leaders + Business Partners).
+     */
+    public function parents()
+    {
+        return response()->json(
+            Agent::query()
+                ->whereIn('agent_role', [Agent::ROLE_AGENT_LEADER, Agent::ROLE_BUSINESS_PARTNER])
+                ->orderBy('agent_role')
+                ->orderBy('id')
+                ->get(['id', 'agent_role', 'company_name', 'individual_name', 'profile_type'])
+        );
     }
 
     /**

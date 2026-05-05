@@ -10,6 +10,15 @@ class Agent extends Model
 {
     use HasFactory;
 
+    public const ROLE_AGENT = 'agent';
+    public const ROLE_AGENT_LEADER = 'agent_leader';
+    public const ROLE_BUSINESS_PARTNER = 'business_partner';
+
+    public const FEE_STATUS_PENDING = 'pending';
+    public const FEE_STATUS_PAID = 'paid';
+    public const FEE_STATUS_OVERDUE = 'overdue';
+    public const FEE_STATUS_WAIVED = 'waived';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -23,6 +32,7 @@ class Agent extends Model
         'individual_id_number',
         'individual_id_file',
         'company_representative_name',
+        'company_representative_id_file',
         'company_name',
         'company_registration_number',
         'company_address',
@@ -35,119 +45,149 @@ class Agent extends Model
         'status',
         'profile_image',
         'about',
+        // Hierarchy + lifecycle
+        'agent_role',
+        'parent_agent_id',
+        'is_default',
+        'registered_at',
+        'expires_at',
+        'renewal_due_at',
+        'fee_payment_status',
     ];
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'status' => 'string',
+            'agent_role' => 'string',
+            'fee_payment_status' => 'string',
+            'is_default' => 'boolean',
+            'registered_at' => 'date',
+            'expires_at' => 'date',
+            'renewal_due_at' => 'date',
         ];
     }
 
-    /**
-     * Get the users associated with this agent.
-     */
     public function users()
     {
         return $this->belongsToMany(User::class, 'agents_users');
     }
 
-    /**
-     * Get the referral code for this agent.
-     */
     public function referralCode()
     {
         return $this->belongsTo(ReferralCode::class);
     }
 
-    /**
-     * Get the bank account for this agent.
-     */
     public function bankAccount()
     {
         return $this->hasOne(BankAccount::class);
     }
 
-    /**
-     * Get the referrals made by this agent.
-     */
     public function referrals()
     {
         return $this->hasMany(Referral::class, 'referrer_id');
     }
 
-    /**
-     * Get the sales made by this agent.
-     */
     public function sales()
     {
         return $this->hasMany(Sale::class);
     }
 
-    /**
-     * Get the commissions for this agent.
-     */
     public function commissions()
     {
         return $this->hasMany(Commission::class);
     }
 
     /**
-     * Get the payouts for this agent.
+     * Commissions earned by this agent (own sales + overrides).
      */
+    public function earnedCommissions()
+    {
+        return $this->hasMany(Commission::class, 'earning_agent_id');
+    }
+
     public function payouts()
     {
         return $this->hasMany(Payout::class);
     }
 
-    /**
-     * Get the activity logs for this agent.
-     */
     public function activityLogs()
     {
         return $this->hasMany(ActivityLog::class);
     }
 
     /**
-     * Get the commission rate for this agent.
+     * Custom commission rate rows (one per kind).
+     */
+    public function commissionRates()
+    {
+        return $this->hasMany(AgentCommissionRate::class);
+    }
+
+    /**
+     * @deprecated Use commissionRates(); kept for legacy callers.
      */
     public function commissionRate()
     {
         return $this->hasOne(AgentCommissionRate::class);
     }
 
-    /**
-     * Get the agents referred by this agent's referral code.
-     */
     public function referredAgents()
     {
         return $this->hasMany(Agent::class, 'referral_code_id');
     }
 
-    /**
-     * Get the visits tracked for this agent.
-     */
     public function visits()
     {
         return $this->hasMany(AgentVisit::class);
     }
 
-    /**
-     * Get the partner that manages this agent.
-     */
     public function partner()
     {
         return $this->belongsTo(Partner::class);
     }
 
     /**
-     * Get the agent's display name
+     * Direct upline agent.
      */
+    public function parentAgent()
+    {
+        return $this->belongsTo(Agent::class, 'parent_agent_id');
+    }
+
+    /**
+     * Direct downline agents.
+     */
+    public function subordinates()
+    {
+        return $this->hasMany(Agent::class, 'parent_agent_id');
+    }
+
+    /**
+     * Recursive descendant collection (eager + iterative).
+     */
+    public function descendants()
+    {
+        $all = collect();
+        $stack = $this->subordinates()->get()->all();
+        while ($stack) {
+            $current = array_shift($stack);
+            $all->push($current);
+            foreach ($current->subordinates()->get() as $child) {
+                $stack[] = $child;
+            }
+        }
+        return $all;
+    }
+
+    public function feePayments()
+    {
+        return $this->hasMany(FeePayment::class);
+    }
+
     public function getNameAttribute()
     {
         return $this->profile_type === 'company'
@@ -155,19 +195,42 @@ class Agent extends Model
             : $this->individual_name;
     }
 
-    /**
-     * Get the agent's type
-     */
     public function getTypeAttribute()
     {
         return $this->profile_type;
     }
 
-    /**
-     * Generate a unique referral code string.
-     *
-     * @return string
-     */
+    public function getRoleAttribute()
+    {
+        return $this->agent_role ?? self::ROLE_AGENT;
+    }
+
+    public function isLeader(): bool
+    {
+        return $this->agent_role === self::ROLE_AGENT_LEADER;
+    }
+
+    public function isBusinessPartner(): bool
+    {
+        return $this->agent_role === self::ROLE_BUSINESS_PARTNER;
+    }
+
+    public function scopeRole($query, string $role)
+    {
+        return $query->where('agent_role', $role);
+    }
+
+    public function scopeTopLevel($query)
+    {
+        return $query->whereNull('parent_agent_id');
+    }
+
+    public function scopeExpiringSoon($query, int $days = 30)
+    {
+        return $query->whereNotNull('expires_at')
+            ->whereBetween('expires_at', [now()->toDateString(), now()->addDays($days)->toDateString()]);
+    }
+
     public static function generateReferralCode(): string
     {
         $systemSetting = SystemSetting::first();
@@ -181,14 +244,6 @@ class Agent extends Model
         return $code;
     }
 
-    /**
-     * Create and associate a referral code with this agent.
-     *
-     * @param float|null $commissionRate Commission rate (defaults to system setting)
-     * @param bool|null $isActive Whether the code is active (defaults to true)
-     * @param \DateTime|null $expiresAt Expiration date (defaults to 5 years from now)
-     * @return ReferralCode
-     */
     public function createReferralCode(?float $commissionRate = null, ?bool $isActive = true, ?\DateTime $expiresAt = null): ReferralCode
     {
         $systemSetting = SystemSetting::first();
@@ -197,7 +252,7 @@ class Agent extends Model
             'agent_id' => $this->id,
             'code' => self::generateReferralCode(),
             'is_active' => $isActive ?? true,
-            'commission_rate' => $commissionRate ?? $systemSetting?->commission_default_rate ?? 0,
+            'commission_rate' => $commissionRate ?? $systemSetting?->agent_own_sales_percentage ?? $systemSetting?->commission_default_rate ?? 0,
             'used_count' => 0,
             'expires_at' => $expiresAt ?? now()->addYears(5),
         ]);
