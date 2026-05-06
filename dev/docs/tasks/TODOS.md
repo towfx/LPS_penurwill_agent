@@ -365,9 +365,9 @@ Schema::dropIfExists('partners');
 
 > **Do this before writing a single new Vue page.** The design reference file may need gaps filled so the team has a complete visual spec to work from.
 
-- [ ] Open `/design/design-01` in the browser and review the current state.
-- [ ] Work through the `@TODO` comments inside `resources/js/Pages/Design/Design01.vue` — complete any sections marked critical before Phase 4 begins (especially: form elements, all button variants, status badges, modal pattern).
-- [ ] After Design01.vue is updated, get stakeholder sign-off that the visual language is correct before Phase 4 coding starts.
+- [x] Open `/design/design-01` in the browser and review the current state.
+- [x] Work through the `@TODO` comments inside `resources/js/Pages/Design/Design01.vue` — complete any sections marked critical before Phase 4 begins (especially: form elements, all button variants, status badges, modal pattern).
+- [x] After Design01.vue is updated, get stakeholder sign-off that the visual language is correct before Phase 4 coding starts.
 
 ---
 
