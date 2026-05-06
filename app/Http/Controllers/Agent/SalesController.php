@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agent;
 use App\Models\Sale;
+use App\Services\AgentHierarchy;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,9 +13,9 @@ use Inertia\Inertia;
 class SalesController extends Controller
 {
     /**
-     * Display the agent sales list page
+     * Display the agent sales list page (includes subordinate sales for leaders/BPs).
      */
-    public function index(Request $request)
+    public function index(Request $request, AgentHierarchy $hierarchy)
     {
         $agent = auth()->user()->agents()->first();
 
@@ -26,9 +28,17 @@ class SalesController extends Controller
         $endDate = $request->get('end_date');
         $status = $request->get('status', 'pending'); // Default to pending
 
+        // Determine agent ID scope: include subordinates for leaders + BPs
+        $agentIds = collect([$agent->id]);
+        if (in_array($agent->agent_role, [Agent::ROLE_AGENT_LEADER, Agent::ROLE_BUSINESS_PARTNER], true)) {
+            $agentIds = $agentIds->merge(
+                $hierarchy->getAllDescendants($agent)->pluck('id')
+            )->unique()->values();
+        }
+
         // Build query
-        $query = Sale::with('commission')
-            ->where('agent_id', $agent->id);
+        $query = Sale::with(['commission', 'agent'])
+            ->whereIn('agent_id', $agentIds);
 
         // Apply date range filter
         if ($startDate && $endDate) {
@@ -59,6 +69,10 @@ class SalesController extends Controller
                 'commission' => $sale->commission ? [
                     'amount' => $sale->commission->amount,
                     'status' => $sale->commission->status,
+                ] : null,
+                'sale_agent' => $sale->agent ? [
+                    'id' => $sale->agent->id,
+                    'name' => $sale->agent->name,
                 ] : null,
             ];
         });

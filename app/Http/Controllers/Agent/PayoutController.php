@@ -20,7 +20,7 @@ class PayoutController extends Controller
             return redirect()->route('agent.dashboard');
         }
 
-        // Get all payouts for the agent
+        // Get all payouts for the agent (Payout.agent_id stores the earning agent)
         $payouts = Payout::where('agent_id', $agent->id)
             ->withCount('payoutItems')
             ->orderBy('created_at', 'desc')

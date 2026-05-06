@@ -58,10 +58,13 @@ class AgentController extends Controller
             'company_phone' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_email_address' => 'required_if:profile_type,company|nullable|email|max:255',
             'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
+            'company_representative_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'about' => 'required|string|max:1000',
             'user_email' => 'required|email|unique:users,email',
             'user_password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,suspended,banned',
+            'agent_role' => 'nullable|in:'.implode(',', [Agent::ROLE_AGENT, Agent::ROLE_AGENT_LEADER, Agent::ROLE_BUSINESS_PARTNER]),
+            'parent_agent_id' => 'nullable|integer|exists:agents,id',
             // Bank account fields
             'bank_account_name' => 'nullable|string|max:255',
             'bank_account_number' => 'nullable|string|max:255',
@@ -76,6 +79,17 @@ class AgentController extends Controller
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
+        }
+
+        // Validate hierarchy if parent_agent_id provided
+        if ($request->filled('parent_agent_id')) {
+            $hierarchy = app(AgentHierarchy::class);
+            $parent = Agent::find($request->parent_agent_id);
+            $tempAgent = new Agent(['agent_role' => $request->agent_role ?? Agent::ROLE_AGENT]);
+            $hierarchyErrors = $hierarchy->validateHierarchyChange($tempAgent, $parent);
+            if (! empty($hierarchyErrors)) {
+                return back()->withErrors(['parent_agent_id' => implode(' ', $hierarchyErrors)])->withInput();
+            }
         }
 
         DB::beginTransaction();
@@ -104,6 +118,8 @@ class AgentController extends Controller
                 'profile_type' => $request->profile_type,
                 'status' => $request->status,
                 'about' => $request->about,
+                'agent_role' => $request->agent_role ?? Agent::ROLE_AGENT,
+                'parent_agent_id' => $request->parent_agent_id,
             ];
 
             if ($request->profile_type === 'individual') {
@@ -140,6 +156,17 @@ class AgentController extends Controller
 
                 Storage::disk('local')->put($path, file_get_contents($file));
                 $agent->update(['company_reg_file' => $path]);
+            }
+
+            // Handle company representative ID file upload (company profile only)
+            if ($request->profile_type === 'company' && $request->hasFile('company_representative_id_file')) {
+                $file = $request->file('company_representative_id_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['company_representative_id_file' => $path]);
             }
 
             // Log agent creation
@@ -204,7 +231,7 @@ class AgentController extends Controller
      */
     public function show($id)
     {
-        $agent = Agent::with(['users', 'bankAccount', 'referralCode'])->findOrFail($id);
+        $agent = Agent::with(['users', 'bankAccount', 'referralCode', 'parentAgent'])->findOrFail($id);
 
         return Inertia::render('Admin/AgentView', [
             'agent' => [
@@ -221,7 +248,20 @@ class AgentController extends Controller
                 'company_address' => $agent->company_address,
                 'company_phone' => $agent->company_phone,
                 'company_reg_file' => $agent->company_reg_file,
+                'company_representative_id_file' => $agent->company_representative_id_file,
                 'status' => $agent->status,
+                'agent_role' => $agent->agent_role,
+                'parent_agent_id' => $agent->parent_agent_id,
+                'parent_agent' => $agent->parentAgent ? [
+                    'id' => $agent->parentAgent->id,
+                    'name' => $agent->parentAgent->name,
+                    'agent_role' => $agent->parentAgent->agent_role,
+                ] : null,
+                'fee_payment_status' => $agent->fee_payment_status,
+                'registered_at' => $agent->registered_at?->toDateString(),
+                'expires_at' => $agent->expires_at?->toDateString(),
+                'renewal_due_at' => $agent->renewal_due_at?->toDateString(),
+                'subordinates_count' => $agent->subordinates()->count(),
                 'created_at' => $agent->created_at->format('Y-m-d H:i:s'),
                 'user_email' => $agent->users->first()?->email,
                 'bank_account' => $agent->bankAccount,
@@ -253,7 +293,15 @@ class AgentController extends Controller
                 'company_address' => $agent->company_address,
                 'company_phone' => $agent->company_phone,
                 'company_reg_file' => $agent->company_reg_file,
+                'company_representative_id_file' => $agent->company_representative_id_file,
                 'status' => $agent->status,
+                'agent_role' => $agent->agent_role,
+                'parent_agent_id' => $agent->parent_agent_id,
+                'fee_payment_status' => $agent->fee_payment_status,
+                'registered_at' => $agent->registered_at?->toDateString(),
+                'expires_at' => $agent->expires_at?->toDateString(),
+                'renewal_due_at' => $agent->renewal_due_at?->toDateString(),
+                'subordinates_count' => $agent->subordinates()->count(),
                 'user_email' => $agent->users->first()?->email,
                 'bank_account' => $agent->bankAccount,
                 'referral_code' => $agent->referralCode,
@@ -284,7 +332,10 @@ class AgentController extends Controller
             'profile_type' => 'required|in:individual,company',
             'about' => 'nullable|string|max:1000',
             'user_password' => 'nullable|string|min:8|confirmed',
-            'status' => 'required|in:active,inactive,suspended,banned',
+            'status' => 'required|in:active,inactive,suspended,banned,expired',
+            'agent_role' => 'nullable|in:'.implode(',', [Agent::ROLE_AGENT, Agent::ROLE_AGENT_LEADER, Agent::ROLE_BUSINESS_PARTNER]),
+            'parent_agent_id' => 'nullable|integer|exists:agents,id',
+            'confirm_downgrade' => 'sometimes|boolean',
             // Bank account fields
             'bank_account_name' => 'nullable|string|max:255',
             'bank_account_number' => 'nullable|string|max:255',
@@ -313,12 +364,38 @@ class AgentController extends Controller
             $rules['company_phone'] = 'required|string|max:255';
             $rules['company_email_address'] = 'required_if:profile_type,company|nullable|email|max:255';
             $rules['company_reg_file'] = 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240';
+            $rules['company_representative_id_file'] = 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240';
         }
 
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
+        }
+
+        // Hierarchy + downgrade checks (Decision 20)
+        $hierarchy = app(AgentHierarchy::class);
+        $newRole = $request->agent_role ?? $agent->agent_role ?? Agent::ROLE_AGENT;
+        $currentRole = $agent->agent_role ?? Agent::ROLE_AGENT;
+        $newRank = AgentHierarchy::ROLE_RANK[$newRole] ?? 0;
+        $currentRank = AgentHierarchy::ROLE_RANK[$currentRole] ?? 0;
+
+        if ($newRank < $currentRank && $agent->subordinates()->count() > 0 && ! $request->boolean('confirm_downgrade')) {
+            return response()->json([
+                'downgrade_warning' => true,
+                'subordinate_count' => $agent->subordinates()->count(),
+                'message' => "Downgrading this agent's role will leave {$agent->subordinates()->count()} subordinate(s) reassigned. Confirm to proceed.",
+            ], 422);
+        }
+
+        if ($request->has('parent_agent_id')) {
+            $parent = $request->filled('parent_agent_id') ? Agent::find($request->parent_agent_id) : null;
+            $candidate = clone $agent;
+            $candidate->agent_role = $newRole;
+            $hierarchyErrors = $hierarchy->validateHierarchyChange($candidate, $parent);
+            if (! empty($hierarchyErrors)) {
+                return back()->withErrors(['parent_agent_id' => implode(' ', $hierarchyErrors)])->withInput();
+            }
         }
 
         DB::beginTransaction();
@@ -329,6 +406,13 @@ class AgentController extends Controller
                 'status' => $request->status,
                 'about' => $request->about,
             ];
+
+            if ($request->filled('agent_role')) {
+                $agentData['agent_role'] = $request->agent_role;
+            }
+            if ($request->has('parent_agent_id')) {
+                $agentData['parent_agent_id'] = $request->parent_agent_id ?: null;
+            }
 
             if ($request->profile_type === 'individual') {
                 $agentData['individual_name'] = $request->individual_name;
@@ -346,7 +430,11 @@ class AgentController extends Controller
                 if ($agent->company_reg_file && Storage::disk('local')->exists($agent->company_reg_file)) {
                     Storage::disk('local')->delete($agent->company_reg_file);
                 }
+                if ($agent->company_representative_id_file && Storage::disk('local')->exists($agent->company_representative_id_file)) {
+                    Storage::disk('local')->delete($agent->company_representative_id_file);
+                }
                 $agentData['company_reg_file'] = null;
+                $agentData['company_representative_id_file'] = null;
             } else {
                 $agentData['company_representative_name'] = $request->company_representative_name;
                 $agentData['company_name'] = $request->company_name;
@@ -394,6 +482,21 @@ class AgentController extends Controller
 
                 Storage::disk('local')->put($path, file_get_contents($file));
                 $agent->update(['company_reg_file' => $path]);
+            }
+
+            // Handle company representative ID file upload (company profile only)
+            if ($request->profile_type === 'company' && $request->hasFile('company_representative_id_file')) {
+                if ($agent->company_representative_id_file && Storage::disk('local')->exists($agent->company_representative_id_file)) {
+                    Storage::disk('local')->delete($agent->company_representative_id_file);
+                }
+
+                $file = $request->file('company_representative_id_file');
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$extension;
+                $path = "agents/{$agent->id}/{$filename}";
+
+                Storage::disk('local')->put($path, file_get_contents($file));
+                $agent->update(['company_representative_id_file' => $path]);
             }
 
             // Update user if password is provided
@@ -487,7 +590,7 @@ class AgentController extends Controller
     {
         $agent = Agent::findOrFail($id);
 
-        $allowedFields = ['individual_id_file', 'company_reg_file'];
+        $allowedFields = ['individual_id_file', 'company_reg_file', 'company_representative_id_file'];
         if (! in_array($field, $allowedFields)) {
             abort(404);
         }

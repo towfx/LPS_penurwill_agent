@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agent;
 use App\Models\Commission;
 use App\Models\Payout;
 use App\Models\Referral;
@@ -45,17 +46,32 @@ class DashboardController extends Controller
             ->sum('amount');
         $salesChange = $salesLastMonth > 0 ? (($salesThisMonth - $salesLastMonth) / $salesLastMonth) * 100 : null;
 
-        // Total commissions this month
-        $commThisMonth = Commission::where('agent_id', $agentId)
+        // Total commissions earned this month (own_sales + overrides)
+        $commThisMonth = Commission::where('earning_agent_id', $agentId)
             ->whereHas('sale', function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
             })
             ->sum('amount');
-        $commLastMonth = Commission::where('agent_id', $agentId)
+        $commLastMonth = Commission::where('earning_agent_id', $agentId)
             ->whereHas('sale', function ($q) use ($startOfLastMonth, $endOfLastMonth) {
                 $q->whereBetween('sale_date', [$startOfLastMonth, $endOfLastMonth]);
             })
             ->sum('amount');
+
+        // Commission breakdown by type (own_sales vs override) for this month
+        $commByType = Commission::query()
+            ->where('earning_agent_id', $agentId)
+            ->whereHas('sale', function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
+            })
+            ->selectRaw('commission_type, SUM(amount) as total')
+            ->groupBy('commission_type')
+            ->pluck('total', 'commission_type');
+        $ownSalesTotal = (float) ($commByType[Commission::TYPE_OWN_SALES] ?? 0);
+        $overrideTotal = (float) ($commByType[Commission::TYPE_OVERRIDE] ?? 0);
+
+        // Subordinate count (relevant for leaders / business partners)
+        $subordinateCount = $agent->subordinates()->count();
         $commChange = $commLastMonth > 0 ? (($commThisMonth - $commLastMonth) / $commLastMonth) * 100 : null;
 
         // Active referrals (90 days)
@@ -153,16 +169,25 @@ class DashboardController extends Controller
         return Inertia::render('Agent/Dashboard', [
             'agent' => [
                 'status' => $agent->status,
+                'agent_role' => $agent->agent_role,
+                'fee_payment_status' => $agent->fee_payment_status,
+                'registered_at' => $agent->registered_at?->toDateString(),
+                'expires_at' => $agent->expires_at?->toDateString(),
+                'renewal_due_at' => $agent->renewal_due_at?->toDateString(),
+                'subordinate_count' => $subordinateCount,
             ],
             'stats' => [
                 'salesThisMonth' => $salesThisMonth,
                 'salesChange' => $salesChange,
                 'commThisMonth' => $commThisMonth,
                 'commChange' => $commChange,
+                'commOwnSalesThisMonth' => $ownSalesTotal,
+                'commOverrideThisMonth' => $overrideTotal,
                 'referrals90' => $referrals90,
                 'refChange' => $refChange,
                 'conversionRate' => $conversionRate,
                 'conversionChange' => $conversionChange,
+                'subordinateCount' => $subordinateCount,
             ],
             'salesByDay' => $salesByDay,
             'referralsByDay' => $referralsByDay,
