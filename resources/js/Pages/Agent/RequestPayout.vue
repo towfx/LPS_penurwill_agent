@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
@@ -29,6 +29,9 @@ const props = defineProps({
     required: true
   }
 })
+
+const page = usePage()
+const minPayoutAmount = computed(() => Number(page.props.systemSettings?.min_payout_amount ?? 1))
 
 // Date range state
 const dateRange = ref(
@@ -382,10 +385,18 @@ watch(() => props.commissions, (newCommissions) => {
           </div>
         </div>
 
+        <p v-if="totalCommission < minPayoutAmount && selectedCount > 0" class="text-sm text-accent-red mb-3">
+          Net total must be at least {{ formatCurrency('RM', minPayoutAmount) }} to request a payout.
+        </p>
+        <p v-if="totalCommission <= 0 && selectedCount > 0" class="text-sm text-accent-red mb-3">
+          Net total is zero or negative due to pending reversals — payout cannot be requested.
+        </p>
+
         <!-- Request Payout Button -->
         <button
           @click="requestPayout"
-          :disabled="selectedCount === 0 || isSubmitting"
+          :disabled="selectedCount === 0 || isSubmitting || totalCommission <= 0 || totalCommission < minPayoutAmount"
+          :title="totalCommission < minPayoutAmount ? `Minimum payout: ${formatCurrency('RM', minPayoutAmount)}` : ''"
           class="w-full md:w-auto px-6 py-3 bg-accent-green text-white rounded-md font-medium hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <span v-if="isSubmitting">Processing...</span>
@@ -423,6 +434,9 @@ watch(() => props.commissions, (newCommissions) => {
               <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
                 Invoice Number
               </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
+                Type
+              </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
                 Amount
               </th>
@@ -433,7 +447,7 @@ watch(() => props.commissions, (newCommissions) => {
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
             <tr v-if="commissions.length === 0" class="hover:bg-stone-50">
-              <td colspan="6" class="px-6 py-4 text-center text-stone-500">
+              <td colspan="7" class="px-6 py-4 text-center text-stone-500">
                 No pending commissions found matching the selected filters.
               </td>
             </tr>
@@ -441,6 +455,7 @@ watch(() => props.commissions, (newCommissions) => {
               v-for="commission in commissions"
               :key="commission.id"
               class="hover:bg-stone-50"
+              :class="{ 'bg-red-50': commission.is_reversal }"
             >
               <td class="px-6 py-4 whitespace-nowrap">
                 <input
@@ -459,10 +474,18 @@ watch(() => props.commissions, (newCommissions) => {
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                 {{ commission.invoice_number || '—' }}
               </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                      :class="commission.commission_type === 'own_sales' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                  {{ commission.commission_type || 'own_sales' }}
+                </span>
+                <span v-if="commission.is_reversal" class="ml-1 text-xs text-accent-red">↩ reversal</span>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
                 {{ formatCurrency('RM', commission.amount) }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-right"
+                  :class="parseFloat(commission.commission_amount) < 0 ? 'text-accent-red font-medium' : 'text-stone-900'">
                 {{ formatCurrency('RM', commission.commission_amount) }}
               </td>
             </tr>

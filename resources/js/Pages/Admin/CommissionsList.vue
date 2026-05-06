@@ -43,6 +43,45 @@
             </span>
           </div>
         </div>
+
+        <!-- Commission Type / Category / Calc filters -->
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-stone-700 mb-2">Type</label>
+          <select
+            v-model="selectedType"
+            @change="updateFilters"
+            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light"
+          >
+            <option value="">All</option>
+            <option value="own_sales">Own Sales</option>
+            <option value="override">Override</option>
+          </select>
+        </div>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-stone-700 mb-2">Category</label>
+          <select
+            v-model="selectedCategory"
+            @change="updateFilters"
+            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light"
+          >
+            <option value="">All</option>
+            <option value="agent">{{ roleNames.agent }}</option>
+            <option value="agent_leader">{{ roleNames.leader }}</option>
+            <option value="business_partner">{{ roleNames.business_partner }}</option>
+          </select>
+        </div>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-stone-700 mb-2">Calc Type</label>
+          <select
+            v-model="selectedCalcType"
+            @change="updateFilters"
+            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light"
+          >
+            <option value="">All</option>
+            <option value="percentage">Percentage</option>
+            <option value="fixed">Fixed</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -159,41 +198,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Link } from '@inertiajs/vue3'
+import { ref, computed, onMounted } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
 
 defineOptions({ layout: AdminLayout })
 
 const props = defineProps({
-  commissions: {
-    type: Array,
-    default: () => []
-  },
-  years: {
-    type: Array,
-    default: () => []
-  },
-  months: {
-    type: Object,
-    default: () => ({})
-  },
-  selectedYear: {
-    type: Number,
-    default: new Date().getFullYear()
-  },
-  selectedMonth: {
-    type: Number,
-    default: new Date().getMonth() + 1
-  }
+  commissions: { type: Array, default: () => [] },
+  years: { type: Array, default: () => [] },
+  months: { type: Object, default: () => ({}) },
+  selectedYear: { type: Number, default: new Date().getFullYear() },
+  selectedMonth: { type: Number, default: new Date().getMonth() + 1 },
+  selectedType: { type: String, default: '' },
+  selectedCategory: { type: String, default: '' },
+  selectedCalcType: { type: String, default: '' },
 })
 
 const selectedYear = ref(props.selectedYear)
 const selectedMonth = ref(props.selectedMonth)
+const selectedType = ref(props.selectedType)
+const selectedCategory = ref(props.selectedCategory)
+const selectedCalcType = ref(props.selectedCalcType)
+
+const page = usePage()
+const roleNames = computed(() => ({
+  agent: page.props.systemSettings?.role_name_agent || 'Agent',
+  leader: page.props.systemSettings?.role_name_leader || 'Leader',
+  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+}))
 
 const updateFilters = () => {
-  window.location.href = `/admin/commissions/list?year=${selectedYear.value}&month=${selectedMonth.value}`
+  const params = new URLSearchParams({
+    year: selectedYear.value,
+    month: selectedMonth.value,
+    type: selectedType.value,
+    category: selectedCategory.value,
+    calc_type: selectedCalcType.value,
+  })
+  window.location.href = `/admin/commissions/list?${params}`
 }
 
 const getAgentName = (agent) => {

@@ -50,6 +50,12 @@
               View File
             </a>
           </div>
+          <div v-if="agent.company_representative_id_file">
+            <span class="font-medium text-gray-700">Company Representative ID:</span>
+            <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
+              View File
+            </a>
+          </div>
         </div>
 
         <div v-if="agent.about" class="mt-6 space-y-2">
@@ -69,6 +75,74 @@
           <div><span class="font-medium text-gray-700">User Email:</span> {{ agent.user_email }}</div>
           <div><span class="font-medium text-gray-700">Created:</span> {{ agent.created_at }}</div>
         </div>
+      </div>
+
+      <!-- Hierarchy & Membership -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">Hierarchy &amp; Membership</h3>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <span class="font-medium text-gray-700">Role:</span>
+            <span class="ml-2">{{ roleLabel(agent.agent_role) }}</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-700">Parent Agent:</span>
+            <span v-if="agent.parent_agent" class="ml-2">
+              <a :href="`/admin/agents/${agent.parent_agent.id}/view`" class="text-gold hover:text-amber-700">
+                {{ agent.parent_agent.name || `#${agent.parent_agent.id}` }}
+                ({{ roleLabel(agent.parent_agent.agent_role) }})
+              </a>
+            </span>
+            <span v-else class="ml-2 text-gray-500">— top level —</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-700">Registered At:</span>
+            <span class="ml-2">{{ agent.registered_at || '—' }}</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-700">Expires At:</span>
+            <span class="ml-2">{{ agent.expires_at || '—' }}</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-700">Renewal Due:</span>
+            <span class="ml-2">{{ agent.renewal_due_at || '—' }}</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-700">Fee Status:</span>
+            <span :class="getFeeStatusPillClass(agent.fee_payment_status)" class="ml-2">
+              {{ agent.fee_payment_status || 'pending' }}
+            </span>
+          </div>
+        </div>
+
+        <div v-if="agent.subordinates && agent.subordinates.length" class="mt-6">
+          <h4 class="text-md font-semibold text-forest-dark mb-2">Direct Subordinates ({{ agent.subordinates.length }})</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border border-gray-200 rounded">
+              <thead class="bg-cream">
+                <tr>
+                  <th class="px-3 py-2 text-left">ID</th>
+                  <th class="px-3 py-2 text-left">Name</th>
+                  <th class="px-3 py-2 text-left">Role</th>
+                  <th class="px-3 py-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr v-for="sub in agent.subordinates" :key="sub.id" class="hover:bg-gray-50">
+                  <td class="px-3 py-2">
+                    <a :href="`/admin/agents/${sub.id}/view`" class="text-gold hover:text-amber-700">#{{ sub.id }}</a>
+                  </td>
+                  <td class="px-3 py-2">{{ sub.name || sub.individual_name || sub.company_name }}</td>
+                  <td class="px-3 py-2">{{ roleLabel(sub.agent_role) }}</td>
+                  <td class="px-3 py-2">
+                    <span :class="getStatusPillClass(sub.status)">{{ sub.status }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div v-else class="mt-4 text-sm text-gray-500">No direct subordinates.</div>
       </div>
 
       <!-- Bank Account Information -->
@@ -129,7 +203,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 
 defineOptions({ layout: AdminLayout })
@@ -140,6 +214,28 @@ const props = defineProps({
     default: null
   }
 })
+
+const page = usePage()
+const roleNames = computed(() => ({
+  agent: page.props.systemSettings?.role_name_agent || 'Agent',
+  agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',
+  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+}))
+
+const roleLabel = (role) => roleNames.value[role] || role || '—'
+
+const getFeeStatusPillClass = (status) => {
+  switch (status) {
+    case 'paid':
+      return 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium'
+    case 'overdue':
+      return 'bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium'
+    case 'waived':
+      return 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium'
+    default:
+      return 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium'
+  }
+}
 
 const showApproveDialogModal = ref(false)
 const isApproving = ref(false)

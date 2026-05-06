@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
@@ -25,6 +25,20 @@ const props = defineProps({
     type: Object,
     required: true
   }
+})
+
+const page = usePage()
+const roleNames = computed(() => ({
+  agent: page.props.systemSettings?.role_name_agent || 'Agent',
+  agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',
+  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+}))
+const roleLabel = (role) => roleNames.value[role] || role || '—'
+
+// Show source agent column only for leader / business partner viewing subordinate sales
+const showsSourceAgent = computed(() => {
+  const role = props.agent?.agent_role
+  return role === 'agent_leader' || role === 'business_partner'
 })
 
 // Date range state
@@ -169,6 +183,12 @@ const applyFilters = () => {
               <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
                 Invoice Number
               </th>
+              <th
+                v-if="showsSourceAgent"
+                class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider"
+              >
+                Source Agent
+              </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
                 Amount
               </th>
@@ -182,7 +202,7 @@ const applyFilters = () => {
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
             <tr v-if="sales.length === 0" class="hover:bg-stone-50">
-              <td colspan="6" class="px-6 py-4 text-center text-stone-500">
+              <td :colspan="showsSourceAgent ? 7 : 6" class="px-6 py-4 text-center text-stone-500">
                 No sales found matching the selected filters.
               </td>
             </tr>
@@ -199,6 +219,13 @@ const applyFilters = () => {
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                 {{ sale.invoice_number || '—' }}
+              </td>
+              <td v-if="showsSourceAgent" class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
+                <span v-if="sale.source_agent">
+                  {{ sale.source_agent.name || sale.source_agent.individual_name || sale.source_agent.company_name }}
+                  <span class="text-xs text-stone-500">({{ roleLabel(sale.source_agent.agent_role) }})</span>
+                </span>
+                <span v-else class="text-stone-400">—</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
                 {{ formatCurrency('RM', sale.amount) }}
