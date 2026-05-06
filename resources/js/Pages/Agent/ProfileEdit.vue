@@ -33,6 +33,7 @@ const form = ref({
   company_phone: props.agent?.company_phone || '',
   company_email_address: props.agent?.company_email_address || '',
   company_reg_file: null,
+  company_representative_id_file: null,
   about: props.agent?.about || '',
   // Bank account fields
   bank_account_name: props.agent?.bank_account?.account_name || '',
@@ -117,6 +118,10 @@ const handleCompanyRegFileChange = (event) => {
   form.value.company_reg_file = event.target.files[0]
 }
 
+const handleCompanyRepIdFileChange = (event) => {
+  form.value.company_representative_id_file = event.target.files[0]
+}
+
 // Helper function to generate file URL with cache-busting parameter
 const getFileUrl = (field) => {
   if (!props.agent) return ''
@@ -150,7 +155,7 @@ const saveProfile = async () => {
   console.log('Form data before submission:', JSON.parse(JSON.stringify(form.value)))
 
   // Check if we have files to upload
-  const hasFiles = form.value.individual_id_file || form.value.company_reg_file
+  const hasFiles = form.value.individual_id_file || form.value.company_reg_file || form.value.company_representative_id_file
 
   try {
     if (hasFiles) {
@@ -158,7 +163,7 @@ const saveProfile = async () => {
       const formData = new FormData()
       Object.keys(form.value).forEach(key => {
         // Skip file fields if they're null (only append if file exists)
-        if (key === 'individual_id_file' || key === 'company_reg_file') {
+        if (key === 'individual_id_file' || key === 'company_reg_file' || key === 'company_representative_id_file') {
           if (form.value[key]) {
             formData.append(key, form.value[key])
             console.log(`Added file ${key}:`, form.value[key].name)
@@ -346,6 +351,24 @@ const saveProfile = async () => {
             <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
             <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
             <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative ID (NRIC/Passport)</label>
+            <div v-if="agent?.company_representative_id_file" class="mb-2">
+              <span class="text-sm text-gray-600">Current file: </span>
+              <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+                View Current File
+              </a>
+            </div>
+            <input
+              @change="handleCompanyRepIdFileChange"
+              type="file"
+              accept=".pdf,.jpeg,.jpg,.png"
+              class="w-full px-3 py-2 border rounded"
+            />
+            <p class="text-sm text-gray-500 mt-1">Copy of the company representative's IC or Passport.</p>
+            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            <p v-if="errors.company_representative_id_file" class="text-accent-red text-sm mt-1">{{ errors.company_representative_id_file }}</p>
           </div>
         </div>
 

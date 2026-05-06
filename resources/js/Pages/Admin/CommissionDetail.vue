@@ -166,126 +166,223 @@
       </div>
     </div>
 
-    <!-- Commissions Table -->
+    <!-- Tabbed Report (Decision 10) -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
       <div class="px-6 py-4 border-b border-stone-200">
-        <h2 class="text-lg font-semibold text-forest-dark">
-          Commission Details
-        </h2>
-      </div>
+        <Tabs v-model="activeTab" default-value="type" class="w-full">
+          <TabsList>
+            <TabsTrigger value="type">By Commission Type</TabsTrigger>
+            <TabsTrigger value="source">By Sales Source</TabsTrigger>
+            <TabsTrigger value="period">By Time Period</TabsTrigger>
+            <TabsTrigger value="detail">Detailed Transactions</TabsTrigger>
+          </TabsList>
 
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-stone-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Sale Description
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Sale Amount
-              </th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission Rate
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission Amount
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-stone-200">
-            <tr v-if="commissions.length === 0" class="hover:bg-stone-50">
-              <td colspan="6" class="px-6 py-4 text-center text-stone-500">
-                No commission records found for this period.
-              </td>
-            </tr>
-            <tr
-              v-for="commission in commissions"
-              :key="commission.id"
-              class="hover:bg-stone-50"
-            >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                {{ formatDate(commission.created_at) }}
-              </td>
-              <td class="px-6 py-4 text-sm text-stone-900">
-                <div class="max-w-xs truncate">
-                  {{ commission.sale?.description || 'N/A' }}
-                </div>
-                <div class="text-xs text-stone-500">
-                  Invoice: {{ commission.sale?.invoice_number || 'N/A' }}
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ formatCurrency('RM', commission.sale?.amount || 0) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-center">
-                {{ commission.commission_rate }}%
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                <span class="font-medium text-forest-dark">
-                  {{ formatCurrency('RM', commission.amount) }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  :class="`
-                    inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                    ${getStatusClass(commission.status)}
-                  `"
-                >
-                  {{ commission.status }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <TabsContent value="type" class="pt-4">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-stone-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-stone-600">Type</th>
+                    <th class="px-4 py-2 text-left font-medium text-stone-600">Category</th>
+                    <th class="px-4 py-2 text-left font-medium text-stone-600">Calc</th>
+                    <th class="px-4 py-2 text-right font-medium text-stone-600">Count</th>
+                    <th class="px-4 py-2 text-right font-medium text-stone-600">Total</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200">
+                  <tr v-for="row in (report?.by_type || [])" :key="`${row.commission_type}-${row.commission_category}-${row.commission_calc_type}`">
+                    <td class="px-4 py-2">
+                      <Badge :variant="row.commission_type === 'own_sales' ? 'success' : 'secondary'">
+                        {{ row.commission_type }}
+                      </Badge>
+                    </td>
+                    <td class="px-4 py-2">{{ roleLabel(row.commission_category) }}</td>
+                    <td class="px-4 py-2">{{ row.commission_calc_type || '—' }}</td>
+                    <td class="px-4 py-2 text-right">{{ row.count }}</td>
+                    <td class="px-4 py-2 text-right font-medium">{{ formatCurrency('RM', row.total) }}</td>
+                  </tr>
+                  <tr v-if="!(report?.by_type || []).length">
+                    <td colspan="5" class="px-4 py-6 text-center text-stone-500">No data.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="source" class="pt-4">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-stone-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-stone-600">Source Agent</th>
+                    <th class="px-4 py-2 text-left font-medium text-stone-600">Role</th>
+                    <th class="px-4 py-2 text-right font-medium text-stone-600">Sales</th>
+                    <th class="px-4 py-2 text-right font-medium text-stone-600">Commission</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200">
+                  <tr v-for="row in (report?.by_source || [])" :key="row.source_agent_id">
+                    <td class="px-4 py-2">{{ row.source_agent_name || `#${row.source_agent_id}` }}</td>
+                    <td class="px-4 py-2">{{ roleLabel(row.source_agent_role) }}</td>
+                    <td class="px-4 py-2 text-right">{{ row.sales_count }}</td>
+                    <td class="px-4 py-2 text-right font-medium">{{ formatCurrency('RM', row.total) }}</td>
+                  </tr>
+                  <tr v-if="!(report?.by_source || []).length">
+                    <td colspan="4" class="px-4 py-6 text-center text-stone-500">No data.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="period" class="pt-4">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-stone-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-stone-600">Period</th>
+                    <th class="px-4 py-2 text-right font-medium text-stone-600">Count</th>
+                    <th class="px-4 py-2 text-right font-medium text-stone-600">Total</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200">
+                  <tr v-for="row in (report?.by_period || [])" :key="row.period">
+                    <td class="px-4 py-2">{{ row.period }}</td>
+                    <td class="px-4 py-2 text-right">{{ row.count }}</td>
+                    <td class="px-4 py-2 text-right font-medium">{{ formatCurrency('RM', row.total) }}</td>
+                  </tr>
+                  <tr v-if="!(report?.by_period || []).length">
+                    <td colspan="3" class="px-4 py-6 text-center text-stone-500">No data.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="detail" class="pt-4">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-stone-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase">Date</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase">Sale</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase">Type</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase">Category</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase">Calc</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-stone-500 uppercase">Sale Amount</th>
+                    <th class="px-4 py-2 text-center text-xs font-medium text-stone-500 uppercase">Rate</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-stone-500 uppercase">Commission</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-stone-200">
+                  <tr v-if="commissions.length === 0">
+                    <td colspan="9" class="px-4 py-4 text-center text-stone-500">No commission records found for this period.</td>
+                  </tr>
+                  <tr
+                    v-for="commission in commissions"
+                    :key="commission.id"
+                    class="hover:bg-stone-50"
+                    :class="{ 'bg-red-50': commission.is_reversal }"
+                  >
+                    <td class="px-4 py-2 whitespace-nowrap text-sm">{{ formatDate(commission.created_at) }}</td>
+                    <td class="px-4 py-2 text-sm">
+                      <div class="max-w-xs truncate">{{ commission.sale?.description || 'N/A' }}</div>
+                      <div class="text-xs text-stone-500">Invoice: {{ commission.sale?.invoice_number || 'N/A' }}</div>
+                    </td>
+                    <td class="px-4 py-2">
+                      <Badge :variant="commission.commission_type === 'own_sales' ? 'success' : 'secondary'">
+                        {{ commission.commission_type || 'own_sales' }}
+                      </Badge>
+                      <span v-if="commission.is_reversal" class="ml-1 text-xs font-medium text-accent-red">↩ reversal</span>
+                    </td>
+                    <td class="px-4 py-2 text-sm">{{ roleLabel(commission.commission_category) }}</td>
+                    <td class="px-4 py-2 text-sm">{{ commission.commission_calc_type || 'percentage' }}</td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-right">
+                      {{ formatCurrency('RM', commission.sale?.amount || commission.source_sale_amount || 0) }}
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-center">
+                      <span v-if="commission.commission_calc_type === 'fixed'">
+                        {{ formatCurrency('RM', commission.commission_fixed_amount || 0) }}
+                      </span>
+                      <span v-else>{{ commission.commission_rate }}%</span>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap text-sm text-right">
+                      <span class="font-medium text-forest-dark">
+                        {{ formatCurrency('RM', commission.amount) }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-2 whitespace-nowrap">
+                      <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(commission.status)}`">
+                        {{ commission.status }}
+                      </span>
+                      <button
+                        v-if="commission.status === 'paid' && !commission.is_reversal && canMarkRefunded(commission)"
+                        @click="markRefunded(commission)"
+                        class="ml-2 text-xs text-accent-red hover:underline"
+                      >
+                        Mark as Refunded
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { Link, router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
+import Tabs from '../Design/Components/Tabs.vue'
+import TabsList from '../Design/Components/TabsList.vue'
+import TabsTrigger from '../Design/Components/TabsTrigger.vue'
+import TabsContent from '../Design/Components/TabsContent.vue'
+import Badge from '../Design/Components/Badge.vue'
 import { formatCurrency } from '../../lib/utils.js'
 
 defineOptions({ layout: AdminLayout })
 
 const props = defineProps({
-  agent: {
-    type: Object,
-    required: true
-  },
-  summary: {
-    type: Object,
-    default: () => ({})
-  },
-  commissions: {
-    type: Array,
-    default: () => []
-  },
-  payout: {
-    type: Object,
-    default: null
-  },
-  year: {
-    type: Number,
-    required: true
-  },
-  month: {
-    type: Number,
-    required: true
-  },
-  monthName: {
-    type: String,
-    required: true
-  }
+  agent: { type: Object, required: true },
+  summary: { type: Object, default: () => ({}) },
+  commissions: { type: Array, default: () => [] },
+  report: { type: Object, default: () => ({ by_type: [], by_source: [], by_period: [] }) },
+  payout: { type: Object, default: null },
+  year: { type: Number, required: true },
+  month: { type: Number, required: true },
+  monthName: { type: String, required: true },
+  reversalTimeLimit: { type: Number, default: 60 },
 })
+
+const activeTab = ref('type')
+
+const page = usePage()
+const roleNames = computed(() => ({
+  agent: page.props.systemSettings?.role_name_agent || 'Agent',
+  agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',
+  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+}))
+
+const roleLabel = (role) => roleNames.value[role] || role || '—'
+
+const canMarkRefunded = (commission) => {
+  if (!commission?.sale?.created_at) return true
+  const saleDate = new Date(commission.sale.created_at)
+  const limitMs = (props.reversalTimeLimit || 60) * 24 * 60 * 60 * 1000
+  return Date.now() - saleDate.getTime() <= limitMs
+}
+
+const markRefunded = (commission) => {
+  if (!commission?.sale?.id) return
+  if (!confirm('Mark this sale as refunded? A negative reversal commission will be created.')) return
+  router.post(`/admin/sales/${commission.sale.id}/refund`)
+}
 
 const getAgentName = (agent) => {
   if (!agent) return 'Unknown Agent'

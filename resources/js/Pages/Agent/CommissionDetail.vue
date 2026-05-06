@@ -120,29 +120,19 @@
         <table class="w-full">
           <thead class="bg-stone-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Sale Description
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Sale Amount
-              </th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission Rate
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission Amount
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Status
-              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Sale Description</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Calc Type</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">Sale Amount</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">Rate / Fixed</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">Commission</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
             <tr v-if="commissions.length === 0" class="hover:bg-stone-50">
-              <td colspan="6" class="px-6 py-4 text-center text-stone-500">
+              <td colspan="8" class="px-6 py-4 text-center text-stone-500">
                 No commission records found for this period.
               </td>
             </tr>
@@ -150,6 +140,7 @@
               v-for="commission in commissions"
               :key="commission.id"
               class="hover:bg-stone-50"
+              :class="{ 'bg-red-50': commission.is_reversal }"
             >
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                 {{ formatDate(commission.created_at) }}
@@ -162,11 +153,24 @@
                   Invoice: {{ commission.sale?.invoice_number || 'N/A' }}
                 </div>
               </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                      :class="commission.commission_type === 'own_sales' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                  {{ commission.commission_type || 'own_sales' }}
+                </span>
+                <span v-if="commission.is_reversal" class="ml-1 text-xs text-accent-red">↩ reversal</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                {{ commission.commission_calc_type || 'percentage' }}
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ formatCurrency('RM', commission.sale?.amount || 0) }}
+                {{ formatCurrency('RM', commission.sale?.amount || commission.source_sale_amount || 0) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-center">
-                {{ commission.commission_rate }}%
+                <span v-if="commission.commission_calc_type === 'fixed'">
+                  {{ formatCurrency('RM', commission.commission_fixed_amount || 0) }}
+                </span>
+                <span v-else>{{ commission.commission_rate }}%</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
                 <span class="font-medium text-forest-dark">
@@ -174,12 +178,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  :class="`
-                    inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                    ${getStatusClass(commission.status)}
-                  `"
-                >
+                <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(commission.status)}`">
                   {{ commission.status }}
                 </span>
               </td>

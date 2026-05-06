@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
@@ -76,6 +76,14 @@ const getStatusText = () => {
 const viewPayout = (id) => {
   router.visit(`/admin/payout/${id}`)
 }
+
+const typeFilter = ref(new URLSearchParams(window.location.search).get('type') || '')
+const applyTypeFilter = () => {
+  const params = new URLSearchParams(window.location.search)
+  if (typeFilter.value) params.set('type', typeFilter.value)
+  else params.delete('type')
+  window.location.href = `/admin/payouts?${params}`
+}
 </script>
 
 <template>
@@ -150,10 +158,19 @@ const viewPayout = (id) => {
 
     <!-- Payouts Table -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
-      <div class="px-6 py-4 border-b border-stone-200">
+      <div class="px-6 py-4 border-b border-stone-200 flex items-center justify-between">
         <h2 class="text-lg font-semibold text-forest-dark">
           Payouts List
         </h2>
+        <select
+          v-model="typeFilter"
+          @change="applyTypeFilter"
+          class="px-3 py-2 border border-stone-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-forest-light"
+        >
+          <option value="">All Types</option>
+          <option value="own_sales">Own Sales</option>
+          <option value="override">Override</option>
+        </select>
       </div>
 
       <div class="overflow-x-auto">
@@ -168,6 +185,15 @@ const viewPayout = (id) => {
               </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
                 Amount
+              </th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
+                Own
+              </th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
+                Override (Agent)
+              </th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
+                Override (Leader)
               </th>
               <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">
                 Items Count
@@ -185,7 +211,7 @@ const viewPayout = (id) => {
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
             <tr v-if="payouts.length === 0" class="hover:bg-stone-50">
-              <td colspan="7" class="px-6 py-4 text-center text-stone-500">
+              <td colspan="10" class="px-6 py-4 text-center text-stone-500">
                 No payouts found.
               </td>
             </tr>
@@ -203,6 +229,15 @@ const viewPayout = (id) => {
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
                 {{ formatCurrency('RM', payout.amount) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-700 text-right">
+                {{ formatCurrency('RM', payout.own_sales_total ?? payout.breakdown?.own_sales ?? 0) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-700 text-right">
+                {{ formatCurrency('RM', payout.override_agent_total ?? payout.breakdown?.override_agent ?? 0) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-700 text-right">
+                {{ formatCurrency('RM', payout.override_leader_total ?? payout.breakdown?.override_leader ?? 0) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-center">
                 {{ payout.items_count }}

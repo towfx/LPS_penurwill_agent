@@ -197,6 +197,19 @@
               <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
               <p v-if="errors.company_reg_file" class="text-red-500 text-sm mt-1">{{ errors.company_reg_file }}</p>
             </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative ID (NRIC/Passport)</label>
+              <input
+                @change="handleCompanyRepIdFileChange"
+                type="file"
+                accept=".pdf,.jpeg,.jpg,.png"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+              />
+              <p class="text-sm text-gray-500 mt-1">Copy of the company representative's IC or Passport.</p>
+              <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+              <p v-if="errors.company_representative_id_file" class="text-red-500 text-sm mt-1">{{ errors.company_representative_id_file }}</p>
+            </div>
           </div>
 
           <!-- About Me / About Company -->
@@ -267,8 +280,98 @@
               <option value="inactive">Inactive</option>
               <option value="suspended">Suspended</option>
               <option value="banned">Banned</option>
+              <option value="expired">Expired</option>
             </select>
             <p v-if="errors.status" class="text-red-500 text-sm mt-1">{{ errors.status }}</p>
+          </div>
+
+          <!-- Hierarchy -->
+          <div class="border-t pt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Hierarchy</h3>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Agent Role *</label>
+                <select
+                  v-model="form.agent_role"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                >
+                  <option value="agent">{{ roleNames.agent }}</option>
+                  <option value="agent_leader">{{ roleNames.leader }}</option>
+                  <option value="business_partner">{{ roleNames.business_partner }}</option>
+                </select>
+                <p v-if="errors.agent_role" class="text-red-500 text-sm mt-1">{{ errors.agent_role }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Parent Agent</label>
+                <input
+                  v-model="parentSearchQuery"
+                  @input="searchParents"
+                  type="text"
+                  list="parent-options"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                  placeholder="Search by name or ID..."
+                />
+                <datalist id="parent-options">
+                  <option
+                    v-for="p in parentOptions"
+                    :key="p.id"
+                    :value="`${p.name} (#${p.id} — ${p.agent_role})`"
+                  />
+                </datalist>
+                <p class="text-sm text-gray-500 mt-1">
+                  Filter shows agents with role ≥ {{ minParentRoleLabel }}.
+                </p>
+                <p v-if="errors.parent_agent_id" class="text-red-500 text-sm mt-1">{{ errors.parent_agent_id }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Membership lifecycle -->
+          <div class="border-t pt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Membership Lifecycle</h3>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Registered At</label>
+                <input
+                  v-model="form.registered_at"
+                  type="date"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                />
+                <p v-if="errors.registered_at" class="text-red-500 text-sm mt-1">{{ errors.registered_at }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Expires At</label>
+                <input
+                  v-model="form.expires_at"
+                  type="date"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                />
+                <p v-if="errors.expires_at" class="text-red-500 text-sm mt-1">{{ errors.expires_at }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Renewal Due At</label>
+                <input
+                  v-model="form.renewal_due_at"
+                  type="date"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                />
+                <p v-if="errors.renewal_due_at" class="text-red-500 text-sm mt-1">{{ errors.renewal_due_at }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Fee Payment Status</label>
+                <select
+                  v-model="form.fee_payment_status"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="waived">Waived</option>
+                </select>
+                <p v-if="errors.fee_payment_status" class="text-red-500 text-sm mt-1">{{ errors.fee_payment_status }}</p>
+              </div>
+            </div>
           </div>
         </form>
       </CardContent>
@@ -445,8 +548,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { ref, reactive, computed, watch } from 'vue'
+import { router, usePage } from '@inertiajs/vue3'
 import { ArrowLeft } from 'lucide-vue-next'
 import AdminLayout from '../Design/AdminLayout.vue'
 import Card from '../Design/Components/Card.vue'
@@ -504,6 +607,13 @@ const aboutWordCount = computed(() => {
   return form.about.trim().split(/\s+/).filter(word => word.length > 0).length
 })
 
+const page = usePage()
+const roleNames = computed(() => ({
+  agent: page.props.systemSettings?.role_name_agent || 'Agent',
+  leader: page.props.systemSettings?.role_name_leader || 'Leader',
+  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+}))
+
 const form = reactive({
   profile_type: 'individual',
   individual_name: '',
@@ -519,11 +629,18 @@ const form = reactive({
   company_phone: '',
   company_email_address: '',
   company_reg_file: null,
+  company_representative_id_file: null,
   about: '',
   user_email: '',
   user_password: '',
   user_password_confirmation: '',
   status: 'active',
+  agent_role: 'agent',
+  parent_agent_id: null,
+  registered_at: '',
+  expires_at: '',
+  renewal_due_at: '',
+  fee_payment_status: 'pending',
   // Bank account fields
   bank_account_name: '',
   bank_account_number: '',
@@ -544,6 +661,55 @@ const handleIndividualIdFileChange = (event) => {
 const handleCompanyRegFileChange = (event) => {
   form.company_reg_file = event.target.files[0]
 }
+
+const handleCompanyRepIdFileChange = (event) => {
+  form.company_representative_id_file = event.target.files[0]
+}
+
+// Parent agent search (filtered to roles >= child role per validateHierarchyChange)
+const parentSearchQuery = ref('')
+const parentOptions = ref([])
+let parentSearchTimer = null
+
+const minParentRoleLabel = computed(() => {
+  if (form.agent_role === 'business_partner') return roleNames.value.business_partner
+  if (form.agent_role === 'agent_leader') return roleNames.value.leader
+  return roleNames.value.agent
+})
+
+const searchParents = () => {
+  clearTimeout(parentSearchTimer)
+  parentSearchTimer = setTimeout(async () => {
+    try {
+      const params = new URLSearchParams({
+        search: parentSearchQuery.value,
+        child_role: form.agent_role,
+      })
+      const res = await fetch(`/admin/agents/parents?${params}`, {
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      parentOptions.value = data.parents || data.data || data || []
+    } catch (e) {
+      parentOptions.value = []
+    }
+  }, 250)
+}
+
+watch(parentSearchQuery, (val) => {
+  // Extract id from "Name (#123 — role)" format if user picks from datalist
+  const match = String(val).match(/#(\d+)/)
+  if (match) {
+    form.parent_agent_id = parseInt(match[1], 10)
+  } else if (!val) {
+    form.parent_agent_id = null
+  }
+})
+
+watch(() => form.agent_role, () => {
+  parentOptions.value = []
+})
 
 const submitForm = async () => {
   isSubmitting.value = true

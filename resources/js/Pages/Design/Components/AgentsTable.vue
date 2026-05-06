@@ -4,6 +4,16 @@
       <div class="flex items-center justify-between">
         <CardTitle>Agents</CardTitle>
         <div class="flex items-center space-x-2">
+          <select
+            v-model="roleFilter"
+            @change="fetchAgents"
+            class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent text-sm"
+          >
+            <option value="">All Roles</option>
+            <option value="agent">{{ roleNames.agent }}</option>
+            <option value="agent_leader">{{ roleNames.agent_leader }}</option>
+            <option value="business_partner">{{ roleNames.business_partner }}</option>
+          </select>
           <div class="relative">
             <input
               v-model="searchQuery"
@@ -59,6 +69,16 @@
               </th>
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                @click="sortBy('agent_role')"
+              >
+                <div class="flex items-center">
+                  Role
+                  <ChevronUp v-if="sortByField === 'agent_role' && sortOrder === 'asc'" class="ml-1 h-4 w-4" />
+                  <ChevronDown v-if="sortByField === 'agent_role' && sortOrder === 'desc'" class="ml-1 h-4 w-4" />
+                </div>
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 @click="sortBy('created_at')"
               >
                 <div class="flex items-center">
@@ -68,6 +88,7 @@
                 </div>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Expiry</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -101,12 +122,22 @@
                   </div>
                 </div>
               </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <Badge :variant="getRoleVariant(agent.agent_role)">
+                  {{ roleLabel(agent.agent_role) }}
+                </Badge>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ agent.reg_date }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <Badge :variant="getStatusVariant(agent.status)">
                   {{ agent.status }}
+                </Badge>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <Badge :variant="getExpiryVariant(agent)">
+                  {{ getExpiryLabel(agent) }}
                 </Badge>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -158,8 +189,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { ref, computed, onMounted, watch } from 'vue'
+import { router, usePage } from '@inertiajs/vue3'
 import {
   Search,
   Download,
@@ -191,9 +222,51 @@ const props = defineProps({
 const agents = ref(props.initialAgents || [])
 const pagination = ref(props.initialPagination || null)
 const searchQuery = ref('')
+const roleFilter = ref(new URLSearchParams(window.location.search).get('role') || '')
 const sortByField = ref('id')
 const sortOrder = ref('desc')
 const isLoading = ref(false)
+
+const page = usePage()
+const roleNames = computed(() => ({
+  agent: page.props.systemSettings?.role_name_agent || 'Agent',
+  agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',
+  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+}))
+
+const roleLabel = (role) => {
+  if (!role) return '—'
+  return roleNames.value[role] || role
+}
+
+const getRoleVariant = (role) => {
+  switch (role) {
+    case 'business_partner': return 'warning'
+    case 'agent_leader': return 'success'
+    case 'agent': return 'default'
+    default: return 'secondary'
+  }
+}
+
+const getExpiryVariant = (agent) => {
+  if (!agent?.expires_at) return 'secondary'
+  const today = new Date()
+  const exp = new Date(agent.expires_at)
+  const days = Math.floor((exp - today) / (1000 * 60 * 60 * 24))
+  if (days < 0) return 'destructive'
+  if (days < 30) return 'warning'
+  return 'success'
+}
+
+const getExpiryLabel = (agent) => {
+  if (!agent?.expires_at) return '—'
+  const today = new Date()
+  const exp = new Date(agent.expires_at)
+  const days = Math.floor((exp - today) / (1000 * 60 * 60 * 24))
+  if (days < 0) return `Expired ${-days}d ago`
+  if (days < 30) return `${days}d left`
+  return agent.expires_at
+}
 
 // Debounced search
 let searchTimeout = null
@@ -205,6 +278,7 @@ const fetchAgents = async () => {
   try {
     const params = new URLSearchParams({
       search: searchQuery.value,
+      role: roleFilter.value,
       sort_by: sortByField.value,
       sort_order: sortOrder.value,
       page: pagination.value?.current_page || 1

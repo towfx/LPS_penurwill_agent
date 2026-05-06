@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue'
-import { router, useForm } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { router, useForm, usePage } from '@inertiajs/vue3'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
@@ -11,27 +11,69 @@ import axios from 'axios'
 defineOptions({ layout: AdminLayout })
 
 const props = defineProps({
-  payout: {
-    type: Object,
-    required: true
-  },
-  agent: {
-    type: Object,
-    required: true
-  },
-  year: {
-    type: Number,
-    required: true
-  },
-  month: {
-    type: Number,
-    required: true
-  },
-  monthName: {
-    type: String,
-    required: true
-  }
+  payout: { type: Object, required: true },
+  agent: { type: Object, required: true },
+  year: { type: Number, required: true },
+  month: { type: Number, required: true },
+  monthName: { type: String, required: true },
+  reversalTimeLimit: { type: Number, default: 60 },
 })
+
+const page = usePage()
+
+const breakdown = computed(() => {
+  const items = props.payout?.payout_items || []
+  const result = { own_sales: 0, override_agent: 0, override_leader: 0 }
+  items.forEach((item) => {
+    const type = item.commission_type || item.commission?.commission_type
+    const category = item.commission_category || item.commission?.commission_category
+    const amount = Number(item.amount || 0)
+    if (type === 'own_sales') {
+      result.own_sales += amount
+    } else if (category === 'agent') {
+      result.override_agent += amount
+    } else if (category === 'agent_leader') {
+      result.override_leader += amount
+    } else {
+      result.override_agent += amount
+    }
+  })
+  return result
+})
+
+const formatType = (type, category) => {
+  if (type === 'own_sales') return 'Own Sales'
+  if (type === 'override') {
+    const labels = {
+      agent: page.props.systemSettings?.role_name_agent || 'Agent',
+      agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',
+      business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+    }
+    return `Override (${labels[category] || category || ''})`.trim()
+  }
+  return type || '—'
+}
+
+const getTypeBadgeClass = (type) => {
+  if (type === 'own_sales') return 'inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800'
+  if (type === 'override') return 'inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800'
+  return 'inline-flex px-2 py-1 text-xs font-medium rounded-full bg-stone-100 text-stone-800'
+}
+
+const canMarkRefunded = (commission) => {
+  if (!commission || commission.is_reversal) return false
+  if (commission.status === 'cancelled') return false
+  if (!commission.sale?.created_at) return true
+  const saleDate = new Date(commission.sale.created_at)
+  const limitMs = (props.reversalTimeLimit || 60) * 24 * 60 * 60 * 1000
+  return Date.now() - saleDate.getTime() <= limitMs
+}
+
+const markRefunded = (commission) => {
+  if (!commission?.sale?.id) return
+  if (!confirm('Mark this sale as refunded? A negative reversal commission will be created.')) return
+  router.post(`/admin/sales/${commission.sale.id}/refund`)
+}
 
 // File upload form
 const fileForm = useForm({
@@ -322,33 +364,40 @@ const downloadBankTransfer = () => {
         </h2>
       </div>
 
+      <!-- Breakdown summary -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 py-4 border-b border-stone-200 bg-stone-50">
+        <div class="text-center">
+          <p class="text-xs text-stone-500 uppercase">Own Sales</p>
+          <p class="text-lg font-bold text-forest-dark">{{ formatCurrency('RM', breakdown.own_sales) }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xs text-stone-500 uppercase">Override (Agent)</p>
+          <p class="text-lg font-bold text-forest-dark">{{ formatCurrency('RM', breakdown.override_agent) }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xs text-stone-500 uppercase">Override (Leader)</p>
+          <p class="text-lg font-bold text-forest-dark">{{ formatCurrency('RM', breakdown.override_leader) }}</p>
+        </div>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="bg-cream">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Sale Description
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Sale Amount
-              </th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission Rate
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission Amount
-              </th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Status
-              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Sale Description</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Calc</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">Sale Amount</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">Rate / Fixed</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">Commission</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
             <tr v-if="!payout.payout_items || payout.payout_items.length === 0" class="hover:bg-stone-50">
-              <td colspan="6" class="px-6 py-4 text-center text-stone-500">
+              <td colspan="9" class="px-6 py-4 text-center text-stone-500">
                 No payout items found.
               </td>
             </tr>
@@ -356,6 +405,7 @@ const downloadBankTransfer = () => {
               v-for="item in (payout.payout_items || [])"
               :key="item.id"
               class="hover:bg-stone-50"
+              :class="{ 'bg-red-50': item.commission?.is_reversal }"
             >
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                 {{ formatDate(item.commission.created_at) }}
@@ -368,11 +418,23 @@ const downloadBankTransfer = () => {
                   Invoice: {{ item.commission.sale?.invoice_number || 'N/A' }}
                 </div>
               </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <span :class="getTypeBadgeClass(item.commission_type || item.commission?.commission_type)">
+                  {{ formatType(item.commission_type || item.commission?.commission_type, item.commission_category || item.commission?.commission_category) }}
+                </span>
+                <span v-if="item.commission?.is_reversal" class="ml-1 text-xs font-medium text-accent-red">↩</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                {{ item.commission?.commission_calc_type || 'percentage' }}
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ formatCurrency('RM', item.commission.sale?.amount || 0) }}
+                {{ formatCurrency('RM', item.commission.sale?.amount || item.commission?.source_sale_amount || 0) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-center">
-                {{ item.commission.commission_rate }}%
+                <span v-if="item.commission?.commission_calc_type === 'fixed'">
+                  {{ formatCurrency('RM', item.commission?.commission_fixed_amount || 0) }}
+                </span>
+                <span v-else>{{ item.commission.commission_rate }}%</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
                 <span class="font-medium text-forest-dark">
@@ -383,6 +445,15 @@ const downloadBankTransfer = () => {
                 <span :class="getStatusClass(item.commission.status)">
                   {{ item.commission.status.charAt(0).toUpperCase() + item.commission.status.slice(1) }}
                 </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-center">
+                <button
+                  v-if="canMarkRefunded(item.commission)"
+                  @click="markRefunded(item.commission)"
+                  class="text-xs text-accent-red hover:underline"
+                >
+                  Mark as Refunded
+                </button>
               </td>
             </tr>
           </tbody>

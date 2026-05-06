@@ -128,6 +128,25 @@
             <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
             <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative ID (NRIC/Passport)</label>
+            <div v-if="agent?.company_representative_id_file" class="mb-2">
+              <span class="text-sm text-gray-600">Current file: </span>
+              <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
+                View Current File
+              </a>
+            </div>
+            <input
+              @change="handleCompanyRepIdFileChange"
+              type="file"
+              accept=".pdf,.jpeg,.jpg,.png"
+              class="w-full px-3 py-2 border rounded"
+            />
+            <p class="text-sm text-gray-500 mt-1">Copy of the company representative's IC or Passport.</p>
+            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            <p v-if="errors.company_representative_id_file" class="text-accent-red text-sm mt-1">{{ errors.company_representative_id_file }}</p>
+          </div>
         </div>
 
         <!-- About Me / About Company -->
@@ -158,11 +177,97 @@
                 <option value="inactive">Inactive</option>
                 <option value="suspended">Suspended</option>
                 <option value="banned">Banned</option>
+                <option value="expired">Expired</option>
               </select>
               <span v-if="agent" :class="getStatusPillClass(agent.status)" class="shrink-0">
                 {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
               </span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hierarchy & Membership -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">Hierarchy &amp; Membership</h3>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Agent Role *</label>
+            <select v-model="form.agent_role" class="w-full px-3 py-2 border rounded">
+              <option value="agent">{{ roleNames.agent }}</option>
+              <option value="agent_leader">{{ roleNames.leader }}</option>
+              <option value="business_partner">{{ roleNames.business_partner }}</option>
+            </select>
+            <p v-if="errors.agent_role" class="text-accent-red text-sm mt-1">{{ errors.agent_role }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Agent</label>
+            <input
+              v-model="parentSearchQuery"
+              @input="searchParents"
+              type="text"
+              list="parent-options"
+              class="w-full px-3 py-2 border rounded"
+              placeholder="Search by name or ID..."
+            />
+            <datalist id="parent-options">
+              <option
+                v-for="p in parentOptions"
+                :key="p.id"
+                :value="`${p.name} (#${p.id} — ${p.agent_role})`"
+              />
+            </datalist>
+            <p class="text-sm text-gray-500 mt-1">Filter shows agents with role ≥ child role.</p>
+            <p v-if="errors.parent_agent_id" class="text-accent-red text-sm mt-1">{{ errors.parent_agent_id }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Registered At</label>
+            <input v-model="form.registered_at" type="date" class="w-full px-3 py-2 border rounded" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Expires At</label>
+            <input v-model="form.expires_at" type="date" class="w-full px-3 py-2 border rounded" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Renewal Due At</label>
+            <input v-model="form.renewal_due_at" type="date" class="w-full px-3 py-2 border rounded" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Fee Payment Status</label>
+            <select v-model="form.fee_payment_status" class="w-full px-3 py-2 border rounded">
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+              <option value="waived">Waived</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Downgrade warning modal -->
+      <div v-if="showDowngradeWarning" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div class="flex items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">⚠ Confirm Role Downgrade</h3>
+          </div>
+          <p class="text-sm text-gray-700 mb-4">
+            This agent has <span class="font-bold">{{ downgradeSubordinateCount }}</span> subordinates.
+            After downgrade they will no longer earn override commissions from those agents.
+            Subordinates must be manually reassigned if desired.
+          </p>
+          <div class="flex justify-end space-x-3">
+            <button @click="showDowngradeWarning = false" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium">
+              Cancel
+            </button>
+            <button @click="confirmDowngradeAndSave" class="bg-accent-red hover:bg-red-700 text-white px-4 py-2 rounded font-medium">
+              Continue Anyway
+            </button>
           </div>
         </div>
       </div>
@@ -334,8 +439,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { ref, computed, watch } from 'vue'
+import { router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 
 defineOptions({ layout: AdminLayout })
@@ -350,6 +455,13 @@ const props = defineProps({
     default: null
   }
 })
+
+const page = usePage()
+const roleNames = computed(() => ({
+  agent: page.props.systemSettings?.role_name_agent || 'Agent',
+  leader: page.props.systemSettings?.role_name_leader || 'Leader',
+  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
+}))
 
 const form = ref({
   profile_type: props.agent?.profile_type || 'individual',
@@ -366,10 +478,19 @@ const form = ref({
   company_phone: props.agent?.company_phone || '',
   company_email_address: props.agent?.company_email_address || '',
   company_reg_file: null,
+  company_representative_id_file: null,
   about: props.agent?.about || '',
   user_password: '',
   user_password_confirmation: '',
   status: props.agent?.status || 'active',
+  agent_role: props.agent?.agent_role || 'agent',
+  parent_agent_id: props.agent?.parent_agent_id || null,
+  registered_at: props.agent?.registered_at || '',
+  expires_at: props.agent?.expires_at || '',
+  renewal_due_at: props.agent?.renewal_due_at || '',
+  fee_payment_status: props.agent?.fee_payment_status || 'pending',
+  // Confirmation flag for downgrade modal
+  confirm_downgrade: false,
   // Bank account fields
   bank_account_name: props.agent?.bank_account?.account_name || '',
   bank_account_number: props.agent?.bank_account?.account_number || '',
@@ -379,8 +500,56 @@ const form = ref({
   // Referral code fields
   referral_code: props.agent?.referral_code?.code || '',
   referral_commission_rate: props.agent?.referral_code?.commission_rate || '',
-  referral_is_active: true, // Always true
+  referral_is_active: true,
 })
+
+// Parent agent search
+const parentSearchQuery = ref(
+  props.agent?.parent_agent
+    ? `${props.agent.parent_agent.name || ''} (#${props.agent.parent_agent.id} — ${props.agent.parent_agent.agent_role})`
+    : ''
+)
+const parentOptions = ref([])
+let parentSearchTimer = null
+
+const searchParents = () => {
+  clearTimeout(parentSearchTimer)
+  parentSearchTimer = setTimeout(async () => {
+    try {
+      const params = new URLSearchParams({
+        search: parentSearchQuery.value,
+        child_role: form.value.agent_role,
+        exclude: props.id,
+      })
+      const res = await fetch(`/admin/agents/parents?${params}`, {
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      parentOptions.value = data.parents || data.data || data || []
+    } catch (e) {
+      parentOptions.value = []
+    }
+  }, 250)
+}
+
+watch(parentSearchQuery, (val) => {
+  const match = String(val).match(/#(\d+)/)
+  if (match) {
+    form.value.parent_agent_id = parseInt(match[1], 10)
+  } else if (!val) {
+    form.value.parent_agent_id = null
+  }
+})
+
+watch(() => form.value.agent_role, () => {
+  parentOptions.value = []
+})
+
+// Role rank helper for downgrade detection
+const roleRank = { agent: 1, agent_leader: 2, business_partner: 3 }
+const showDowngradeWarning = ref(false)
+const downgradeSubordinateCount = ref(0)
 
 const isIndividual = computed(() => form.value.profile_type === 'individual')
 const isCompany = computed(() => form.value.profile_type === 'company')
@@ -466,12 +635,35 @@ const handleCompanyRegFileChange = (event) => {
   form.value.company_reg_file = event.target.files[0]
 }
 
-const saveAgent = async () => {
+const handleCompanyRepIdFileChange = (event) => {
+  form.value.company_representative_id_file = event.target.files[0]
+}
+
+const confirmDowngradeAndSave = () => {
+  showDowngradeWarning.value = false
+  form.value.confirm_downgrade = true
+  saveAgent(true)
+}
+
+const saveAgent = async (skipDowngradeCheck = false) => {
   isSaving.value = true
   errors.value = {}
   showErrorDialog.value = false
   showBankWarningDialog.value = false
   generalErrorMessage.value = ''
+
+  // Detect role downgrade (Decision 20)
+  if (!skipDowngradeCheck && props.agent) {
+    const oldRank = roleRank[props.agent.agent_role] || 1
+    const newRank = roleRank[form.value.agent_role] || 1
+    const subCount = props.agent.subordinates_count ?? props.agent.subordinates?.length ?? 0
+    if (newRank < oldRank && subCount > 0) {
+      downgradeSubordinateCount.value = subCount
+      showDowngradeWarning.value = true
+      isSaving.value = false
+      return
+    }
+  }
 
   // Check for incomplete bank account information
   const bankFields = [form.value.bank_account_name, form.value.bank_account_number, form.value.bank_name]
@@ -485,7 +677,7 @@ const saveAgent = async () => {
   }
 
   // Check if we have files to upload
-  const hasFiles = form.value.individual_id_file || form.value.company_reg_file
+  const hasFiles = form.value.individual_id_file || form.value.company_reg_file || form.value.company_representative_id_file
 
   try {
     if (hasFiles) {
@@ -493,7 +685,7 @@ const saveAgent = async () => {
       const formData = new FormData()
       Object.keys(form.value).forEach(key => {
         // Skip file fields if they're null (only append if file exists)
-        if (key === 'individual_id_file' || key === 'company_reg_file') {
+        if (key === 'individual_id_file' || key === 'company_reg_file' || key === 'company_representative_id_file') {
           if (form.value[key]) {
             formData.append(key, form.value[key])
           }
@@ -564,7 +756,7 @@ const proceedWithSave = async () => {
   generalErrorMessage.value = ''
 
   // Check if we have files to upload
-  const hasFiles = form.value.individual_id_file || form.value.company_reg_file
+  const hasFiles = form.value.individual_id_file || form.value.company_reg_file || form.value.company_representative_id_file
 
   try {
     if (hasFiles) {
@@ -572,7 +764,7 @@ const proceedWithSave = async () => {
       const formData = new FormData()
       Object.keys(form.value).forEach(key => {
         // Skip file fields if they're null (only append if file exists)
-        if (key === 'individual_id_file' || key === 'company_reg_file') {
+        if (key === 'individual_id_file' || key === 'company_reg_file' || key === 'company_representative_id_file') {
           if (form.value[key]) {
             formData.append(key, form.value[key])
           }
