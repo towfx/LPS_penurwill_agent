@@ -4,163 +4,74 @@
   DESIGN SYSTEM REFERENCE — resources/js/Pages/Design/Design01.vue
   Preview at: /design/design-01
 
-  This file is the single source of truth for UI patterns.
-  All new pages should import components from ./Components/
-  and follow the patterns demonstrated here.
+  This file is the visual contract for the app. It composes
+  per-topic showcase sections from ./Sections/* — each one
+  documents a concept (buttons, forms, modals, …) using the
+  primitives in ./Components/.
 
-  SECTIONS IN THIS FILE:
-    ✓  Layout (Sidebar + Header)
-    ✓  StatsCard (4 variants with trends)
-    ✓  Tabs (TabsList / TabsTrigger / TabsContent)
-    ✓  Card / CardHeader / CardContent / CardTitle
-    ✓  Progress bar
-    ✓  Badge (secondary, outline, default) — incomplete, see @TODO
-    ✓  Button (outline/sm) — incomplete, see @TODO
-    ✓  UsersTable
-    ✓  ActivityTimeline
-    ✓  AlertsSection
+  When you build a new page:
+    • Reuse components from ./Components/ — never re-implement
+    • Wrap reusable section markup in Components/Showcase.vue
+    • If you add a new primitive, add a Sections/<X>Showcase.vue here
 
-  @TODO — MISSING SECTIONS (complete before Phase 4 frontend work):
-
-  CRITICAL (needed for admin + agent forms):
-  [ ] Form Elements — Input, Textarea, Select, Checkbox, Radio
-      → These need new shadcn-based components in ./Components/
-      → Show: label + input + error state + disabled state
-  [ ] All Button variants — default (stone-900), secondary (amber-600),
-      destructive (red-600), ghost, link; all 4 sizes (default, sm, lg, icon)
-  [ ] All Badge variants — add: success (green), warning (yellow), destructive (red)
-  [ ] ConfirmationModal pattern — used for approve/reject/downgrade flows
-      → Show: title, body text, cancel + confirm buttons, destructive variant
-  [ ] Status badge system — show the custom CSS classes from app.css:
-      status-pending (yellow), status-paid (green), status-cancelled (red)
-      + active/inactive/suspended/expired/rejected variants
-
-  HIGH (needed for most pages):
-  [ ] Breadcrumb navigation pattern — show: Home > Section > Current Page
-  [ ] Page layout template — show the standard admin page structure:
-      breadcrumb + title row (with action button) + content area
-  [ ] EmptyState component — icon + headline + subtext + optional CTA
-      → Needed for every list screen when no records exist
-  [ ] Pagination component — prev/next + page numbers + "showing X of Y"
-  [ ] Toast / flash notification — Inertia $page.props.flash.success / error
-  [ ] All Alert variants — Alert.vue exists but is not shown here
-      → Show: default, destructive, success, warning
-
-  MEDIUM (needed for specific screens):
-  [ ] File upload input pattern — choose file + preview name + remove
-  [ ] Status stepper / progress timeline — for payout lifecycle:
-      Pending → Approved → Processing → Paid (with dates)
-  [ ] BarChart, LineChart, PieChart — components exist but not shown
-  [ ] Inbox notification row — subject, body excerpt, timestamp, unread badge
-  [ ] Multi-step wizard header — step dots 1-6 with active/completed states
-
-  LOW (polish / reference):
-  [ ] Color palette showcase — visual swatches for all brand + accent colors
-  [ ] Typography scale — h1 through h4, body, muted, label sizes in context
-  [ ] Icon reference — show key Lucide icons by concept:
-      (DollarSign=money, Users=team, ShoppingCart=sales, etc.)
-  [ ] Loading / skeleton state — show shimmer placeholder for cards + tables
-  [ ] Date range picker pattern — from/to inputs with calendar
+  All sections are drop-in: re-order them, comment one out, or
+  add new ones without touching the others. Keep this file as
+  composition-only — implementation lives in the section files.
   ============================================================
   -->
 
   <div class="min-h-screen h-screen bg-cream font-sans">
-    <!-- Google Fonts Import -->
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <div class="flex flex-col lg:flex-row h-full">
-      <!-- Sidebar -->
       <Sidebar :isOpen="sidebarOpen" @toggle="toggleSidebar" />
 
       <div class="flex-1 flex flex-col lg:ml-0 min-h-0">
-        <!-- Header -->
         <Header @toggle="toggleSidebar" />
 
-        <!-- Main Content -->
         <main class="flex-1 p-4 sm:p-6 overflow-y-auto">
 
-          <!-- @TODO: Add breadcrumb pattern here -->
-          <!-- Example: Home > Admin > Dashboard -->
+          <PageHeader
+            title="Design System"
+            description="Single source of truth for UI patterns. Every primitive below has a matching component in ./Components/."
+            :breadcrumbs="[
+              { label: 'Home', href: '/' },
+              { label: 'Design' },
+              { label: 'Design 01' },
+            ]"
+          >
+            <template #actions>
+              <Button variant="outline" size="sm">
+                <Download class="h-4 w-4 mr-1.5" /> Export tokens
+              </Button>
+            </template>
+          </PageHeader>
 
-          <div class="mb-6 sm:mb-8">
-            <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-forest-dark">
-              Dashboard Overview
-            </h1>
-            <p class="text-gray-600 text-sm sm:text-base">Welcome back! Here's what's happening with your business today.</p>
-          </div>
-
-          <!-- @TODO: Add page layout template block here showing:
-               breadcrumb + title + description + right-side action button -->
-
-
-          <!-- ── StatsCard ───────────────────────────────────────── -->
-          <!-- @TODO: StatsCard icon prop only accepts: DollarSign, Users, ShoppingCart, Activity
-               Add more icons to StatsCard.vue iconComponent map as needed -->
+          <!-- ── StatsCards (live demo) ─────────────────────────── -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <StatsCard
-              title="Total Revenue"
-              value="$54,239"
-              change="+12.5% from last month"
-              icon="DollarSign"
-              trend="up"
-              :progress="75"
-            />
-            <StatsCard
-              title="Active Users"
-              value="2,847"
-              change="+8.2% from last week"
-              icon="Users"
-              trend="up"
-              :progress="82"
-            />
-            <StatsCard
-              title="Total Orders"
-              value="1,423"
-              change="+15.3% from yesterday"
-              icon="ShoppingCart"
-              trend="up"
-              :progress="65"
-            />
-            <StatsCard
-              title="Conversion Rate"
-              value="3.24%"
-              change="-2.1% from last month"
-              icon="Activity"
-              trend="down"
-              :progress="32"
-            />
+            <StatsCard title="Total Revenue" value="$54,239" change="+12.5% from last month" icon="DollarSign" trend="up" :progress="75" />
+            <StatsCard title="Active Users"  value="2,847"   change="+8.2% from last week"  icon="Users"      trend="up" :progress="82" />
+            <StatsCard title="Total Orders"  value="1,423"   change="+15.3% from yesterday" icon="ShoppingCart" trend="up" :progress="65" />
+            <StatsCard title="Conversion"    value="3.24%"   change="-2.1% from last month" icon="Activity"    trend="down" :progress="32" />
           </div>
 
-          <!-- @TODO: Add Button variants section here
-               Show all 6 variants × 4 sizes in a grid:
-               default (stone-900), secondary (amber-600), destructive (red),
-               outline, ghost, link — sizes: default, sm, lg, icon -->
+          <!-- ── Showcase sections ──────────────────────────────── -->
+          <PageHeaderShowcase />
+          <ButtonShowcase />
+          <BadgeShowcase />
+          <FormShowcase />
+          <AlertShowcase />
+          <ModalShowcase />
+          <EmptyStateShowcase />
+          <StepperShowcase />
+          <PaginationShowcase />
+          <ChartShowcase />
+          <SkeletonShowcase />
+          <ColorPaletteShowcase />
+          <TypographyShowcase />
+          <IconReferenceShowcase />
 
-          <!-- @TODO: Add Badge variants section here
-               Show: default, secondary, outline, success (green), warning (yellow), destructive (red)
-               Also show status badge classes: status-pending, status-paid, status-cancelled -->
-
-          <!-- @TODO: Add Alert variants section here (uses Alert.vue)
-               Show: default, destructive, success, warning -->
-
-          <!-- @TODO: Add form elements section here — these need new shadcn components:
-               Input (text, with label + error state)
-               Textarea
-               Select / Dropdown
-               Checkbox
-               Radio button group
-               File upload input (choose file + filename preview) -->
-
-          <!-- @TODO: Add ConfirmationModal pattern here
-               Show: trigger button → modal with title, body, cancel + confirm -->
-
-          <!-- @TODO: Add EmptyState pattern here
-               Show: icon + headline + subtext + optional CTA button -->
-
-          <!-- @TODO: Add status stepper / timeline here
-               Show: Pending → Approved → Processing → Paid lifecycle stepper -->
-
-          <!-- Tabs Section -->
+          <!-- ── Existing tabs demo (Users / Activity / Reports) ── -->
           <div class="mb-6 sm:mb-8">
             <Tabs :model-value="activeTab" @update:model-value="activeTab = $event" class="w-full">
               <TabsList class="mb-4 sm:mb-6 flex-wrap">
@@ -172,21 +83,15 @@
 
               <TabsContent value="overview" class="space-y-4 sm:space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                  <div class="lg:col-span-2">
-                    <UsersTable />
-                  </div>
-                  <div>
-                    <ActivityTimeline />
-                  </div>
+                  <div class="lg:col-span-2"><UsersTable /></div>
+                  <div><ActivityTimeline /></div>
                 </div>
               </TabsContent>
 
               <TabsContent value="analytics" class="space-y-4 sm:space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Performance Metrics</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle>Performance Metrics</CardTitle></CardHeader>
                     <CardContent>
                       <div class="space-y-4">
                         <div>
@@ -215,9 +120,7 @@
                   </Card>
 
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Traffic Sources</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle>Traffic Sources</CardTitle></CardHeader>
                     <CardContent>
                       <div class="space-y-3">
                         <div class="flex items-center justify-between">
@@ -240,9 +143,7 @@
 
               <TabsContent value="reports">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Generated Reports</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle>Generated Reports</CardTitle></CardHeader>
                   <CardContent>
                     <div class="space-y-4">
                       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-2 sm:gap-0">
@@ -251,8 +152,7 @@
                           <p class="text-sm text-gray-500">Generated 2 hours ago</p>
                         </div>
                         <Button variant="outline" size="sm">
-                          <Download class="h-4 w-4 mr-2" />
-                          Download
+                          <Download class="h-4 w-4 mr-2" /> Download
                         </Button>
                       </div>
                       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-2 sm:gap-0">
@@ -261,8 +161,7 @@
                           <p class="text-sm text-gray-500">Generated yesterday</p>
                         </div>
                         <Button variant="outline" size="sm">
-                          <Download class="h-4 w-4 mr-2" />
-                          Download
+                          <Download class="h-4 w-4 mr-2" /> Download
                         </Button>
                       </div>
                     </div>
@@ -272,41 +171,9 @@
 
               <TabsContent value="notifications">
                 <AlertsSection />
-                <!-- @TODO: Add inbox notification row pattern here
-                     Show: unread dot, subject, body excerpt, timestamp, [Mark Read] button -->
               </TabsContent>
             </Tabs>
           </div>
-
-          <!-- @TODO: Add charts section here — BarChart, LineChart, PieChart are in ./Components/
-               Show each with sample data and labels -->
-
-          <!-- @TODO: Add pagination component here (component does not exist yet — create it)
-               Show: prev button + page numbers + next button + "Showing X–Y of Z" -->
-
-          <!-- @TODO: Add color palette showcase section
-               Swatches: forest-dark, forest-light, gold, cream, accent-red/orange/green/blue/gray
-               Stone neutrals: stone-50 through stone-900 -->
-
-          <!-- @TODO: Add typography scale section
-               h1 (text-3xl font-bold text-forest-dark)
-               h2 (text-2xl font-semibold text-forest-dark)
-               h3 (text-xl font-semibold text-stone-800)
-               Body (text-sm text-stone-600)
-               Muted (text-sm text-stone-400)
-               Label (text-sm font-medium text-stone-700) -->
-
-          <!-- @TODO: Add icon reference section
-               Show key Lucide icons by concept grouped:
-               Finance: DollarSign, CreditCard, Banknote, TrendingUp, TrendingDown
-               People: Users, User, UserPlus, UserCheck, UserX
-               Status: CheckCircle, XCircle, AlertCircle, Clock, Info
-               Actions: Edit, Trash2, Eye, Download, Upload, Plus, Search, Filter
-               Navigation: ChevronDown, ChevronRight, ArrowLeft, Menu
-               System: Settings, Bell, Mail, Shield, Activity -->
-
-          <!-- @TODO: Add loading/skeleton state section
-               Show shimmer placeholder card and table row skeletons -->
 
         </main>
       </div>
@@ -316,38 +183,13 @@
 
 <script setup>
 import { ref } from 'vue'
-import {
-  Menu,
-  X,
-  Home,
-  Users,
-  Settings,
-  BarChart3,
-  FileText,
-  Bell,
-  Search,
-  User,
-  ChevronDown,
-  TrendingUp,
-  UserPlus,
-  Activity,
-  Calendar,
-  DollarSign,
-  ShoppingCart,
-  Eye,
-  MoreHorizontal,
-  Filter,
-  Download,
-  Plus,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Clock
-} from 'lucide-vue-next'
+import { Download } from 'lucide-vue-next'
 
-// Components
+// Layout chrome
 import Sidebar from './Components/Sidebar.vue'
 import Header from './Components/Header.vue'
+
+// Live demos kept in Design01 itself
 import StatsCard from './Components/StatsCard.vue'
 import UsersTable from './Components/UsersTable.vue'
 import ActivityTimeline from './Components/ActivityTimeline.vue'
@@ -363,22 +205,30 @@ import CardTitle from './Components/CardTitle.vue'
 import Progress from './Components/Progress.vue'
 import Badge from './Components/Badge.vue'
 import Button from './Components/Button.vue'
+import PageHeader from './Components/PageHeader.vue'
 
-// Reactive data
+// Per-topic showcase sections (each is self-contained — see ./Sections/)
+import PageHeaderShowcase from './Sections/PageHeaderShowcase.vue'
+import ButtonShowcase from './Sections/ButtonShowcase.vue'
+import BadgeShowcase from './Sections/BadgeShowcase.vue'
+import FormShowcase from './Sections/FormShowcase.vue'
+import AlertShowcase from './Sections/AlertShowcase.vue'
+import ModalShowcase from './Sections/ModalShowcase.vue'
+import EmptyStateShowcase from './Sections/EmptyStateShowcase.vue'
+import StepperShowcase from './Sections/StepperShowcase.vue'
+import PaginationShowcase from './Sections/PaginationShowcase.vue'
+import ChartShowcase from './Sections/ChartShowcase.vue'
+import SkeletonShowcase from './Sections/SkeletonShowcase.vue'
+import ColorPaletteShowcase from './Sections/ColorPaletteShowcase.vue'
+import TypographyShowcase from './Sections/TypographyShowcase.vue'
+import IconReferenceShowcase from './Sections/IconReferenceShowcase.vue'
+
 const sidebarOpen = ref(false)
 const activeTab = ref('overview')
-
-// Methods
-const toggleSidebar = () => {
-  sidebarOpen.value = !sidebarOpen.value
-}
+const toggleSidebar = () => { sidebarOpen.value = !sidebarOpen.value }
 </script>
 
 <style scoped>
-/* Custom styles for Geist font */
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
-
-.font-sans {
-  font-family: 'Geist', sans-serif !important;
-}
+.font-sans { font-family: 'Geist', sans-serif !important; }
 </style>
