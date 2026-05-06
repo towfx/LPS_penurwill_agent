@@ -15,8 +15,12 @@ Route::get('/get-started', function () {
 
 Route::get('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'show'])->name('register-as-agent');
 Route::post('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'store'])->name('register-as-agent.store');
+Route::post('/register-as-agent/save-draft', [App\Http\Controllers\AgentRegistrationController::class, 'saveDraft'])->name('register-as-agent.save-draft');
 Route::post('/register-as-agent/verify-email', [App\Http\Controllers\AgentRegistrationController::class, 'verifyEmail'])->name('register-as-agent.verify-email');
 Route::post('/register-as-agent/resend-code', [App\Http\Controllers\AgentRegistrationController::class, 'resendCode'])->name('register-as-agent.resend-code');
+Route::post('/register-as-agent/initiate-stripe', [App\Http\Controllers\AgentRegistrationController::class, 'initiateStripe'])->name('register-as-agent.initiate-stripe');
+Route::post('/register-as-agent/submit-payment', [App\Http\Controllers\AgentRegistrationController::class, 'submitManualPayment'])->name('register-as-agent.submit-payment');
+Route::post('/register-as-agent/skip-payment', [App\Http\Controllers\AgentRegistrationController::class, 'skipPayment'])->name('register-as-agent.skip-payment');
 Route::get('/register-as-agent/payment/success', [App\Http\Controllers\AgentRegistrationController::class, 'stripeSuccess'])->name('register-as-agent.payment.success');
 Route::get('/register-as-agent/payment/cancelled', [App\Http\Controllers\AgentRegistrationController::class, 'stripeCancelled'])->name('register-as-agent.payment.cancelled');
 

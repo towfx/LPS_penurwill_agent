@@ -26,14 +26,43 @@ class FeePaymentController extends Controller
         if ($request->filled('fee_type')) {
             $query->where('fee_type', $request->fee_type);
         }
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('agent', fn ($q) => $q->where('name', 'like', "%{$search}%")
+                ->orWhere('id', $search));
+        }
 
-        $payments = $query->orderByDesc('paid_at')->paginate(50);
+        $summaryQuery = clone $query;
+        $summary = [
+            'count'         => $summaryQuery->count(),
+            'total_amount'  => (float) $summaryQuery->sum('amount'),
+            'renewal_count' => (int) $summaryQuery->where('fee_type', FeePayment::TYPE_RENEWAL)->count(),
+        ];
+
+        $paginated = $query->orderByDesc('paid_at')->paginate(50)->withQueryString();
 
         return Inertia::render('Admin/FeePayments', [
-            'payments' => $payments,
+            'payments'   => $paginated->items(),
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'from'         => $paginated->firstItem() ?? 0,
+                'to'           => $paginated->lastItem() ?? 0,
+                'total'        => $paginated->total(),
+            ],
+            'summary' => $summary,
             'filters' => [
-                'agent_id' => $request->get('agent_id'),
-                'fee_type' => $request->get('fee_type'),
+                'agent_id'       => $request->get('agent_id'),
+                'fee_type'       => $request->get('fee_type'),
+                'role'           => $request->get('role'),
+                'payment_method' => $request->get('payment_method'),
+                'search'         => $request->get('search'),
             ],
         ]);
     }

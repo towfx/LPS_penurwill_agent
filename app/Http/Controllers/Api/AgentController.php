@@ -35,6 +35,10 @@ class AgentController extends Controller
             $query->where('profile_type', $request->get('profile_type'));
         }
 
+        if ($request->filled('role')) {
+            $query->where('agent_role', $request->get('role'));
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->get('status'));
         }
@@ -44,7 +48,7 @@ class AgentController extends Controller
         $sortOrder = $request->get('sort_order', 'desc');
 
         // Validate sort fields
-        $allowedSortFields = ['id', 'individual_name', 'company_name', 'profile_type', 'status', 'created_at'];
+        $allowedSortFields = ['id', 'individual_name', 'company_name', 'profile_type', 'agent_role', 'status', 'created_at'];
         if (! in_array($sortBy, $allowedSortFields)) {
             $sortBy = 'id';
         }
@@ -60,11 +64,13 @@ class AgentController extends Controller
             return [
                 'id' => $agent->id,
                 'agent_type' => ucfirst($agent->profile_type),
+                'agent_role' => $agent->agent_role,
                 'name' => $agent->profile_type === 'individual'
                     ? $agent->individual_name
                     : $agent->company_name,
                 'reg_date' => $agent->created_at->format('Y-m-d'),
                 'status' => ucfirst($agent->status),
+                'expires_at' => $agent->expires_at?->format('Y-m-d'),
                 'phone' => $agent->profile_type === 'individual'
                     ? $agent->individual_phone
                     : $agent->company_phone,
