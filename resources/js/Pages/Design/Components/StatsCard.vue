@@ -14,7 +14,7 @@
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <p class="text-sm" :style="{ color: trendColors[trend] }">
-            <TrendingUp size="16" class="inline mr-1" />
+            <component :is="trend === 'down' ? TrendingDown : TrendingUp" size="16" class="inline mr-1" />
             {{ change }}
           </p>
           <span v-if="progress" class="text-xs text-gray-500">{{ progress }}%</span>
@@ -29,10 +29,22 @@
 import { computed } from 'vue'
 import {
   TrendingUp,
+  TrendingDown,
   Users,
+  UserPlus,
+  UserCheck,
   ShoppingCart,
   Activity,
-  DollarSign
+  DollarSign,
+  CreditCard,
+  Banknote,
+  Wallet,
+  FileText,
+  Package,
+  Receipt,
+  Clock,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-vue-next'
 import Card from './Card.vue'
 import CardContent from './CardContent.vue'
@@ -68,10 +80,11 @@ const props = defineProps({
 
 const iconComponent = computed(() => {
   const icons = {
-    DollarSign,
-    Users,
-    ShoppingCart,
-    Activity
+    DollarSign, CreditCard, Banknote, Wallet, Receipt,
+    Users, UserPlus, UserCheck,
+    ShoppingCart, Package, FileText,
+    Activity, TrendingUp, TrendingDown,
+    Clock, CheckCircle, AlertCircle,
   }
   return icons[props.icon] || Activity
 })
