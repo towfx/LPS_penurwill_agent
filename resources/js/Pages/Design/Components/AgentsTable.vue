@@ -6,7 +6,7 @@
         <div class="flex items-center space-x-2">
           <select
             v-model="roleFilter"
-            @change="fetchAgents"
+            @change="resetAndFetch"
             class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent text-sm"
           >
             <option value="">All Roles</option>
@@ -296,10 +296,17 @@ const fetchAgents = async () => {
   }
 }
 
+const resetAndFetch = () => {
+  if (pagination.value) {
+    pagination.value.current_page = 1
+  }
+  fetchAgents()
+}
+
 const handleSearch = () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    fetchAgents()
+    resetAndFetch()
   }, 300)
 }
 
@@ -310,7 +317,7 @@ const sortBy = (field) => {
     sortByField.value = field
     sortOrder.value = 'asc'
   }
-  fetchAgents()
+  resetAndFetch()
 }
 
 const changePage = (page) => {

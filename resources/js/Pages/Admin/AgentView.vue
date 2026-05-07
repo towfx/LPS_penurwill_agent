@@ -84,6 +84,34 @@
             </div>
             <p class="text-sm text-red-800">{{ agent.rejection_reason }}</p>
           </div>
+
+          <!-- Status Override -->
+          <div class="mt-4 pt-4 border-t border-gray-100">
+            <p class="text-sm font-medium text-gray-700 mb-2">Override Status</p>
+            <div class="flex items-center gap-3">
+              <select
+                v-model="overrideStatus"
+                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gold focus:border-gold"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+                <option value="banned">Banned</option>
+                <option value="pending">Pending</option>
+                <option value="expired">Expired</option>
+              </select>
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="overrideStatus === agent.status || isOverridingStatus"
+                @click="applyStatusOverride"
+              >
+                <span v-if="isOverridingStatus">Saving…</span>
+                <span v-else>Apply</span>
+              </Button>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">To reject, use the Reject button above.</p>
+          </div>
         </div>
       </div>
 
@@ -379,4 +407,17 @@ const goBack = () => {
 
 const isIndividual = computed(() => props.agent && props.agent.profile_type === 'individual')
 const isCompany = computed(() => props.agent && props.agent.profile_type === 'company')
+
+const overrideStatus = ref(props.agent?.status || 'active')
+const isOverridingStatus = ref(false)
+
+const applyStatusOverride = () => {
+  if (!overrideStatus.value || overrideStatus.value === props.agent.status) return
+  isOverridingStatus.value = true
+  router.post(`/admin/agents/${props.agent.id}/update`, { status: overrideStatus.value, _method: 'PUT' }, {
+    preserveScroll: true,
+    onSuccess: () => { isOverridingStatus.value = false },
+    onError: () => { isOverridingStatus.value = false },
+  })
+}
 </script>

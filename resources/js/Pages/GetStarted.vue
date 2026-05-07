@@ -162,6 +162,7 @@
 <script setup>
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 import {
   UserPlus,
   DollarSign,
@@ -187,17 +188,7 @@ const handleContinue = async () => {
   checkResult.value = null
 
   try {
-    const response = await fetch('/get-started/check-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ email: email.value })
-    })
-
-    const data = await response.json()
+    const { data } = await axios.post('/get-started/check-email', { email: email.value })
     const status = data.status || 'new'
 
     if (status === 'new') {

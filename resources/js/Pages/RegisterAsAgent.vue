@@ -708,6 +708,7 @@ const proceedFromStep3 = async () => {
   if (Object.keys(errs).length) { profileErrors.value = errs; return }
 
   step3Submitting.value = true
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
   try {
     // Pre-check email
     const checkRes = await fetch('/get-started/check-email', {
@@ -719,10 +720,52 @@ const proceedFromStep3 = async () => {
     if (checkJson.status === 'login') { emailCheckResult.value = 'exists'; step3Submitting.value = false; return }
     if (checkJson.status === 'reset' || checkJson.status === 'no_password') { emailCheckResult.value = 'needs_reset'; step3Submitting.value = false; return }
 
+    // Save profile draft to backend session (includes files)
+    const draftData = new FormData()
+    draftData.append('email', loginEmail)
+    draftData.append('profile_type', profile.value.type)
+    draftData.append('package', pkg.value.choice)
+    draftData.append('password', profile.value.password)
+    draftData.append('password_confirmation', profile.value.password_confirmation)
+    draftData.append('bank_name', profile.value.bank_name)
+    draftData.append('bank_account_name', profile.value.bank_account_name)
+    draftData.append('bank_account_number', profile.value.bank_account_number)
+    if (referral.value.choice === 'yes' && referral.value.status === 'valid') {
+      draftData.append('referral_code', referral.value.code)
+    }
+    if (profile.value.type === 'individual') {
+      draftData.append('individual_name', profile.value.individual_name)
+      draftData.append('individual_id_number', profile.value.individual_id_number)
+      draftData.append('individual_phone', profile.value.individual_phone)
+      draftData.append('individual_address', profile.value.individual_address)
+      if (profile.value.individual_id_file) draftData.append('individual_id_file', profile.value.individual_id_file)
+    } else {
+      draftData.append('company_name', profile.value.company_name)
+      draftData.append('company_registration_number', profile.value.company_registration_number)
+      draftData.append('company_phone', profile.value.company_phone)
+      draftData.append('company_email_address', profile.value.company_email_address)
+      draftData.append('company_address', profile.value.company_address)
+      draftData.append('company_representative_name', profile.value.company_representative_name)
+      draftData.append('company_representative_id_number', profile.value.company_representative_id_number)
+      if (profile.value.company_reg_file) draftData.append('company_reg_file', profile.value.company_reg_file)
+      if (profile.value.company_representative_id_file) draftData.append('company_representative_id_file', profile.value.company_representative_id_file)
+    }
+
+    const draftRes = await fetch('/register-as-agent/save-draft', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+      body: draftData,
+    })
+    if (!draftRes.ok) {
+      const draftErr = await draftRes.json().catch(() => ({}))
+      profileErrors.value.login_email = draftErr.message || 'Failed to save registration data. Please try again.'
+      step3Submitting.value = false
+      return
+    }
+
     // Send verification code
     const formData = new FormData()
     formData.append('email', loginEmail)
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     const codeRes = await fetch('/register-as-agent/resend-code', {
       method: 'POST',
       headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
