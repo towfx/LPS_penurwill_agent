@@ -1,6 +1,6 @@
 # ROLES_WORKFLOW.md
 > Business Process & UI/UX Workflow Reference
-> Last updated: 2026-05-01 | Status: DRAFT — pending stakeholder approval
+> Last updated: 2026-05-06 | Status: APPROVED
 
 ---
 

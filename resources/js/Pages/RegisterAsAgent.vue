@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-cream font-sans">
-    <!-- Google Fonts Import -->
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <div class="container mx-auto px-4 py-8">
@@ -25,7 +24,7 @@
 
         <!-- Progress Steps -->
         <div class="mb-8">
-          <div class="flex items-center justify-center space-x-4">
+          <div class="flex items-center justify-center flex-wrap gap-y-3">
             <div
               v-for="(step, index) in steps"
               :key="index"
@@ -35,62 +34,53 @@
                 class="flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors"
                 :class="getStepClasses(index)"
               >
-                <span
-                  class="text-sm font-medium"
-                  :class="getStepTextClasses(index)"
-                >
+                <span class="text-sm font-medium" :class="getStepTextClasses(index)">
                   {{ index + 1 }}
                 </span>
               </div>
-              <span
-                class="ml-2 text-sm font-medium hidden sm:block"
-                :class="getStepLabelClasses(index)"
-              >
+              <span class="ml-2 text-sm font-medium hidden md:block" :class="getStepLabelClasses(index)">
                 {{ step.label }}
               </span>
               <div
                 v-if="index < steps.length - 1"
-                class="w-16 h-0.5 mx-4 transition-colors"
+                class="w-8 lg:w-12 h-0.5 mx-2 lg:mx-3 transition-colors"
                 :class="getStepLineClasses(index)"
               ></div>
             </div>
           </div>
         </div>
 
-        <!-- Registration Form -->
+        <!-- Wizard Card -->
         <Card class="p-8">
-          <!-- Step 1: Agent Info -->
+          <!-- Step 1: Referral ID Check -->
           <div v-if="currentStep === 0" class="space-y-6">
             <div class="text-center mb-6">
-              <h2 class="text-2xl font-bold text-forest-dark mb-2">Agent Information</h2>
-              <p class="text-gray-600">Tell us about yourself or your company</p>
+              <h2 class="text-2xl font-bold text-forest-dark mb-2">Referral ID</h2>
+              <p class="text-gray-600">Do you have a Referral ID from an existing agent?</p>
             </div>
 
-            <!-- Agent Type Selection -->
+            <!-- Yes / No -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-3">Agent Type *</label>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label
                   class="relative cursor-pointer"
-                  :class="form.profile_type === 'individual' ? 'ring-2 ring-gold' : 'ring-1 ring-gray-300'"
+                  :class="referral.choice === 'yes' ? 'ring-2 ring-gold' : 'ring-1 ring-gray-300'"
                 >
                   <input
-                    v-model="form.profile_type"
+                    v-model="referral.choice"
+                    @change="resetReferralValidation"
                     type="radio"
-                    value="individual"
+                    value="yes"
                     class="sr-only"
                   />
                   <div class="p-4 border rounded-lg transition-all hover:bg-accent-green/5">
                     <div class="flex items-center">
                       <div class="w-5 h-5 border-2 rounded-full mr-3 flex items-center justify-center">
-                        <div
-                          v-if="form.profile_type === 'individual'"
-                          class="w-3 h-3 bg-gold rounded-full"
-                        ></div>
+                        <div v-if="referral.choice === 'yes'" class="w-3 h-3 bg-gold rounded-full"></div>
                       </div>
                       <div>
-                        <div class="font-medium text-forest-dark">Individual</div>
-                        <div class="text-sm text-gray-500">Personal agent account</div>
+                        <div class="font-medium text-forest-dark">Yes</div>
+                        <div class="text-sm text-gray-500">I have a Referral ID</div>
                       </div>
                     </div>
                   </div>
@@ -98,223 +88,91 @@
 
                 <label
                   class="relative cursor-pointer"
-                  :class="form.profile_type === 'company' ? 'ring-2 ring-gold' : 'ring-1 ring-gray-300'"
+                  :class="referral.choice === 'no' ? 'ring-2 ring-gold' : 'ring-1 ring-gray-300'"
                 >
                   <input
-                    v-model="form.profile_type"
+                    v-model="referral.choice"
+                    @change="resetReferralValidation"
                     type="radio"
-                    value="company"
+                    value="no"
                     class="sr-only"
                   />
                   <div class="p-4 border rounded-lg transition-all hover:bg-accent-green/5">
                     <div class="flex items-center">
                       <div class="w-5 h-5 border-2 rounded-full mr-3 flex items-center justify-center">
-                        <div
-                          v-if="form.profile_type === 'company'"
-                          class="w-3 h-3 bg-gold rounded-full"
-                        ></div>
+                        <div v-if="referral.choice === 'no'" class="w-3 h-3 bg-gold rounded-full"></div>
                       </div>
                       <div>
-                        <div class="font-medium text-forest-dark">Company</div>
-                        <div class="text-sm text-gray-500">Business agent account</div>
+                        <div class="font-medium text-forest-dark">No</div>
+                        <div class="text-sm text-gray-500">Continue without an upline</div>
                       </div>
                     </div>
                   </div>
                 </label>
               </div>
-              <p v-if="errors.profile_type" class="text-accent-red text-sm mt-1">{{ errors.profile_type }}</p>
             </div>
 
-            <!-- Individual Fields -->
-            <div v-if="form.profile_type === 'individual'" class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Individual Name *</label>
+            <!-- Referral Code Input -->
+            <div v-if="referral.choice === 'yes'" class="space-y-3">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Referral ID *</label>
+              <div class="flex gap-3">
                 <input
-                  v-model="form.individual_name"
+                  v-model="referral.code"
+                  @input="resetReferralValidation"
                   type="text"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter your full name"
+                  class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
+                  placeholder="Enter Referral ID"
                 />
-                <p v-if="errors.individual_name" class="text-accent-red text-sm mt-1">{{ errors.individual_name }}</p>
+                <Button
+                  type="button"
+                  @click="validateReferralCode"
+                  :disabled="!referral.code || referral.validating"
+                  class="bg-forest-dark hover:bg-forest-light text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                >
+                  <span v-if="referral.validating" class="flex items-center">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Validating
+                  </span>
+                  <span v-else>Validate</span>
+                </Button>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                <input
-                  v-model="form.individual_phone"
-                  type="tel"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter your phone number"
-                />
-                <p v-if="errors.individual_phone" class="text-accent-red text-sm mt-1">{{ errors.individual_phone }}</p>
+              <!-- Valid: green banner -->
+              <div
+                v-if="referral.status === 'valid'"
+                class="p-4 rounded-lg bg-accent-green/10 border border-accent-green flex items-start gap-3"
+              >
+                <CheckCircle class="w-5 h-5 text-accent-green flex-shrink-0 mt-0.5" />
+                <div>
+                  <div class="font-medium text-forest-dark">Referral ID verified</div>
+                  <div class="text-sm text-gray-600">Referring agent: <span class="font-medium">{{ referral.agentName }}</span></div>
+                </div>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Alternative E-Mail Address</label>
-                <input
-                  v-model="form.individual_email"
-                  type="email"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter alternative email address (optional)"
-                />
-                <p v-if="errors.individual_email" class="text-accent-red text-sm mt-1">{{ errors.individual_email }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Address *</label>
-                <textarea
-                  v-model="form.individual_address"
-                  rows="3"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter your address"
-                ></textarea>
-                <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">NRIC/Passport Number *</label>
-                <input
-                  v-model="form.individual_id_number"
-                  type="text"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter NRIC or Passport Number"
-                />
-                <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
-                <p v-if="errors.individual_id_number" class="text-accent-red text-sm mt-1">{{ errors.individual_id_number }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport *</label>
-                <input
-                  @change="handleIndividualIdFileChange"
-                  type="file"
-                  accept=".pdf,.jpeg,.jpg,.png"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                />
-                <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
-                <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-                <p v-if="errors.individual_id_file" class="text-accent-red text-sm mt-1">{{ errors.individual_id_file }}</p>
+              <!-- Invalid / Expired: inline error -->
+              <div
+                v-if="referral.status === 'invalid'"
+                class="p-4 rounded-lg bg-accent-red/10 border border-accent-red flex items-start gap-3"
+              >
+                <AlertCircle class="w-5 h-5 text-accent-red flex-shrink-0 mt-0.5" />
+                <div class="text-sm text-accent-red font-medium">{{ referral.errorMessage }}</div>
               </div>
             </div>
 
-            <!-- Company Fields -->
-            <div v-if="form.profile_type === 'company'" class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative Name *</label>
-                <input
-                  v-model="form.company_representative_name"
-                  type="text"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter representative's full name"
-                />
-                <p v-if="errors.company_representative_name" class="text-accent-red text-sm mt-1">{{ errors.company_representative_name }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                <input
-                  v-model="form.company_name"
-                  type="text"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter company name"
-                />
-                <p v-if="errors.company_name" class="text-accent-red text-sm mt-1">{{ errors.company_name }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Company Registration Number *</label>
-                <input
-                  v-model="form.company_registration_number"
-                  type="text"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter registration number"
-                />
-                <p v-if="errors.company_registration_number" class="text-accent-red text-sm mt-1">{{ errors.company_registration_number }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Company Address *</label>
-                <textarea
-                  v-model="form.company_address"
-                  rows="3"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter company address"
-                ></textarea>
-                <p v-if="errors.company_address" class="text-accent-red text-sm mt-1">{{ errors.company_address }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone *</label>
-                <input
-                  v-model="form.company_phone"
-                  type="tel"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter company phone number"
-                />
-                <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address *</label>
-                <input
-                  v-model="form.company_email_address"
-                  type="email"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                  placeholder="Enter company email address"
-                />
-                <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate *</label>
-                <input
-                  @change="handleCompanyRegFileChange"
-                  type="file"
-                  accept=".pdf,.jpeg,.jpg,.png"
-                  required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                />
-                <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
-                <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-                <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
-              </div>
+            <!-- No upline notice -->
+            <div
+              v-if="referral.choice === 'no'"
+              class="p-4 rounded-lg bg-stone-100 border border-stone-200 text-sm text-gray-700"
+            >
+              You'll be assigned to the default Business Partner as your upline.
             </div>
 
-            <!-- About Me / About Company -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }} *
-              </label>
-              <textarea
-                v-model="form.about"
-                rows="4"
-                required
-                maxlength="1000"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
-              ></textarea>
-              <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
-              <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
-              <p v-if="errors.about" class="text-accent-red text-sm mt-1">{{ errors.about }}</p>
-            </div>
-
-            <!-- Next Button -->
+            <!-- Navigation -->
             <div class="flex justify-end pt-6">
               <Button
                 type="button"
                 @click="nextStep"
-                :disabled="!canProceedToNext"
+                :disabled="!canProceedFromStep1"
                 class="bg-gold hover:bg-amber-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
               >
                 Next
@@ -322,114 +180,19 @@
             </div>
           </div>
 
-          <!-- Step 2: Login Info -->
-          <div v-if="currentStep === 1" class="space-y-6">
+          <!-- Steps 2-6: Placeholders -->
+          <div v-else class="space-y-6">
             <div class="text-center mb-6">
-              <h2 class="text-2xl font-bold text-forest-dark mb-2">Login Information</h2>
-              <p class="text-gray-600">Set up your account credentials</p>
+              <h2 class="text-2xl font-bold text-forest-dark mb-2">{{ steps[currentStep].label }}</h2>
+              <p class="text-gray-600">This step is not yet implemented.</p>
             </div>
 
-            <!-- Email (pre-filled) -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-              <input
-                v-model="form.email"
-                type="email"
-                required
-                readonly
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-              />
+            <div class="p-6 rounded-lg bg-stone-100 border border-dashed border-stone-300 text-center text-gray-500">
+              <Construction class="w-10 h-10 mx-auto mb-3 text-gold" />
+              <div class="font-medium text-forest-dark mb-1">Coming soon</div>
+              <div class="text-sm">Step {{ currentStep + 1 }} — {{ steps[currentStep].label }} will be implemented in a follow-up.</div>
             </div>
 
-            <!-- Referral Code -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Referral Code (Optional)</label>
-              <input
-                v-model="form.referral_code"
-                type="text"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                placeholder="Enter partner referral code"
-              />
-              <p v-if="errors.referral_code" class="text-accent-red text-sm mt-1">{{ errors.referral_code }}</p>
-            </div>
-
-            <!-- Password -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Password *
-                <span class="text-accent-red">(Minimum 12 characters with numbers and special characters)</span>
-              </label>
-              <input
-                v-model="form.password"
-                type="password"
-                required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                placeholder="Create a strong password"
-                @input="validatePassword"
-              />
-              <div class="mt-2 space-y-1">
-                <div class="flex items-center text-sm">
-                  <div
-                    class="w-2 h-2 rounded-full mr-2"
-                    :class="passwordValidation.length ? 'bg-accent-green' : 'bg-gray-300'"
-                  ></div>
-                  <span :class="passwordValidation.length ? 'text-accent-green' : 'text-gray-500'">
-                    At least 12 characters
-                  </span>
-                </div>
-                <div class="flex items-center text-sm">
-                  <div
-                    class="w-2 h-2 rounded-full mr-2"
-                    :class="passwordValidation.numbers ? 'bg-accent-green' : 'bg-gray-300'"
-                  ></div>
-                  <span :class="passwordValidation.numbers ? 'text-accent-green' : 'text-gray-500'">
-                    Contains numbers (0-9)
-                  </span>
-                </div>
-                <div class="flex items-center text-sm">
-                  <div
-                    class="w-2 h-2 rounded-full mr-2"
-                    :class="passwordValidation.special ? 'bg-accent-green' : 'bg-gray-300'"
-                  ></div>
-                  <span :class="passwordValidation.special ? 'text-accent-green' : 'text-gray-500'">
-                    Contains special characters (!@#$%^&*()_+-=[]{}|;:,.<>?)
-                  </span>
-                </div>
-              </div>
-              <p v-if="errors.password" class="text-accent-red text-sm mt-1">{{ errors.password }}</p>
-            </div>
-
-            <!-- Confirm Password -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
-              <input
-                v-model="form.password_confirmation"
-                type="password"
-                required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                placeholder="Confirm your password"
-                @input="validatePassword"
-              />
-              <p v-if="errors.password_confirmation" class="text-accent-red text-sm mt-1">{{ errors.password_confirmation }}</p>
-            </div>
-
-            <!-- Terms and Conditions -->
-            <div class="flex items-start space-x-3">
-              <input
-                v-model="form.terms"
-                type="checkbox"
-                required
-                class="mt-1 h-4 w-4 text-gold focus:ring-gold border-gray-300 rounded"
-              />
-              <label class="text-sm text-gray-600">
-                I agree to the
-                <a href="/terms-of-service" class="text-gold hover:text-amber-700 font-medium">Terms of Service</a>
-                and
-                <a href="/privacy-policy" class="text-gold hover:text-amber-700 font-medium">Privacy Policy</a>
-              </label>
-            </div>
-
-            <!-- Navigation Buttons -->
             <div class="flex justify-between pt-6">
               <Button
                 type="button"
@@ -439,79 +202,13 @@
               >
                 Back
               </Button>
-            <Button
-                type="button"
-                @click="submitApplication"
-                :disabled="!canSubmit"
-                class="bg-gold hover:bg-amber-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
-            >
-              <span v-if="isLoading" class="flex items-center">
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Submitting...
-              </span>
-                <span v-else>Submit Agent Application</span>
-            </Button>
-            </div>
-          </div>
-
-          <!-- Step 3: Confirmation -->
-          <div v-if="currentStep === 2" class="text-center space-y-6">
-            <div class="mb-6">
-              <div class="w-16 h-16 bg-accent-green rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle class="w-8 h-8 text-white" />
-              </div>
-              <h2 class="text-2xl font-bold text-forest-dark mb-2">Application Submitted!</h2>
-              <p class="text-gray-600">Your agent application has been successfully submitted</p>
-            </div>
-
-            <!-- Agent Profile Summary -->
-            <div class="bg-gray-50 rounded-lg p-6 text-left">
-              <h3 class="text-lg font-semibold text-forest-dark mb-4">Agent Profile</h3>
-
-              <div class="space-y-3">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Agent Type:</span>
-                  <span class="font-medium text-forest-dark">
-                    {{ form.profile_type === 'individual' ? 'Individual' : 'Company' }}
-                  </span>
-                </div>
-
-                <div v-if="form.profile_type === 'individual'">
-                  <div class="flex justify-between">
-                    <span class="text-gray-600">Name:</span>
-                    <span class="font-medium text-forest-dark">{{ form.individual_name }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-gray-600">Phone:</span>
-                    <span class="font-medium text-forest-dark">{{ form.individual_phone }}</span>
-                  </div>
-                </div>
-
-                <div v-else>
-                  <div class="flex justify-between">
-                    <span class="text-gray-600">Company:</span>
-                    <span class="font-medium text-forest-dark">{{ form.company_name }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-gray-600">Representative:</span>
-                    <span class="font-medium text-forest-dark">{{ form.company_representative_name }}</span>
-                  </div>
-                </div>
-
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Login Email:</span>
-                  <span class="font-medium text-forest-dark">{{ form.email }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Login Button -->
-            <div class="pt-6">
               <Button
-                @click="goToLogin"
+                v-if="currentStep < steps.length - 1"
+                type="button"
+                @click="nextStep"
                 class="bg-gold hover:bg-amber-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
               >
-                Login Now
+                Next
               </Button>
             </div>
           </div>
@@ -524,11 +221,9 @@
       <template #title>
         Invalid Email Address
       </template>
-
       <template #content>
         <p>The email address provided is not in a valid format. Please use a valid email address to register as an agent.</p>
       </template>
-
       <template #footer>
         <Button @click="handleDialogClose" class="bg-gold hover:bg-amber-700 text-white">
           OK
@@ -541,166 +236,86 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
-import { ArrowLeft, CheckCircle } from 'lucide-vue-next'
+import { ArrowLeft, CheckCircle, AlertCircle, Construction } from 'lucide-vue-next'
 
-// Components
 import Card from './Design/Components/Card.vue'
 import Button from './Design/Components/Button.vue'
 import DialogModal from '@/Components/DialogModal.vue'
 
-// Props
 const props = defineProps({
-  email: {
-    type: String,
-    default: ''
-  },
-  invalidEmail: {
-    type: Boolean,
-    default: false
-  },
-  errors: {
-    type: Object,
-    default: () => ({})
-  }
+  email: { type: String, default: '' },
+  invalidEmail: { type: Boolean, default: false },
+  errors: { type: Object, default: () => ({}) },
 })
 
-// Reactive data
 const currentStep = ref(0)
-const isLoading = ref(false)
 const showInvalidEmailDialog = ref(false)
 
 const steps = [
-  { label: 'Agent Info', key: 'agent-info' },
-  { label: 'Login Info', key: 'login-info' },
-  { label: 'Confirmation', key: 'confirmation' }
+  { label: 'Referral ID', key: 'referral' },
+  { label: 'Package', key: 'package' },
+  { label: 'Your Details', key: 'details' },
+  { label: 'Email Verify', key: 'verify' },
+  { label: 'T&C + Payment', key: 'payment' },
+  { label: 'Done', key: 'done' },
 ]
 
-const form = ref({
-  email: '',
-  profile_type: 'individual',
-  individual_name: '',
-  individual_phone: '',
-  individual_email: '',
-  individual_address: '',
-  individual_id_number: '',
-  individual_id_file: null,
-  company_representative_name: '',
-  company_name: '',
-  company_registration_number: '',
-  company_address: '',
-  company_phone: '',
-  company_email_address: '',
-  company_reg_file: null,
-  referral_code: '',
-  password: '',
-  password_confirmation: '',
-  terms: false,
-  about: ''
+const referral = ref({
+  choice: '',
+  code: '',
+  validating: false,
+  status: '',
+  agentName: '',
+  errorMessage: '',
 })
 
-const passwordValidation = ref({
-  length: false,
-  numbers: false,
-  special: false
-})
-
-// Methods
-const handleIndividualIdFileChange = (event) => {
-  form.value.individual_id_file = event.target.files[0]
+const resetReferralValidation = () => {
+  referral.value.status = ''
+  referral.value.agentName = ''
+  referral.value.errorMessage = ''
 }
 
-const handleCompanyRegFileChange = (event) => {
-  form.value.company_reg_file = event.target.files[0]
-}
+const validateReferralCode = async () => {
+  const code = referral.value.code.trim()
+  if (!code) return
 
-// Computed properties
-const aboutWordCount = computed(() => {
-  if (!form.value.about || !form.value.about.trim()) {
-    return 0
-  }
-  return form.value.about.trim().split(/\s+/).filter(word => word.length > 0).length
-})
+  referral.value.validating = true
+  resetReferralValidation()
 
-const canProceedToNext = computed(() => {
-  if (currentStep.value === 0) {
-    if (form.value.profile_type === 'individual') {
-      return form.value.individual_name && form.value.individual_phone && form.value.individual_address &&
-             form.value.individual_id_number && form.value.individual_id_file && form.value.about
+  try {
+    const response = await fetch(`/api/agents/track/code/${encodeURIComponent(code)}`, {
+      headers: { Accept: 'application/json' },
+    })
+    const json = await response.json().catch(() => ({}))
+
+    if (response.ok && json.success && json.data) {
+      referral.value.status = 'valid'
+      referral.value.agentName = json.data.agent_name || 'Unknown agent'
     } else {
-      return form.value.company_representative_name && form.value.company_name &&
-             form.value.company_registration_number && form.value.company_address && form.value.company_phone &&
-             form.value.company_email_address && form.value.company_reg_file && form.value.about
+      referral.value.status = 'invalid'
+      referral.value.errorMessage = json.message || 'Referral ID is invalid or expired.'
     }
-  }
-  return true
-})
-
-const canSubmit = computed(() => {
-  return form.value.password &&
-         form.value.password_confirmation &&
-         form.value.terms &&
-         passwordValidation.value.length &&
-         passwordValidation.value.numbers &&
-         passwordValidation.value.special &&
-         form.value.password === form.value.password_confirmation
-})
-
-const validatePassword = () => {
-  const password = form.value.password
-  passwordValidation.value = {
-    length: password.length >= 12,
-    numbers: /\d/.test(password),
-    special: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)
+  } catch (e) {
+    referral.value.status = 'invalid'
+    referral.value.errorMessage = 'Unable to validate Referral ID. Please try again.'
+  } finally {
+    referral.value.validating = false
   }
 }
+
+const canProceedFromStep1 = computed(() => {
+  if (referral.value.choice === 'no') return true
+  if (referral.value.choice === 'yes') return referral.value.status === 'valid'
+  return false
+})
 
 const nextStep = () => {
-  if (canProceedToNext.value) {
-    currentStep.value++
-  }
+  if (currentStep.value === 0 && !canProceedFromStep1.value) return
+  if (currentStep.value < steps.length - 1) currentStep.value++
 }
 
 const prevStep = () => {
-  if (currentStep.value > 0) {
-    currentStep.value--
-  }
-}
-
-const submitApplication = async () => {
-  if (!canSubmit.value) return
-
-  isLoading.value = true
-
-  try {
-    // Use FormData for file uploads
-    const formData = new FormData()
-    Object.keys(form.value).forEach(key => {
-      if (key === 'individual_id_file' && form.value[key]) {
-        formData.append(key, form.value[key])
-      } else if (key === 'company_reg_file' && form.value[key]) {
-        formData.append(key, form.value[key])
-      } else if (form.value[key] !== null && form.value[key] !== '') {
-        formData.append(key, form.value[key])
-      }
-    })
-
-    await router.post('/register-as-agent', formData, {
-      onSuccess: () => {
-        currentStep.value = 2
-      },
-      onError: (errors) => {
-        console.error('Registration errors:', errors)
-      }
-    })
-  } catch (error) {
-    console.error('Registration error:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const goToLogin = () => {
-  router.visit(`/login?email=${encodeURIComponent(form.value.email)}`)
+  if (currentStep.value > 0) currentStep.value--
 }
 
 const handleDialogClose = () => {
@@ -708,50 +323,23 @@ const handleDialogClose = () => {
 }
 
 const getStepClasses = (index) => {
-  if (index < currentStep.value) {
-    return 'border-gold bg-gold text-white'
-  } else if (index === currentStep.value) {
-    return 'border-gold bg-white text-gold'
-  } else {
-    return 'border-gray-300 bg-white text-gray-400'
-  }
+  if (index < currentStep.value) return 'border-gold bg-gold text-white'
+  if (index === currentStep.value) return 'border-gold bg-white text-gold'
+  return 'border-gray-300 bg-white text-gray-400'
 }
-
 const getStepTextClasses = (index) => {
-  if (index < currentStep.value) {
-    return 'text-white'
-  } else if (index === currentStep.value) {
-    return 'text-gold'
-  } else {
-    return 'text-gray-400'
-  }
+  if (index < currentStep.value) return 'text-white'
+  if (index === currentStep.value) return 'text-gold'
+  return 'text-gray-400'
 }
-
 const getStepLabelClasses = (index) => {
-  if (index < currentStep.value) {
-    return 'text-gold'
-  } else if (index === currentStep.value) {
-    return 'text-forest-dark'
-  } else {
-    return 'text-gray-400'
-  }
+  if (index < currentStep.value) return 'text-gold'
+  if (index === currentStep.value) return 'text-forest-dark'
+  return 'text-gray-400'
 }
+const getStepLineClasses = (index) => (index < currentStep.value ? 'bg-gold' : 'bg-gray-300')
 
-const getStepLineClasses = (index) => {
-  if (index < currentStep.value) {
-    return 'bg-gold'
-  } else {
-    return 'bg-gray-300'
-  }
-}
-
-// Lifecycle
 onMounted(() => {
-  // Set email from props or URL params
-  const urlParams = new URLSearchParams(window.location.search)
-  form.value.email = props.email || urlParams.get('email') || ''
-
-  // Show dialog if invalid email detected
   if (props.invalidEmail) {
     showInvalidEmailDialog.value = true
   }
@@ -759,10 +347,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Custom styles for Geist font */
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
-
-.font-sans {
-  font-family: 'Geist', sans-serif !important;
-}
+.font-sans { font-family: 'Geist', sans-serif !important; }
 </style>
