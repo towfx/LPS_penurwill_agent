@@ -494,7 +494,7 @@ Schema::dropIfExists('partners');
 
 ### Migrations [N]
 
-14. [N] `database/migrations/2026_05_01_000014_add_credentials_and_tc_to_registration.php`
+14. [x] `database/migrations/2026_05_01_000014_add_credentials_and_tc_to_registration.php`
     ```php
     // agents table additions
     $table->timestamp('tc_accepted_at')->nullable()->after('fee_payment_status');
@@ -505,7 +505,7 @@ Schema::dropIfExists('partners');
     DB::statement("ALTER TABLE agents MODIFY status ENUM('active','inactive','suspended','banned','expired','pending','rejected') DEFAULT 'pending'");
     ```
 
-15. [N] `database/migrations/2026_05_01_000015_create_registration_verifications_table.php`
+15. [x] `database/migrations/2026_05_01_000015_create_registration_verifications_table.php`
     ```php
     Schema::create('registration_verifications', function (Blueprint $table) {
         $table->id();
@@ -518,7 +518,7 @@ Schema::dropIfExists('partners');
     });
     ```
 
-16. [N] `database/migrations/2026_05_01_000016_create_agent_notifications_table.php`
+16. [x] `database/migrations/2026_05_01_000016_create_agent_notifications_table.php`
     ```php
     Schema::create('agent_notifications', function (Blueprint $table) {
         $table->id();
@@ -535,20 +535,20 @@ Schema::dropIfExists('partners');
     });
     ```
 
-17. [N] `database/migrations/2026_05_01_000017_add_note_fields_to_payouts_table.php`
+17. [x] `database/migrations/2026_05_01_000017_add_note_fields_to_payouts_table.php`
     ```php
     $table->string('agent_note', 500)->nullable()->after('status');
     $table->text('admin_note')->nullable()->after('agent_note');
     ```
 
-18. [N] `database/migrations/2026_05_01_000018_add_min_payout_amount_to_system_settings.php`
+18. [x] `database/migrations/2026_05_01_000018_add_min_payout_amount_to_system_settings.php`
     ```php
     $table->decimal('min_payout_amount', 10, 2)->default(1.00)->after('renewal_reminder_days_before');
     ```
 
 ### Models [N/M]
 
-- [N] [app/Models/AgentNotification.php](app/Models/AgentNotification.php)
+- [x] [app/Models/AgentNotification.php](app/Models/AgentNotification.php)
   - Fillable: `agent_id`, `type`, `subject`, `body`, `status`, `read_at`, `related_model`, `related_id`
   - Casts: `status` → string, `read_at` → datetime
   - Relations: `agent()`
@@ -557,46 +557,46 @@ Schema::dropIfExists('partners');
   - Constants: `STATUS_UNREAD`, `STATUS_READ`, `STATUS_PENDING`, `STATUS_ARCHIVED`; `TYPE_*` for each event type
   - Note: `is_read` column does NOT exist — migration #16 uses `status` enum. Do not add `is_read`.
 
-- [N] [app/Models/RegistrationVerification.php](app/Models/RegistrationVerification.php)
+- [x] [app/Models/RegistrationVerification.php](app/Models/RegistrationVerification.php)
   - Fillable: `email`, `code`, `expires_at`, `attempts`, `verified`
   - Methods: `isExpired()`, `isExhausted()` (attempts >= 3), `markVerified()`
 
-- [M] [app/Models/Agent.php](app/Models/Agent.php)
+- [x] [app/Models/Agent.php](app/Models/Agent.php)
   - Add `tc_accepted_at`, `first_login_at`, `suspension_reason`, `rejection_reason` to fillable + casts
   - Add relation: `notifications()` → `hasMany(AgentNotification)`
   - Helper: `isFirstLogin(): bool` checks `first_login_at === null`
 
-- [M] [app/Models/Payout.php](app/Models/Payout.php)
+- [x] [app/Models/Payout.php](app/Models/Payout.php)
   - Add `agent_note`, `admin_note` to fillable
 
-- [M] [app/Models/SystemSetting.php](app/Models/SystemSetting.php)
+- [x] [app/Models/SystemSetting.php](app/Models/SystemSetting.php)
   - Add `min_payout_amount` to fillable + cast as decimal
 
 ### Services [N/M]
 
-- [N] [app/Services/NotificationService.php](app/Services/NotificationService.php)
+- [x] [app/Services/NotificationService.php](app/Services/NotificationService.php)
   - `notify(Agent $agent, string $type, string $subject, string $body, ?string $relatedModel = null, ?int $relatedId = null): AgentNotification`
   - `notifyAdmin(string $type, string $subject, string $body, ?string $relatedModel = null, ?int $relatedId = null): AgentNotification` — sends to Agent#1
   - `notifyChain(Commission $commission, string $type, string $subject, string $body)` — notifies all earners in commission chain
   - All methods wrapped in try/catch — notification failure must never block the primary action
   - **After every `AgentNotification` creation**: dispatch a queued job to send an email to the agent (`Mail::to($agent->user)->queue(new InboxNotificationEmail($notification))`). Email failure must not block notification creation.
 
-- [N] [app/Services/RegistrationVerificationService.php](app/Services/RegistrationVerificationService.php)
+- [x] [app/Services/RegistrationVerificationService.php](app/Services/RegistrationVerificationService.php)
   - `generate(string $email): RegistrationVerification` — creates 6-digit code, 15-min expiry, sends email
   - `verify(string $email, string $code): bool` — checks code + expiry + increments attempts on the current code row
   - `resend(string $email): RegistrationVerification` — checks daily attempt total across all codes for that email; if >= `email_verification_max_retry` (SystemSetting) throw `VerificationDailyLimitException`; otherwise invalidates old code, generates new one (resets per-code attempts)
   - `isExhausted(string $email): bool` — checks daily total attempts >= SystemSetting limit
   - `getDailyAttemptCount(string $email): int` — counts all attempts for email today
 
-- [M] [app/Services/RefundService.php](app/Services/RefundService.php)
+- [x] [app/Services/RefundService.php](app/Services/RefundService.php)
   - After reversal: call `NotificationService::notifyChain()` for all earners
 
-- [M] [app/Services/FeeService.php](app/Services/FeeService.php)
+- [x] [app/Services/FeeService.php](app/Services/FeeService.php)
   - After `applyEntryFee`: call `NotificationService::notify()` for agent
 
 ### Seeders
 
-- [M] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — add Phase 7 fields: `min_payout_amount = 1.00`, `reversal_time_limit = 60`, `email_verification_max_retry = 10`
+- [x] [database/seeders/SystemSettingsSeeder.php](database/seeders/SystemSettingsSeeder.php) — add Phase 7 fields: `min_payout_amount = 1.00`, `reversal_time_limit = 60`, `email_verification_max_retry = 10`
 
 ### Controllers [N/M]
 
@@ -623,7 +623,7 @@ Schema::dropIfExists('partners');
 
 #### Notification / Inbox
 
-- [N] [app/Http/Controllers/Agent/NotificationController.php](app/Http/Controllers/Agent/NotificationController.php)
+- [x] [app/Http/Controllers/Agent/NotificationController.php](app/Http/Controllers/Agent/NotificationController.php)
   - `index()` GET → paginated list of agent's notifications (latest first)
   - `markRead($id)` POST → marks single notification read
   - `markAllRead()` POST → marks all as read
@@ -631,14 +631,14 @@ Schema::dropIfExists('partners');
 
 #### Admin Activity Log
 
-- [N] [app/Http/Controllers/Admin/ActivityLogController.php](app/Http/Controllers/Admin/ActivityLogController.php)
+- [x] [app/Http/Controllers/Admin/ActivityLogController.php](app/Http/Controllers/Admin/ActivityLogController.php)
   - `index()` GET → paginated, filterable `ActivityLog` list
   - Filters: date range, actor_id, action, target model
   - `export()` GET → CSV download of filtered results
 
 #### Admin Agent (additions)
 
-- [M] [app/Http/Controllers/Admin/AgentController.php](app/Http/Controllers/Admin/AgentController.php)
+- [x] [app/Http/Controllers/Admin/AgentController.php](app/Http/Controllers/Admin/AgentController.php)
   - `approve()` — after setting `status=active`: call `NotificationService::notify()` for agent (approved) + parent (new team member)
   - `store()` — admin-created agents: create User with temp password + send `AccountCreatedByAdminNotification`
   - `requestApproval()` POST from agent side → resets status to pending + notifies admin inbox
@@ -647,15 +647,15 @@ Schema::dropIfExists('partners');
 
 #### Agent Appeal
 
-- [N] [app/Http/Controllers/Agent/AppealController.php](app/Http/Controllers/Agent/AppealController.php)
+- [x] [app/Http/Controllers/Agent/AppealController.php](app/Http/Controllers/Agent/AppealController.php)
   - `store()` POST `/agent/appeal-suspension` → sends email to admin + creates Inbox notification for agent
 
 #### Payout (additions)
 
-- [M] [app/Http/Controllers/Admin/PayoutController.php](app/Http/Controllers/Admin/PayoutController.php)
+- [x] [app/Http/Controllers/Admin/PayoutController.php](app/Http/Controllers/Admin/PayoutController.php)
   - `cancel()` POST — new action: set `status=cancelled`, admin note required, notify agent via `NotificationService`
   - Store `agent_note` from request on `store()`
-- [M] [app/Http/Controllers/Agent/RequestPayoutController.php](app/Http/Controllers/Agent/RequestPayoutController.php)
+- [x] [app/Http/Controllers/Agent/RequestPayoutController.php](app/Http/Controllers/Agent/RequestPayoutController.php)
   - Auto-select all eligible commissions (no manual selection)
   - Block if total < `min_payout_amount`
   - Accept `agent_note` field
@@ -663,7 +663,7 @@ Schema::dropIfExists('partners');
 
 #### Referral Stats
 
-- [N] [app/Http/Controllers/Agent/ReferralController.php](app/Http/Controllers/Agent/ReferralController.php)
+- [x] [app/Http/Controllers/Agent/ReferralController.php](app/Http/Controllers/Agent/ReferralController.php)
   - `index()` GET `/agent/referral` → referral code + visit stats + paginated visits table
   - Stats computed: total visits, converted visits (have linked Sale), conversion rate (converted/total × 100), avg time to conversion (sale.created_at - visit.created_at), visits this month, conversions this month
   - Filter by date range + converted status
@@ -671,7 +671,7 @@ Schema::dropIfExists('partners');
 
 #### First Login
 
-- [N] [app/Http/Controllers/Agent/OnboardingController.php](app/Http/Controllers/Agent/OnboardingController.php)
+- [x] [app/Http/Controllers/Agent/OnboardingController.php](app/Http/Controllers/Agent/OnboardingController.php)
   - `show()` GET `/get-started-guide` → render onboarding slides; pass agent_role to Vue
   - `complete()` POST → set `agent.first_login_at = now()`, redirect to dashboard
 
@@ -718,11 +718,11 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 
 ### Mail [N]
 
-- [N] [app/Mail/AccountCreatedNotification.php](app/Mail/AccountCreatedNotification.php) — sent at Step 4 completion (self-registration); contains login URL, pending status note
-- [N] [app/Mail/AccountCreatedByAdminNotification.php](app/Mail/AccountCreatedByAdminNotification.php) — sent when admin creates agent; contains temp password reset link
-- [N] [app/Mail/EmailVerificationCode.php](app/Mail/EmailVerificationCode.php) — 6-digit code email for registration Step 4
-- [N] [app/Mail/SuspensionAppealNotification.php](app/Mail/SuspensionAppealNotification.php) — sent to admin when agent appeals
-- [N] [app/Mail/PayoutCancelledNotification.php](app/Mail/PayoutCancelledNotification.php) — sent when admin cancels payout
+- [x] [app/Mail/AccountCreatedNotification.php](app/Mail/AccountCreatedNotification.php) — sent at Step 4 completion (self-registration); contains login URL, pending status note
+- [x] [app/Mail/AccountCreatedByAdminNotification.php](app/Mail/AccountCreatedByAdminNotification.php) — sent when admin creates agent; contains temp password reset link
+- [x] [app/Mail/EmailVerificationCode.php](app/Mail/EmailVerificationCode.php) — 6-digit code email for registration Step 4
+- [x] [app/Mail/SuspensionAppealNotification.php](app/Mail/SuspensionAppealNotification.php) — sent to admin when agent appeals
+- [x] [app/Mail/PayoutCancelledNotification.php](app/Mail/PayoutCancelledNotification.php) — sent when admin cancels payout
 
 ### Vue Pages [N/M]
 
@@ -792,7 +792,7 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 
 ### HandleInertiaRequests Updates
 
-- [M] [app/Http/Middleware/HandleInertiaRequests.php](app/Http/Middleware/HandleInertiaRequests.php)
+- [x] [app/Http/Middleware/HandleInertiaRequests.php](app/Http/Middleware/HandleInertiaRequests.php)
   - Share `unread_inbox_count` in `share()`: `AgentNotification::forAgent($agent->id)->unread()->count()` (0 if not agent)
   - Share `agent_status` and `fee_payment_status` for dashboard banner logic
 
