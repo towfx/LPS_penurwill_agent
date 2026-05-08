@@ -230,63 +230,51 @@
       </Card>
 
       <!-- Bank Account Information -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-forest-dark mb-4">Bank Account Information</h3>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Account Name</label>
-            <input v-model="form.bank_account_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.bank_account_name" class="text-accent-red text-sm mt-1">{{ errors.bank_account_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
-            <input v-model="form.bank_account_number" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.bank_account_number" class="text-accent-red text-sm mt-1">{{ errors.bank_account_number }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
-            <input v-model="form.bank_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.bank_name" class="text-accent-red text-sm mt-1">{{ errors.bank_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
-            <input v-model="form.iban" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.iban" class="text-accent-red text-sm mt-1">{{ errors.iban }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">SWIFT Code</label>
-            <input v-model="form.swift_code" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.swift_code" class="text-accent-red text-sm mt-1">{{ errors.swift_code }}</p>
-          </div>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Bank Account Information</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <FormField label="Account Name" :error="errors.bank_account_name">
+            <Input v-model="form.bank_account_name" type="text" :invalid="!!errors.bank_account_name" />
+          </FormField>
+          <FormField label="Account Number" :error="errors.bank_account_number">
+            <Input v-model="form.bank_account_number" type="text" :invalid="!!errors.bank_account_number" />
+          </FormField>
+          <FormField label="Bank Name" :error="errors.bank_name">
+            <Input v-model="form.bank_name" type="text" :invalid="!!errors.bank_name" />
+          </FormField>
+          <FormField label="IBAN" :error="errors.iban">
+            <Input v-model="form.iban" type="text" :invalid="!!errors.iban" />
+          </FormField>
+          <FormField label="SWIFT Code" :error="errors.swift_code">
+            <Input v-model="form.swift_code" type="text" :invalid="!!errors.swift_code" />
+          </FormField>
+        </CardContent>
+      </Card>
 
       <!-- Referral Code Information -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-forest-dark mb-4">Referral Code Information</h3>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Referral Code</label>
-            <input v-model="form.referral_code" type="text" class="w-full px-3 py-2 border rounded font-mono" placeholder="Enter unique referral code" />
-            <p v-if="errors.referral_code" class="text-accent-red text-sm mt-1">{{ errors.referral_code }}</p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Referral Code Information</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <FormField label="Referral Code" :error="errors.referral_code">
+            <Input v-model="form.referral_code" type="text" placeholder="Enter unique referral code" :invalid="!!errors.referral_code" class="font-mono" />
             <p class="text-sm text-gray-500 mt-1">Referral code must be unique across all agents</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Commission Rate (%)</label>
-            <input v-model="form.referral_commission_rate" type="number" step="0.01" min="0" max="100" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.referral_commission_rate" class="text-accent-red text-sm mt-1">{{ errors.referral_commission_rate }}</p>
-          </div>
-        </div>
-      </div>
+          </FormField>
+          <FormField label="Commission Rate (%)" :error="errors.referral_commission_rate">
+            <Input v-model="form.referral_commission_rate" type="number" :invalid="!!errors.referral_commission_rate" />
+          </FormField>
+        </CardContent>
+      </Card>
 
       <!-- Form Actions -->
       <div class="flex justify-end">
-        <button type="submit" :disabled="isSaving" class="bg-gold hover:bg-amber-700 text-white px-6 py-2 rounded font-medium transition-colors">
+        <Button type="submit" :disabled="isSaving">
           <span v-if="isSaving">Saving...</span>
           <span v-else>Save Changes</span>
-        </button>
+        </Button>
       </div>
     </form>
 
@@ -308,12 +296,8 @@
           <p class="text-sm text-gray-600 mt-2">Do you want to save anyway?</p>
         </div>
         <div class="flex justify-end space-x-3">
-          <button @click="closeBankWarningDialog" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium transition-colors">
-            Cancel
-          </button>
-          <button @click="proceedWithSave" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-medium transition-colors">
-            Save Anyway
-          </button>
+          <Button variant="outline" @click="closeBankWarningDialog">Cancel</Button>
+          <Button variant="default" @click="proceedWithSave">Save Anyway</Button>
         </div>
       </div>
     </div>
@@ -335,9 +319,7 @@
           <p class="text-sm text-gray-700">{{ generalErrorMessage }}</p>
         </div>
         <div class="flex justify-end">
-          <button @click="closeErrorDialog" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium transition-colors">
-            Close
-          </button>
+          <Button variant="destructive" @click="closeErrorDialog">Close</Button>
         </div>
       </div>
     </div>
@@ -360,13 +342,11 @@
           <p class="text-sm font-medium text-forest-dark">Agent Name: {{ agentName }}</p>
         </div>
         <div class="flex justify-end space-x-3">
-          <button @click="closeApproveDialog" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium transition-colors">
-            Cancel
-          </button>
-          <button @click="approveAgent" :disabled="isApproving" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+          <Button variant="outline" @click="closeApproveDialog">Cancel</Button>
+          <Button variant="default" @click="approveAgent" :disabled="isApproving">
             <span v-if="isApproving">Approving...</span>
             <span v-else>Confirm</span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -377,6 +357,18 @@
 import { ref, computed, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
+import Card from '../Design/Components/Card.vue'
+import CardHeader from '../Design/Components/CardHeader.vue'
+import CardContent from '../Design/Components/CardContent.vue'
+import CardTitle from '../Design/Components/CardTitle.vue'
+import Button from '../Design/Components/Button.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Input from '../Design/Components/Input.vue'
+import Select from '../Design/Components/Select.vue'
+import Radio from '../Design/Components/Radio.vue'
+import FileInput from '../Design/Components/FileInput.vue'
+import Textarea from '../Design/Components/Textarea.vue'
 
 defineOptions({ layout: AdminLayout })
 

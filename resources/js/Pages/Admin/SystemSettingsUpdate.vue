@@ -1,31 +1,20 @@
 <template>
   <div class="space-y-6">
-    <!-- Breadcrumbs -->
-    <nav class="flex items-center space-x-2 text-sm text-gray-600">
-      <Link href="/admin/dashboard" class="hover:text-forest-dark transition-colors">Dashboard</Link>
-      <span class="text-gray-400">/</span>
-      <Link href="/admin/system-settings" class="hover:text-forest-dark transition-colors">System Settings</Link>
-      <span class="text-gray-400">/</span>
-      <span class="text-forest-dark font-medium">Update Settings</span>
-    </nav>
-
-    <!-- Header -->
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <h1 class="text-3xl font-bold text-forest-dark">Update System Settings</h1>
-        <p class="text-gray-600 mt-2">
-          Configure global commission rates, fee structure, and lifecycle policies.
-          Changes affect new commissions and renewal cycles going forward.
-        </p>
-      </div>
-      <Link
-        href="/admin/commission-rate-preview"
-        class="inline-flex items-center px-4 py-2 text-sm bg-cream text-forest-dark border border-gold/30 rounded-lg hover:bg-gold/10 transition-colors whitespace-nowrap"
-      >
-        <Eye class="w-4 h-4 mr-2" />
-        Live Commission Preview
-      </Link>
-    </div>
+    <PageHeader
+      title="Update System Settings"
+      description="Configure global commission rates, fee structure, and lifecycle policies. Changes affect new commissions and renewal cycles going forward."
+      :breadcrumbs="[{ label: 'Dashboard', href: '/admin/dashboard' }, { label: 'System Settings', href: '/admin/system-settings' }, { label: 'Update Settings' }]"
+    >
+      <template #actions>
+        <Link
+          href="/admin/commission-rate-preview"
+          class="inline-flex items-center px-4 py-2 text-sm bg-cream text-forest-dark border border-gold/30 rounded-lg hover:bg-gold/10 transition-colors whitespace-nowrap"
+        >
+          <Eye class="w-4 h-4 mr-2" />
+          Live Commission Preview
+        </Link>
+      </template>
+    </PageHeader>
 
     <form @submit.prevent="submitForm" class="space-y-6">
       <!-- Commission Configuration -->
@@ -53,46 +42,33 @@
             </div>
 
             <div class="md:col-span-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Percentage (%)</label>
-              <input
-                v-model="form[row.key + '_percentage']"
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                :class="{ 'border-red-500': errors[row.key + '_percentage'] }"
-              />
-              <p v-if="errors[row.key + '_percentage']" class="text-red-500 text-xs mt-1">
-                {{ errors[row.key + '_percentage'] }}
-              </p>
+              <FormField label="Percentage (%)" :error="errors[row.key + '_percentage']">
+                <Input
+                  v-model="form[row.key + '_percentage']"
+                  type="number"
+                  :invalid="!!errors[row.key + '_percentage']"
+                />
+              </FormField>
             </div>
 
             <div class="md:col-span-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Fixed (RM)</label>
-              <input
-                v-model="form[row.key + '_fixed_amount']"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                :class="{ 'border-red-500': errors[row.key + '_fixed_amount'] }"
-              />
-              <p v-if="errors[row.key + '_fixed_amount']" class="text-red-500 text-xs mt-1">
-                {{ errors[row.key + '_fixed_amount'] }}
-              </p>
+              <FormField label="Fixed (RM)" :error="errors[row.key + '_fixed_amount']">
+                <Input
+                  v-model="form[row.key + '_fixed_amount']"
+                  type="number"
+                  :invalid="!!errors[row.key + '_fixed_amount']"
+                />
+              </FormField>
             </div>
 
             <div class="md:col-span-2">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Calc Type</label>
-              <select
-                v-model="form[row.key + '_calc_type']"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
-                :class="{ 'border-red-500': errors[row.key + '_calc_type'] }"
-              >
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed</option>
-              </select>
+              <FormField label="Calc Type" :error="errors[row.key + '_calc_type']">
+                <Select
+                  v-model="form[row.key + '_calc_type']"
+                  :options="[{ value: 'percentage', label: 'Percentage' }, { value: 'fixed', label: 'Fixed' }]"
+                  :invalid="!!errors[row.key + '_calc_type']"
+                />
+              </FormField>
             </div>
           </div>
 
@@ -136,29 +112,15 @@
             </div>
 
             <div class="md:col-span-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Entry Fee (RM)</label>
-              <input
-                v-model="form[row.entryKey]"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition-colors"
-                :class="{ 'border-red-500': errors[row.entryKey] }"
-              />
-              <p v-if="errors[row.entryKey]" class="text-red-500 text-xs mt-1">{{ errors[row.entryKey] }}</p>
+              <FormField label="Entry Fee (RM)" :error="errors[row.entryKey]">
+                <Input v-model="form[row.entryKey]" type="number" :invalid="!!errors[row.entryKey]" />
+              </FormField>
             </div>
 
             <div class="md:col-span-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Renewal Fee (RM)</label>
-              <input
-                v-model="form[row.renewalKey]"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-green focus:border-accent-green transition-colors"
-                :class="{ 'border-red-500': errors[row.renewalKey] }"
-              />
-              <p v-if="errors[row.renewalKey]" class="text-red-500 text-xs mt-1">{{ errors[row.renewalKey] }}</p>
+              <FormField label="Renewal Fee (RM)" :error="errors[row.renewalKey]">
+                <Input v-model="form[row.renewalKey]" type="number" :invalid="!!errors[row.renewalKey]" />
+              </FormField>
             </div>
 
             <div v-if="row.enabledKey" class="md:col-span-3 flex items-center pb-2">
@@ -188,41 +150,15 @@
             Override the default labels shown across the application. These do not change role permissions.
           </p>
           <div class="grid gap-4 md:grid-cols-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Agent Label</label>
-              <input
-                v-model="form.role_name_agent"
-                type="text"
-                maxlength="100"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition-colors"
-                :class="{ 'border-red-500': errors.role_name_agent }"
-              />
-              <p v-if="errors.role_name_agent" class="text-red-500 text-xs mt-1">{{ errors.role_name_agent }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Leader Label</label>
-              <input
-                v-model="form.role_name_leader"
-                type="text"
-                maxlength="100"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition-colors"
-                :class="{ 'border-red-500': errors.role_name_leader }"
-              />
-              <p v-if="errors.role_name_leader" class="text-red-500 text-xs mt-1">{{ errors.role_name_leader }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Business Partner Label</label>
-              <input
-                v-model="form.role_name_business_partner"
-                type="text"
-                maxlength="100"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition-colors"
-                :class="{ 'border-red-500': errors.role_name_business_partner }"
-              />
-              <p v-if="errors.role_name_business_partner" class="text-red-500 text-xs mt-1">
-                {{ errors.role_name_business_partner }}
-              </p>
-            </div>
+            <FormField label="Agent Label" :error="errors.role_name_agent">
+              <Input v-model="form.role_name_agent" type="text" :invalid="!!errors.role_name_agent" />
+            </FormField>
+            <FormField label="Leader Label" :error="errors.role_name_leader">
+              <Input v-model="form.role_name_leader" type="text" :invalid="!!errors.role_name_leader" />
+            </FormField>
+            <FormField label="Business Partner Label" :error="errors.role_name_business_partner">
+              <Input v-model="form.role_name_business_partner" type="text" :invalid="!!errors.role_name_business_partner" />
+            </FormField>
           </div>
         </CardContent>
       </Card>
@@ -237,85 +173,33 @@
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="grid gap-4 md:grid-cols-2">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Renewal Reminder (days before)</label>
-              <input
-                v-model="form.renewal_reminder_days_before"
-                type="number"
-                min="1"
-                max="365"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange"
-                :class="{ 'border-red-500': errors.renewal_reminder_days_before }"
-              />
-              <p v-if="errors.renewal_reminder_days_before" class="text-red-500 text-xs mt-1">
-                {{ errors.renewal_reminder_days_before }}
-              </p>
+            <FormField label="Renewal Reminder (days before)" :error="errors.renewal_reminder_days_before">
+              <Input v-model="form.renewal_reminder_days_before" type="number" :invalid="!!errors.renewal_reminder_days_before" />
               <p class="text-xs text-gray-500 mt-1">Days before expiry to send the renewal reminder email.</p>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Reversal Time Limit (days)</label>
-              <input
-                v-model="form.reversal_time_limit"
-                type="number"
-                min="0"
-                max="3650"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange"
-                :class="{ 'border-red-500': errors.reversal_time_limit }"
-              />
-              <p v-if="errors.reversal_time_limit" class="text-red-500 text-xs mt-1">
-                {{ errors.reversal_time_limit }}
-              </p>
+            <FormField label="Reversal Time Limit (days)" :error="errors.reversal_time_limit">
+              <Input v-model="form.reversal_time_limit" type="number" :invalid="!!errors.reversal_time_limit" />
               <p class="text-xs text-gray-500 mt-1">Sales older than this can no longer be refunded (Decision 18).</p>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email Verification Max Retry</label>
-              <input
-                v-model="form.email_verification_max_retry"
-                type="number"
-                min="1"
-                max="100"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange"
-                :class="{ 'border-red-500': errors.email_verification_max_retry }"
-              />
-              <p v-if="errors.email_verification_max_retry" class="text-red-500 text-xs mt-1">
-                {{ errors.email_verification_max_retry }}
-              </p>
+            <FormField label="Email Verification Max Retry" :error="errors.email_verification_max_retry">
+              <Input v-model="form.email_verification_max_retry" type="number" :invalid="!!errors.email_verification_max_retry" />
               <p class="text-xs text-gray-500 mt-1">
                 Max attempts per code &amp; per day before lockout (Decision 27). Default: 10.
               </p>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Payout Amount (RM)</label>
-              <input
-                v-model="form.min_payout_amount"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange"
-                :class="{ 'border-red-500': errors.min_payout_amount }"
-              />
-              <p v-if="errors.min_payout_amount" class="text-red-500 text-xs mt-1">
-                {{ errors.min_payout_amount }}
-              </p>
+            <FormField label="Minimum Payout Amount (RM)" :error="errors.min_payout_amount">
+              <Input v-model="form.min_payout_amount" type="number" :invalid="!!errors.min_payout_amount" />
               <p class="text-xs text-gray-500 mt-1">Agents cannot request payouts below this threshold.</p>
-            </div>
+            </FormField>
 
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Referral Code Prefix</label>
-              <input
-                v-model="form.referral_code_prefix"
-                type="text"
-                maxlength="50"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange"
-                :class="{ 'border-red-500': errors.referral_code_prefix }"
-              />
-              <p v-if="errors.referral_code_prefix" class="text-red-500 text-xs mt-1">
-                {{ errors.referral_code_prefix }}
-              </p>
-              <p class="text-xs text-gray-500 mt-1">Prefix prepended to auto-generated referral codes.</p>
+              <FormField label="Referral Code Prefix" :error="errors.referral_code_prefix">
+                <Input v-model="form.referral_code_prefix" type="text" :invalid="!!errors.referral_code_prefix" />
+                <p class="text-xs text-gray-500 mt-1">Prefix prepended to auto-generated referral codes.</p>
+              </FormField>
             </div>
           </div>
         </CardContent>
@@ -338,47 +222,27 @@
           </p>
 
           <div class="grid gap-4 md:grid-cols-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Sale Amount (RM)</label>
-              <input
-                v-model="preview.sale_amount"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Earning Agent ID</label>
-              <input
-                v-model="preview.earning_agent_id"
-                type="number"
-                min="1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Source Agent ID</label>
-              <input
-                v-model="preview.source_agent_id"
-                type="number"
-                min="1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold"
-              />
-            </div>
+            <FormField label="Sale Amount (RM)">
+              <Input v-model="preview.sale_amount" type="number" />
+            </FormField>
+            <FormField label="Earning Agent ID">
+              <Input v-model="preview.earning_agent_id" type="number" />
+            </FormField>
+            <FormField label="Source Agent ID">
+              <Input v-model="preview.source_agent_id" type="number" />
+            </FormField>
           </div>
 
           <div class="flex items-center justify-between">
-            <button
+            <Button
               type="button"
               @click="runPreview"
               :disabled="previewLoading"
-              class="inline-flex items-center px-4 py-2 bg-forest-dark text-white text-sm font-medium rounded-lg hover:bg-forest-dark/90 disabled:opacity-50"
             >
               <Loader2 v-if="previewLoading" class="w-4 h-4 mr-2 animate-spin" />
               <Play v-else class="w-4 h-4 mr-2" />
               {{ previewLoading ? 'Calculating...' : 'Run Preview' }}
-            </button>
+            </Button>
             <p v-if="previewError" class="text-sm text-red-600">{{ previewError }}</p>
           </div>
 
@@ -425,21 +289,12 @@
 
       <!-- Action Buttons -->
       <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
-        <Link
-          href="/admin/system-settings"
-          class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          Cancel
-        </Link>
-        <button
-          type="submit"
-          :disabled="isSubmitting"
-          class="inline-flex items-center px-6 py-2 bg-gold text-forest-dark font-medium rounded-lg hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
+        <Button variant="outline" as="a" href="/admin/system-settings">Cancel</Button>
+        <Button type="submit" :disabled="isSubmitting">
           <Save v-if="!isSubmitting" class="w-4 h-4 mr-2" />
           <Loader2 v-else class="w-4 h-4 mr-2 animate-spin" />
           {{ isSubmitting ? 'Updating...' : 'Update Settings' }}
-        </button>
+        </Button>
       </div>
     </form>
   </div>
@@ -457,6 +312,11 @@ import CardTitle from '../Design/Components/CardTitle.vue'
 import CardContent from '../Design/Components/CardContent.vue'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Button from '../Design/Components/Button.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Input from '../Design/Components/Input.vue'
+import Select from '../Design/Components/Select.vue'
 
 defineOptions({ layout: AdminLayout })
 

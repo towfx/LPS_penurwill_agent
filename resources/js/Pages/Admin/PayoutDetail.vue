@@ -7,6 +7,9 @@ import { formatCurrency } from '../../lib/utils.js'
 import { DollarSign, Calendar, CheckCircle, Upload, Download, Check, XCircle } from 'lucide-vue-next'
 import Modal from '../../Components/Modal.vue'
 import axios from 'axios'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Button from '../Design/Components/Button.vue'
+import FormField from '../Design/Components/FormField.vue'
 
 defineOptions({ layout: AdminLayout })
 
@@ -206,15 +209,10 @@ const downloadBankTransfer = () => {
 
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <Link href="/admin/payouts" class="hover:text-forest-dark transition-colors">Admin</Link> /
-      <Link href="/admin/payouts" class="hover:text-forest-dark transition-colors">Payouts</Link> /
-      <span class="text-stone-900 font-medium">Payout Detail</span>
-    </nav>
-
-    <!-- Title -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-6">Payout Detail</h1>
+    <PageHeader
+      title="Payout Detail"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Payouts', href: '/admin/payouts' }, { label: 'Payout Detail' }]"
+    />
 
     <!-- Summary Card -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden mb-6">
@@ -321,20 +319,14 @@ const downloadBankTransfer = () => {
           </span>
           <span class="text-sm text-stone-600">{{ payout.bank_transfer_file }}</span>
         </div>
-        <button
-          @click="downloadBankTransfer"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-accent-blue text-white rounded-md font-medium hover:bg-accent-blue/90 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2 transition-colors"
-        >
-          <Download class="w-4 h-4" />
+        <Button variant="outline" @click="downloadBankTransfer">
+          <Download class="w-4 h-4 mr-2" />
           Download File
-        </button>
+        </Button>
       </div>
 
       <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-stone-700 mb-2">
-            Upload Bank Transfer File
-          </label>
+        <FormField label="Upload Bank Transfer File">
           <input
             ref="fileInput"
             type="file"
@@ -343,16 +335,15 @@ const downloadBankTransfer = () => {
             class="block w-full text-sm text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent-blue file:text-white hover:file:bg-accent-blue/90"
           />
           <p class="mt-1 text-xs text-stone-500">Accepted formats: PDF, JPG, JPEG, PNG (Max 5MB)</p>
-        </div>
-        <button
+        </FormField>
+        <Button
           @click="uploadBankTransfer"
           :disabled="!fileForm.bank_transfer_file || isUploading"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-accent-green text-white rounded-md font-medium hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Upload class="w-4 h-4" />
+          <Upload class="w-4 h-4 mr-2" />
           <span v-if="isUploading">Uploading...</span>
           <span v-else>{{ payout.bank_transfer_file ? 'Update File' : 'Upload File' }}</span>
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -447,13 +438,14 @@ const downloadBankTransfer = () => {
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
-                <button
+                <Button
                   v-if="canMarkRefunded(item.commission)"
+                  variant="destructive"
+                  size="sm"
                   @click="markRefunded(item.commission)"
-                  class="text-xs text-accent-red hover:underline"
                 >
                   Mark as Refunded
-                </button>
+                </Button>
               </td>
             </tr>
           </tbody>
@@ -463,13 +455,10 @@ const downloadBankTransfer = () => {
 
     <!-- Mark as Paid Button -->
     <div v-if="payout.status !== 'paid'" class="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-      <button
-        @click="showMarkAsPaidDialog = true"
-        class="inline-flex items-center gap-2 px-6 py-3 bg-accent-green text-white rounded-md font-medium hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
-      >
-        <Check class="w-5 h-5" />
+      <Button @click="showMarkAsPaidDialog = true">
+        <Check class="w-5 h-5 mr-2" />
         Mark as Paid
-      </button>
+      </Button>
     </div>
 
     <!-- Mark as Paid Confirmation Dialog -->
@@ -484,20 +473,11 @@ const downloadBankTransfer = () => {
           Are you sure you want to mark this payout as paid? This action will set the status to "paid" and record the current date as the paid date.
         </p>
         <div class="flex justify-end gap-3">
-          <button
-            @click="showMarkAsPaidDialog = false"
-            class="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 rounded-md hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:ring-offset-2"
-          >
-            Cancel
-          </button>
-          <button
-            @click="markAsPaid"
-            :disabled="isMarkingAsPaid"
-            class="px-4 py-2 text-sm font-medium text-white bg-accent-green rounded-md hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button variant="outline" @click="showMarkAsPaidDialog = false">Cancel</Button>
+          <Button @click="markAsPaid" :disabled="isMarkingAsPaid">
             <span v-if="isMarkingAsPaid">Processing...</span>
             <span v-else>Confirm</span>
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>
@@ -521,12 +501,7 @@ const downloadBankTransfer = () => {
           <p class="text-sm text-gray-700">{{ dialogMessage }}</p>
         </div>
         <div class="flex justify-end">
-          <button
-            @click="showSuccessDialog = false"
-            class="px-4 py-2 text-sm font-medium text-white bg-accent-green rounded-md hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2"
-          >
-            OK
-          </button>
+          <Button @click="showSuccessDialog = false">OK</Button>
         </div>
       </div>
     </Modal>
@@ -550,12 +525,7 @@ const downloadBankTransfer = () => {
           <p class="text-sm text-gray-700">{{ dialogMessage }}</p>
         </div>
         <div class="flex justify-end">
-          <button
-            @click="showErrorDialog = false"
-            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          >
-            OK
-          </button>
+          <Button variant="destructive" @click="showErrorDialog = false">OK</Button>
         </div>
       </div>
     </Modal>

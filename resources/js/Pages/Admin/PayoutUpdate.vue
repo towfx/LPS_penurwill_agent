@@ -1,27 +1,14 @@
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <Link href="/admin/commissions/list" class="hover:text-forest-light">Admin</Link> /
-      <Link href="/admin/commissions/list" class="hover:text-forest-light">Commissions</Link> /
-      <span class="text-stone-900 font-medium">Update Payout</span>
-    </nav>
-
-    <!-- Title -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-forest-dark">Update Payout</h1>
-        <p class="text-stone-600 mt-1">
-          {{ getAgentName(agent) }} - {{ monthName }} {{ year }}
-        </p>
-      </div>
-      <Link
-        href="/admin/commissions/list"
-        class="px-4 py-2 text-sm font-medium text-forest-light hover:text-forest-dark transition-colors"
-      >
-        ← Back to List
-      </Link>
-    </div>
+    <PageHeader
+      title="Update Payout"
+      :description="`${getAgentName(agent)} — ${monthName} ${year}`"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Commissions', href: '/admin/commissions/list' }, { label: 'Update Payout' }]"
+    >
+      <template #actions>
+        <Button variant="outline" as="a" href="/admin/commissions/list">← Back to List</Button>
+      </template>
+    </PageHeader>
 
     <form @submit.prevent="submitForm">
       <!-- Agent Info Card -->
@@ -91,21 +78,10 @@
 
         <!-- Amount Input -->
         <div class="mb-6">
-          <label class="block text-sm font-medium text-stone-700 mb-2">
-            Payout Amount
-          </label>
-          <input
-            v-model="form.amount"
-            type="number"
-            step="0.01"
-            min="0"
-            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light focus:border-forest-light"
-            :placeholder="formatCurrency('RM', selectedSummary.total_commission)"
-            required
-          />
-          <p class="text-sm text-stone-500 mt-1">
-            Format: 0.00 (e.g., 1234.56)
-          </p>
+          <FormField label="Payout Amount">
+            <Input v-model="form.amount" type="number" :placeholder="formatCurrency('RM', selectedSummary.total_commission)" />
+            <p class="text-sm text-stone-500 mt-1">Format: 0.00 (e.g., 1234.56)</p>
+          </FormField>
         </div>
 
         <!-- Paid Checkbox -->
@@ -122,15 +98,9 @@
 
         <!-- Paid Date Input -->
         <div v-if="form.is_paid" class="mb-6">
-          <label class="block text-sm font-medium text-stone-700 mb-2">
-            Payment Date
-          </label>
-          <input
-            v-model="form.paid_at"
-            type="date"
-            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light focus:border-forest-light"
-            required
-          />
+          <FormField label="Payment Date">
+            <Input v-model="form.paid_at" type="date" />
+          </FormField>
         </div>
       </div>
 
@@ -241,13 +211,9 @@
 
       <!-- Submit Button -->
       <div class="flex justify-end">
-        <button
-          type="submit"
-          class="px-6 py-2 bg-forest-dark text-white font-medium rounded-md hover:bg-forest-light transition-colors"
-          :disabled="form.commission_ids.length === 0"
-        >
+        <Button type="submit" :disabled="form.commission_ids.length === 0">
           Update Payout
-        </button>
+        </Button>
       </div>
     </form>
   </div>
@@ -258,6 +224,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { Link, useForm } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Button from '../Design/Components/Button.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Input from '../Design/Components/Input.vue'
 
 defineOptions({ layout: AdminLayout })
 

@@ -1,80 +1,57 @@
 <template>
   <div class="space-y-6">
-    <nav class="flex items-center space-x-2 text-sm text-gray-600">
-      <Link href="/admin/dashboard" class="hover:text-forest-dark transition-colors">Dashboard</Link>
-      <span class="text-gray-400">/</span>
-      <span class="text-forest-dark font-medium">Fee Payments</span>
-    </nav>
-
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-forest-dark">Fee Payments</h1>
-        <p class="text-gray-600 mt-2">
-          Full history of entry &amp; renewal fee events recorded against agents.
-        </p>
-      </div>
-      <button
-        @click="showAddModal = true"
-        class="inline-flex items-center px-4 py-2 bg-gold text-forest-dark font-medium rounded-lg hover:bg-gold/90 transition-colors"
-      >
-        <Plus class="w-4 h-4 mr-2" />
-        Record Fee Payment
-      </button>
-    </div>
+    <PageHeader
+      title="Fee Payments"
+      description="Full history of entry &amp; renewal fee events recorded against agents."
+      :breadcrumbs="[{ label: 'Dashboard', href: '/admin/dashboard' }, { label: 'Fee Payments' }]"
+    >
+      <template #actions>
+        <Button @click="showAddModal = true">
+          <Plus class="w-4 h-4 mr-2" />
+          Record Fee Payment
+        </Button>
+      </template>
+    </PageHeader>
 
     <!-- Filters -->
     <Card class="bg-white shadow-sm border border-gray-200">
       <CardContent class="pt-6">
         <div class="grid gap-4 md:grid-cols-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Search Agent</label>
-            <input
-              v-model="filters.search"
-              @input="applyFilters"
-              type="text"
-              placeholder="Name or ID"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold text-sm"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Fee Type</label>
-            <select
+          <FormField label="Search Agent">
+            <Input v-model="filters.search" @input="applyFilters" type="text" placeholder="Name or ID" />
+          </FormField>
+          <FormField label="Fee Type">
+            <Select
               v-model="filters.fee_type"
               @change="applyFilters"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold text-sm"
-            >
-              <option value="">All</option>
-              <option value="entry">Entry</option>
-              <option value="renewal">Renewal</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Role</label>
-            <select
+              :options="[{ value: '', label: 'All' }, { value: 'entry', label: 'Entry' }, { value: 'renewal', label: 'Renewal' }]"
+            />
+          </FormField>
+          <FormField label="Role">
+            <Select
               v-model="filters.role"
               @change="applyFilters"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold text-sm"
-            >
-              <option value="">All</option>
-              <option value="agent">{{ roleNames.agent }}</option>
-              <option value="agent_leader">{{ roleNames.leader }}</option>
-              <option value="business_partner">{{ roleNames.business_partner }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Payment Method</label>
-            <select
+              :options="[
+                { value: '', label: 'All' },
+                { value: 'agent', label: roleNames.agent },
+                { value: 'agent_leader', label: roleNames.leader },
+                { value: 'business_partner', label: roleNames.business_partner },
+              ]"
+            />
+          </FormField>
+          <FormField label="Payment Method">
+            <Select
               v-model="filters.payment_method"
               @change="applyFilters"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold text-sm"
-            >
-              <option value="">All</option>
-              <option value="stripe">Stripe</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="manual">Manual</option>
-              <option value="waived">Waived</option>
-            </select>
-          </div>
+              :options="[
+                { value: '', label: 'All' },
+                { value: 'stripe', label: 'Stripe' },
+                { value: 'bank_transfer', label: 'Bank Transfer' },
+                { value: 'manual', label: 'Manual' },
+                { value: 'waived', label: 'Waived' },
+              ]"
+            />
+          </FormField>
         </div>
       </CardContent>
     </Card>
@@ -152,21 +129,19 @@
             Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }}
           </div>
           <div class="flex items-center space-x-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               :disabled="pagination.current_page === 1"
               @click="goToPage(pagination.current_page - 1)"
-              class="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
+            >Previous</Button>
             <span class="text-sm">Page {{ pagination.current_page }} / {{ pagination.last_page }}</span>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               :disabled="pagination.current_page === pagination.last_page"
               @click="goToPage(pagination.current_page + 1)"
-              class="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
-            >
-              Next
-            </button>
+            >Next</Button>
           </div>
         </div>
       </CardContent>
@@ -181,87 +156,54 @@
       <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold text-forest-dark mb-4">Record Fee Payment</h3>
         <form @submit.prevent="submitFee" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Agent ID *</label>
-            <input
-              v-model="newFee.agent_id"
-              type="number"
-              min="1"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold"
-            />
-          </div>
+          <FormField label="Agent ID" required>
+            <Input v-model="newFee.agent_id" type="number" />
+          </FormField>
           <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Fee Type *</label>
-              <select v-model="newFee.fee_type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="entry">Entry</option>
-                <option value="renewal">Renewal</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-              <select v-model="newFee.role" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="agent">{{ roleNames.agent }}</option>
-                <option value="agent_leader">{{ roleNames.leader }}</option>
-                <option value="business_partner">{{ roleNames.business_partner }}</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Amount (RM) *</label>
-              <input
-                v-model="newFee.amount"
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            <FormField label="Fee Type" required>
+              <Select
+                v-model="newFee.fee_type"
+                :options="[{ value: 'entry', label: 'Entry' }, { value: 'renewal', label: 'Renewal' }]"
               />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
-              <select v-model="newFee.payment_method" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="manual">Manual</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="stripe">Stripe</option>
-                <option value="waived">Waived</option>
-              </select>
-            </div>
+            </FormField>
+            <FormField label="Role" required>
+              <Select
+                v-model="newFee.role"
+                :options="[
+                  { value: 'agent', label: roleNames.agent },
+                  { value: 'agent_leader', label: roleNames.leader },
+                  { value: 'business_partner', label: roleNames.business_partner },
+                ]"
+              />
+            </FormField>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Reference</label>
-            <input
-              v-model="newFee.payment_reference"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Optional reference (e.g. Stripe session id)"
-            />
+          <div class="grid grid-cols-2 gap-3">
+            <FormField label="Amount (RM)" required>
+              <Input v-model="newFee.amount" type="number" />
+            </FormField>
+            <FormField label="Payment Method" required>
+              <Select
+                v-model="newFee.payment_method"
+                :options="[
+                  { value: 'manual', label: 'Manual' },
+                  { value: 'bank_transfer', label: 'Bank Transfer' },
+                  { value: 'stripe', label: 'Stripe' },
+                  { value: 'waived', label: 'Waived' },
+                ]"
+              />
+            </FormField>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Paid At</label>
-            <input
-              v-model="newFee.paid_at"
-              type="date"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+          <FormField label="Reference">
+            <Input v-model="newFee.payment_reference" type="text" placeholder="Optional reference (e.g. Stripe session id)" />
+          </FormField>
+          <FormField label="Paid At">
+            <Input v-model="newFee.paid_at" type="date" />
+          </FormField>
           <div class="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              @click="showAddModal = false"
-              class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="submitting"
-              class="px-4 py-2 text-sm bg-gold text-forest-dark font-medium rounded-lg hover:bg-gold/90 disabled:opacity-50"
-            >
+            <Button type="button" variant="outline" @click="showAddModal = false">Cancel</Button>
+            <Button type="submit" :disabled="submitting">
               {{ submitting ? 'Saving...' : 'Save' }}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -278,6 +220,11 @@ import CardContent from '../Design/Components/CardContent.vue'
 import Badge from '../Design/Components/Badge.vue'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Button from '../Design/Components/Button.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Input from '../Design/Components/Input.vue'
+import Select from '../Design/Components/Select.vue'
 
 defineOptions({ layout: AdminLayout })
 
