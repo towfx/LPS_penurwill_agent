@@ -1,22 +1,15 @@
 <template>
   <div>
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Agents</span> / <span class="text-stone-900 font-medium">View Agent</span>
-    </nav>
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-forest-dark">Agent Details</h1>
-      <div class="flex space-x-2">
-        <button @click="goBack" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors">
-          Back to List
-        </button>
-        <button v-if="agent.status !== 'active'" @click="showApproveDialog" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
-          Approve Agent
-        </button>
-        <button @click="goToEdit" class="bg-gold hover:bg-amber-700 text-white px-4 py-2 rounded font-medium transition-colors">
-          Edit Agent
-        </button>
-      </div>
-    </div>
+    <PageHeader
+      title="Agent Details"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Agents', href: '/admin/agents/list' }, { label: 'View Agent' }]"
+    >
+      <template #actions>
+        <Button variant="secondary" @click="goBack">Back to List</Button>
+        <Button v-if="agent.status !== 'active'" variant="default" @click="showApproveDialog">Approve Agent</Button>
+        <Button variant="default" @click="goToEdit">Edit Agent</Button>
+      </template>
+    </PageHeader>
 
     <div v-if="!agent" class="text-accent-red">Agent not found.</div>
     <div v-else class="space-y-6">
@@ -188,13 +181,11 @@
           <p class="text-sm font-medium text-forest-dark">Agent Name: {{ agentName }}</p>
         </div>
         <div class="flex justify-end space-x-3">
-          <button @click="closeApproveDialog" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium transition-colors">
-            Cancel
-          </button>
-          <button @click="approveAgent" :disabled="isApproving" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+          <Button variant="secondary" @click="closeApproveDialog">Cancel</Button>
+          <Button variant="default" @click="approveAgent" :disabled="isApproving">
             <span v-if="isApproving">Approving...</span>
             <span v-else>Confirm</span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -205,6 +196,8 @@
 import { computed, ref } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Button from '../Design/Components/Button.vue'
 
 defineOptions({ layout: AdminLayout })
 

@@ -1,26 +1,22 @@
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Commissions</span> / <span class="text-stone-900 font-medium">List</span>
-    </nav>
-
-    <!-- Title -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-6">Commissions List</h1>
+    <PageHeader
+      title="Commissions List"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Commissions' }, { label: 'List' }]"
+    />
 
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
       <div class="flex flex-col lg:flex-row gap-6">
         <!-- Year Dropdown -->
         <div class="flex-1">
-          <label class="block text-sm font-medium text-stone-700 mb-2">Year</label>
-          <select
-            v-model="selectedYear"
-            @change="updateFilters"
-            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light focus:border-forest-light"
-          >
-            <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
-          </select>
+          <FormField label="Year">
+            <Select
+              v-model="selectedYear"
+              :options="years.map(y => ({ value: y, label: String(y) }))"
+              @update:modelValue="updateFilters"
+            />
+          </FormField>
         </div>
 
         <!-- Month Selection -->
@@ -46,41 +42,31 @@
 
         <!-- Commission Type / Category / Calc filters -->
         <div class="flex-1">
-          <label class="block text-sm font-medium text-stone-700 mb-2">Type</label>
-          <select
-            v-model="selectedType"
-            @change="updateFilters"
-            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light"
-          >
-            <option value="">All</option>
-            <option value="own_sales">Own Sales</option>
-            <option value="override">Override</option>
-          </select>
+          <FormField label="Type">
+            <Select
+              v-model="selectedType"
+              :options="[{ value: '', label: 'All' }, { value: 'own_sales', label: 'Own Sales' }, { value: 'override', label: 'Override' }]"
+              @update:modelValue="updateFilters"
+            />
+          </FormField>
         </div>
         <div class="flex-1">
-          <label class="block text-sm font-medium text-stone-700 mb-2">Category</label>
-          <select
-            v-model="selectedCategory"
-            @change="updateFilters"
-            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light"
-          >
-            <option value="">All</option>
-            <option value="agent">{{ roleNames.agent }}</option>
-            <option value="agent_leader">{{ roleNames.leader }}</option>
-            <option value="business_partner">{{ roleNames.business_partner }}</option>
-          </select>
+          <FormField label="Category">
+            <Select
+              v-model="selectedCategory"
+              :options="[{ value: '', label: 'All' }, { value: 'agent', label: roleNames.agent }, { value: 'agent_leader', label: roleNames.leader }, { value: 'business_partner', label: roleNames.business_partner }]"
+              @update:modelValue="updateFilters"
+            />
+          </FormField>
         </div>
         <div class="flex-1">
-          <label class="block text-sm font-medium text-stone-700 mb-2">Calc Type</label>
-          <select
-            v-model="selectedCalcType"
-            @change="updateFilters"
-            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light"
-          >
-            <option value="">All</option>
-            <option value="percentage">Percentage</option>
-            <option value="fixed">Fixed</option>
-          </select>
+          <FormField label="Calc Type">
+            <Select
+              v-model="selectedCalcType"
+              :options="[{ value: '', label: 'All' }, { value: 'percentage', label: 'Percentage' }, { value: 'fixed', label: 'Fixed' }]"
+              @update:modelValue="updateFilters"
+            />
+          </FormField>
         </div>
       </div>
     </div>
@@ -202,6 +188,9 @@ import { ref, computed, onMounted } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Select from '../Design/Components/Select.vue'
 
 defineOptions({ layout: AdminLayout })
 

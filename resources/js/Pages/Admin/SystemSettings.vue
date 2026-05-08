@@ -1,35 +1,21 @@
 <template>
   <div class="space-y-6">
-    <nav class="flex items-center space-x-2 text-sm text-gray-600">
-      <Link href="/admin/dashboard" class="hover:text-forest-dark transition-colors">Dashboard</Link>
-      <span class="text-gray-400">/</span>
-      <span class="text-forest-dark font-medium">System Settings</span>
-    </nav>
-
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-forest-dark">System Settings</h1>
-        <p class="text-gray-600 mt-2">
-          Read-only summary of the active commission, fee, and lifecycle configuration.
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
-        <Link
-          href="/admin/commission-rate-preview"
-          class="inline-flex items-center px-4 py-2 bg-cream text-forest-dark border border-gold/30 font-medium rounded-lg hover:bg-gold/10 transition-colors"
-        >
+    <PageHeader
+      title="System Settings"
+      description="Read-only summary of the active commission, fee, and lifecycle configuration."
+      :breadcrumbs="[{ label: 'Dashboard', href: '/admin/dashboard' }, { label: 'System Settings' }]"
+    >
+      <template #actions>
+        <Button variant="outline" @click="() => router.visit('/admin/commission-rate-preview')">
           <Eye class="w-4 h-4 mr-2" />
           Live Preview
-        </Link>
-        <Link
-          href="/admin/system-settings/update"
-          class="inline-flex items-center px-4 py-2 bg-gold text-forest-dark font-medium rounded-lg hover:bg-gold/90 transition-colors"
-        >
+        </Button>
+        <Button variant="default" @click="() => router.visit('/admin/system-settings/update')">
           <Settings class="w-4 h-4 mr-2" />
           Update Settings
-        </Link>
-      </div>
-    </div>
+        </Button>
+      </template>
+    </PageHeader>
 
     <!-- Commission Configuration -->
     <Card class="bg-white shadow-sm border border-gray-200">
@@ -185,7 +171,8 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Link, usePage } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import {
   Settings, Percent, Receipt, Users, Clock, Info, Eye, CheckCircle2, XCircle,
 } from 'lucide-vue-next'
@@ -194,6 +181,8 @@ import CardHeader from '../Design/Components/CardHeader.vue'
 import CardTitle from '../Design/Components/CardTitle.vue'
 import CardContent from '../Design/Components/CardContent.vue'
 import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
 

@@ -4,6 +4,9 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { DollarSign, Calendar, CheckCircle, Eye } from 'lucide-vue-next'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Select from '../Design/Components/Select.vue'
+import Button from '../Design/Components/Button.vue'
 
 defineOptions({ layout: AdminLayout })
 
@@ -88,13 +91,10 @@ const applyTypeFilter = () => {
 
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span class="text-stone-900 font-medium">Payouts</span>
-    </nav>
-
-    <!-- Title -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-6">Payouts Management</h1>
+    <PageHeader
+      title="Payouts Management"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Payouts' }]"
+    />
 
     <!-- Summary Card -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden mb-6">
@@ -162,15 +162,11 @@ const applyTypeFilter = () => {
         <h2 class="text-lg font-semibold text-forest-dark">
           Payouts List
         </h2>
-        <select
+        <Select
           v-model="typeFilter"
-          @change="applyTypeFilter"
-          class="px-3 py-2 border border-stone-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-forest-light"
-        >
-          <option value="">All Types</option>
-          <option value="own_sales">Own Sales</option>
-          <option value="override">Override</option>
-        </select>
+          :options="[{ value: '', label: 'All Types' }, { value: 'own_sales', label: 'Own Sales' }, { value: 'override', label: 'Override' }]"
+          @update:modelValue="applyTypeFilter"
+        />
       </div>
 
       <div class="overflow-x-auto">
@@ -251,13 +247,15 @@ const applyTypeFilter = () => {
                 {{ payout.paid_at ? formatDateTime(payout.paid_at) : '—' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   @click.stop="viewPayout(payout.id)"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-accent-blue hover:text-accent-blue/80 focus:outline-none"
+                  class="inline-flex items-center gap-1 text-accent-blue hover:text-accent-blue/80"
                 >
                   <Eye class="w-4 h-4" />
                   View
-                </button>
+                </Button>
               </td>
             </tr>
           </tbody>

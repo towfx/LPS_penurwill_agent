@@ -1,21 +1,10 @@
 <template>
   <div class="space-y-6">
-    <nav class="flex items-center space-x-2 text-sm text-gray-600">
-      <Link href="/admin/dashboard" class="hover:text-forest-dark transition-colors">Dashboard</Link>
-      <span class="text-gray-400">/</span>
-      <Link href="/admin/system-settings" class="hover:text-forest-dark transition-colors">System Settings</Link>
-      <span class="text-gray-400">/</span>
-      <span class="text-forest-dark font-medium">Commission Rate Preview</span>
-    </nav>
-
-    <div>
-      <h1 class="text-3xl font-bold text-forest-dark">Commission Rate Preview</h1>
-      <p class="text-gray-600 mt-2">
-        Simulate a sale to see exactly which commission rows the current configuration would generate.
-        No data is persisted — this is a dry run against
-        <code class="px-1 py-0.5 bg-stone-100 rounded text-xs">CommissionGenerator::regenerateConfigPreview()</code>.
-      </p>
-    </div>
+    <PageHeader
+      title="Commission Rate Preview"
+      description="Simulate a sale to see exactly which commission rows the current configuration would generate. No data is persisted — this is a dry run against CommissionGenerator::regenerateConfigPreview()."
+      :breadcrumbs="[{ label: 'Dashboard', href: '/admin/dashboard' }, { label: 'System Settings', href: '/admin/system-settings' }, { label: 'Commission Rate Preview' }]"
+    />
 
     <Card class="bg-white shadow-sm border border-gray-200">
       <CardHeader>
@@ -23,51 +12,44 @@
       </CardHeader>
       <CardContent class="space-y-4">
         <div class="grid gap-4 md:grid-cols-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Sale Amount (RM)</label>
-            <input
+          <FormField label="Sale Amount (RM)">
+            <Input
               v-model="form.sale_amount"
               type="number"
               step="0.01"
               min="0"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
             />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Earning Agent ID</label>
-            <input
+          </FormField>
+          <FormField label="Earning Agent ID">
+            <Input
               v-model="form.earning_agent_id"
               type="number"
               min="1"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
               placeholder="Agent earning the commission"
             />
             <p class="text-xs text-gray-500 mt-1">The agent whose hierarchy is walked for overrides.</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Sale Source Agent ID</label>
-            <input
+          </FormField>
+          <FormField label="Sale Source Agent ID">
+            <Input
               v-model="form.source_agent_id"
               type="number"
               min="1"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold focus:border-gold"
               placeholder="Agent who generated the sale"
             />
             <p class="text-xs text-gray-500 mt-1">May equal the earning agent for own sales scenarios.</p>
-          </div>
+          </FormField>
         </div>
 
         <div class="flex items-center justify-between pt-2">
-          <button
-            type="button"
+          <Button
+            variant="default"
             @click="runPreview"
             :disabled="loading || !canRun"
-            class="inline-flex items-center px-4 py-2 bg-gold text-forest-dark font-medium rounded-lg hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Loader2 v-if="loading" class="w-4 h-4 mr-2 animate-spin" />
             <Play v-else class="w-4 h-4 mr-2" />
             {{ loading ? 'Calculating...' : 'Run Preview' }}
-          </button>
+          </Button>
           <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
         </div>
       </CardContent>
@@ -157,6 +139,10 @@ import CardHeader from '../Design/Components/CardHeader.vue'
 import CardTitle from '../Design/Components/CardTitle.vue'
 import CardContent from '../Design/Components/CardContent.vue'
 import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Input from '../Design/Components/Input.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
 

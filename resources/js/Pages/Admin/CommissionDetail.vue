@@ -1,27 +1,14 @@
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <Link href="/admin/commissions/list" class="hover:text-forest-light">Admin</Link> /
-      <Link href="/admin/commissions/list" class="hover:text-forest-light">Commissions</Link> /
-      <span class="text-stone-900 font-medium">Detail</span>
-    </nav>
-
-    <!-- Title -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-forest-dark">Commission Details</h1>
-        <p class="text-stone-600 mt-1">
-          {{ getAgentName(agent) }} - {{ monthName }} {{ year }}
-        </p>
-      </div>
-      <Link
-        href="/admin/commissions/list"
-        class="px-4 py-2 text-sm font-medium text-forest-light hover:text-forest-dark transition-colors"
-      >
-        ← Back to List
-      </Link>
-    </div>
+    <PageHeader
+      title="Commission Details"
+      :description="`${getAgentName(agent)} - ${monthName} ${year}`"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Commissions', href: '/admin/commissions/list' }, { label: 'Detail' }]"
+    >
+      <template #actions>
+        <Button variant="ghost" @click="() => router.visit('/admin/commissions/list')">← Back to List</Button>
+      </template>
+    </PageHeader>
 
     <!-- Summary Card -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
@@ -316,13 +303,15 @@
                       <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(commission.status)}`">
                         {{ commission.status }}
                       </span>
-                      <button
+                      <Button
                         v-if="commission.status === 'paid' && !commission.is_reversal && canMarkRefunded(commission)"
+                        variant="link"
+                        size="sm"
                         @click="markRefunded(commission)"
-                        class="ml-2 text-xs text-accent-red hover:underline"
+                        class="ml-2 text-xs text-accent-red"
                       >
                         Mark as Refunded
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 </tbody>
@@ -344,6 +333,8 @@ import TabsList from '../Design/Components/TabsList.vue'
 import TabsTrigger from '../Design/Components/TabsTrigger.vue'
 import TabsContent from '../Design/Components/TabsContent.vue'
 import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
 import { formatCurrency } from '../../lib/utils.js'
 
 defineOptions({ layout: AdminLayout })
