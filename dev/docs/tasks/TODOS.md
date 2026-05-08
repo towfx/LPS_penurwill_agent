@@ -433,10 +433,10 @@ Schema::dropIfExists('partners');
 
 ## Phase 5 — Activity Logging + System User (≈0.5 day)
 
-- [M] [app/Services/TrackingService.php](app/Services/TrackingService.php), [app/Services/CommissionGenerator.php](app/Services/CommissionGenerator.php) — replace `User::where('email', 'system@…')->first()` lookups with `SystemUser::resolve()`.
-- [N] [app/Support/SystemUser.php](app/Support/SystemUser.php) — `resolve(): User` cached.
-- [M] [app/Models/ActivityLog.php](app/Models/ActivityLog.php) — verify bulk-create tolerance. Add `logBulkCreate` helper if needed.
-- Log these new events: fee payment recorded, fee config updated, role names updated, agent refund triggered, agent expired by scheduler, commission reversal created.
+- [x] [app/Services/TrackingService.php](app/Services/TrackingService.php), [app/Services/CommissionGenerator.php](app/Services/CommissionGenerator.php) — replace `User::where('email', 'system@…')->first()` lookups with `SystemUser::resolve()`.
+- [x] [app/Support/SystemUser.php](app/Support/SystemUser.php) — `resolve(): User` cached.
+- [x] [app/Models/ActivityLog.php](app/Models/ActivityLog.php) — verify bulk-create tolerance. Add `logBulkCreate` helper if needed.
+- [x] Log these new events: fee payment recorded (FeeService), fee config updated (SystemSettingController — existing), role names updated (same), agent refund triggered (SaleController + RefundService — existing), agent expired by scheduler (RenewalService — added), commission reversal created (RefundService — existing).
 
 ---
 
