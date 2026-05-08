@@ -21,6 +21,16 @@ services:
       timeout: 20s
       retries: 10
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: penurwill-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - penurwill
+
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: penurwill-phpmyadmin
