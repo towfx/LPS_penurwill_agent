@@ -23,20 +23,27 @@ class AgentRegistrationController extends Controller
         $email = $request->get('email', '');
         $invalidEmail = false;
 
-        // Validate email format if provided
         if (! empty($email)) {
-            $validator = Validator::make(['email' => $email], [
-                'email' => 'required|email',
-            ]);
-
+            $validator = Validator::make(['email' => $email], ['email' => 'required|email']);
             if ($validator->fails()) {
                 $invalidEmail = true;
             }
         }
 
+        $settings = \App\Models\SystemSetting::first();
+        $companyAgent = Agent::find(1);
+        $companyBank = $companyAgent?->bankAccount;
+
         return Inertia::render('RegisterAsAgent', [
             'email' => $email,
             'invalidEmail' => $invalidEmail,
+            'entryFeeAgent' => $settings?->entry_fee_agent ?? 100,
+            'entryFeeBusinessPartner' => $settings?->entry_fee_business_partner ?? 3000,
+            'companyBank' => $companyBank ? [
+                'bank_name' => $companyBank->bank_name,
+                'account_name' => $companyBank->account_name,
+                'account_number' => $companyBank->account_number,
+            ] : null,
         ]);
     }
 

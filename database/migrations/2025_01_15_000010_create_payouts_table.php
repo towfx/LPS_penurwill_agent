@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('agent_id');
             $table->decimal('amount', 10, 2);
-            $table->enum('status', ['pending', 'approved', 'paid'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'paid', 'cancelled'])->default('pending');
             $table->string('payment_method')->nullable();
             $table->text('notes')->nullable();
             $table->timestamp('paid_at')->nullable();

@@ -15,8 +15,10 @@ return new class extends Migration
             $table->text('rejection_reason')->nullable()->after('suspension_reason');
         });
 
-        // Extend status enum to include rejected and pending
-        DB::statement("ALTER TABLE agents MODIFY status ENUM('active','inactive','suspended','banned','expired','pending','rejected') DEFAULT 'pending'");
+        // Extend status enum to include rejected and pending (MySQL only — SQLite uses untyped TEXT)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE agents MODIFY status ENUM('active','inactive','suspended','banned','expired','pending','rejected') DEFAULT 'pending'");
+        }
     }
 
     public function down(): void
