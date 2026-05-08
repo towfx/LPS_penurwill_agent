@@ -9,7 +9,6 @@ use App\Models\Commission;
 use App\Models\Referral;
 use App\Models\ReferralCode;
 use App\Models\Sale;
-use App\Models\User;
 use App\Support\SystemUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -86,7 +85,7 @@ class TrackingService
             ]);
 
             // Log activity (using system user for API tracking)
-            $systemUser = User::where('email', 'system@penurwill.com')->first();
+            $systemUser = SystemUser::resolve();
             if ($systemUser) {
                 ActivityLog::logCreate($systemUser, $referral, $referral->toArray());
             }
@@ -173,7 +172,7 @@ class TrackingService
             ]);
 
             // Log activity (using system user for API tracking)
-            $systemUser = User::where('email', 'system@penurwill.com')->first();
+            $systemUser = SystemUser::resolve();
             if ($systemUser) {
                 ActivityLog::logCreate($systemUser, $visit, $visit->toArray());
             }

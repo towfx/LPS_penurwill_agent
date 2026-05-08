@@ -129,6 +129,20 @@ class ActivityLog extends Model
     }
 
     /**
+     * Log a creation event for each item in a collection.
+     * Safe for bulk operations — each item gets its own log row queued via createInstance().
+     *
+     * @param iterable<Model> $targets
+     * @param callable|null   $dataFn  Receives the target; returns the array to store as after_data.
+     */
+    public static function logBulkCreate(User $user, iterable $targets, ?callable $dataFn = null): void
+    {
+        foreach ($targets as $target) {
+            self::logCreate($user, $target, $dataFn ? $dataFn($target) : $target->toArray());
+        }
+    }
+
+    /**
      * Get the user who performed this action.
      */
     public function user()

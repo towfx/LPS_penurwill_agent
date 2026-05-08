@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActivityLog;
 use App\Models\Agent;
 use App\Models\FeePayment;
 use App\Models\SystemSetting;
@@ -37,7 +38,7 @@ class FeeService
                 'fee_payment_status' => Agent::FEE_STATUS_PAID,
             ]);
 
-            return FeePayment::create([
+            $payment = FeePayment::create([
                 'agent_id' => $agent->id,
                 'fee_type' => FeePayment::TYPE_ENTRY,
                 'role' => $role,
@@ -47,6 +48,15 @@ class FeeService
                 'paid_at' => now(),
                 'recorded_by' => $recordedBy->id,
             ]);
+
+            ActivityLog::logCustom(
+                $recordedBy,
+                'fee_payment_recorded',
+                "Entry fee of {$amount} recorded for agent #{$agent->id} (role: {$role})",
+                $payment,
+            );
+
+            return $payment;
         });
     }
 
@@ -75,7 +85,7 @@ class FeeService
                 'status' => 'active',
             ]);
 
-            return FeePayment::create([
+            $payment = FeePayment::create([
                 'agent_id' => $agent->id,
                 'fee_type' => FeePayment::TYPE_RENEWAL,
                 'role' => $role,
@@ -85,6 +95,15 @@ class FeeService
                 'paid_at' => now(),
                 'recorded_by' => $recordedBy->id,
             ]);
+
+            ActivityLog::logCustom(
+                $recordedBy,
+                'fee_payment_recorded',
+                "Renewal fee of {$amount} recorded for agent #{$agent->id} (role: {$role})",
+                $payment,
+            );
+
+            return $payment;
         });
     }
 

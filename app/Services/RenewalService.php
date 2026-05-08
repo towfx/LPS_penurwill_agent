@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Mail\AgentExpiryAlertNotification;
 use App\Mail\AgentRenewalReminderNotification;
+use App\Models\ActivityLog;
 use App\Models\Agent;
+use App\Support\SystemUser;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -49,12 +51,32 @@ class RenewalService
      */
     public function markExpiredAgents(): int
     {
-        return Agent::query()
+        $agents = Agent::query()
             ->whereNotNull('expires_at')
             ->whereDate('expires_at', '<', now()->toDateString())
             ->where('fee_payment_status', '!=', Agent::FEE_STATUS_PAID)
             ->where('status', '!=', 'expired')
-            ->update(['status' => 'expired']);
+            ->get();
+
+        if ($agents->isEmpty()) {
+            return 0;
+        }
+
+        Agent::whereIn('id', $agents->pluck('id'))->update(['status' => 'expired']);
+
+        $systemUser = SystemUser::resolve();
+        if ($systemUser) {
+            foreach ($agents as $agent) {
+                ActivityLog::logCustom(
+                    $systemUser,
+                    'agent_expired_by_scheduler',
+                    "Scheduler marked agent #{$agent->id} as expired (expires_at: {$agent->expires_at})",
+                    $agent,
+                );
+            }
+        }
+
+        return $agents->count();
     }
 
     /**
