@@ -16,12 +16,30 @@ class NotificationController extends Controller
             return redirect()->route('agent.dashboard');
         }
 
-        $notifications = AgentNotification::forAgent($agent->id)
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $tab = $request->get('tab', 'unread');
+        $allowed = ['unread', 'pending', 'archived'];
+        if (! in_array($tab, $allowed)) {
+            $tab = 'unread';
+        }
+
+        $query = AgentNotification::forAgent($agent->id)->orderByDesc('created_at');
+
+        if ($tab === 'unread') {
+            $query->unread();
+        } elseif ($tab === 'pending') {
+            $query->pending();
+        } else {
+            $query->archived();
+        }
+
+        $notifications = $query->paginate(20)->withQueryString();
+
+        $unreadCount = AgentNotification::forAgent($agent->id)->unread()->count();
 
         return Inertia::render('Agent/Inbox', [
             'notifications' => $notifications,
+            'activeTab' => $tab,
+            'unreadCount' => $unreadCount,
         ]);
     }
 

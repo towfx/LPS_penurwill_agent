@@ -14,6 +14,7 @@ use App\Models\Agent;
 use App\Models\ActivityLog;
 use App\Models\SystemSetting;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 
@@ -143,6 +144,35 @@ class DashboardController extends Controller
         $totalReferrals = Referral::count();
         $totalSales = Sale::count();
 
+        // 9. Scheduler health
+        $schedulerAlerts = [];
+        $failedJobsCount = 0;
+        try {
+            if (Schema::hasTable('scheduler_logs')) {
+                $jobTypes = ['process_renewals'];
+                foreach ($jobTypes as $jobType) {
+                    $latest = DB::table('scheduler_logs')
+                        ->where('job_type', $jobType)
+                        ->orderByDesc('ran_at')
+                        ->first();
+                    if (! $latest) {
+                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'never_ran', 'last_ran' => null];
+                    } elseif (Carbon::parse($latest->ran_at)->diffInHours(now()) > 24) {
+                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'stale', 'last_ran' => $latest->ran_at];
+                    } elseif ($latest->status === 'failed') {
+                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'failed', 'last_ran' => $latest->ran_at, 'error' => $latest->error_message];
+                    } else {
+                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'ok', 'last_ran' => $latest->ran_at];
+                    }
+                }
+            }
+            if (Schema::hasTable('failed_jobs')) {
+                $failedJobsCount = DB::table('failed_jobs')->count();
+            }
+        } catch (\Throwable $e) {
+            // Non-critical
+        }
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
                 'revenueThisMonth' => $revenueThisMonth,
@@ -172,6 +202,8 @@ class DashboardController extends Controller
                 'totalReferrals' => $totalReferrals,
                 'totalSales' => $totalSales,
             ],
+            'schedulerAlerts' => $schedulerAlerts,
+            'failedJobsCount' => $failedJobsCount,
         ]);
     }
 }

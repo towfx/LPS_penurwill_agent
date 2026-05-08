@@ -6,7 +6,8 @@
     >
       <template #actions>
         <Button variant="secondary" @click="goBack">Back to List</Button>
-        <Button v-if="agent.status !== 'active'" variant="default" @click="showApproveDialog">Approve Agent</Button>
+        <Button v-if="agent.status !== 'active' && agent.status !== 'rejected'" variant="default" @click="showApproveDialog">Approve Agent</Button>
+        <Button v-if="agent.status !== 'rejected' && agent.status !== 'active'" variant="destructive" @click="showRejectDialogFn">Reject Agent</Button>
         <Button variant="default" @click="goToEdit">Edit Agent</Button>
       </template>
     </PageHeader>
@@ -67,6 +68,22 @@
           </div>
           <div><span class="font-medium text-gray-700">User Email:</span> {{ agent.user_email }}</div>
           <div><span class="font-medium text-gray-700">Created:</span> {{ agent.created_at }}</div>
+
+          <!-- Suspension / Rejection reasons -->
+          <div v-if="agent.status === 'suspended' && agent.suspension_reason" class="mt-3 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
+            <div class="flex items-center gap-2 mb-1">
+              <AlertTriangle class="w-4 h-4 text-yellow-700" />
+              <span class="text-sm font-semibold text-yellow-900">Suspension Reason</span>
+            </div>
+            <p class="text-sm text-yellow-800">{{ agent.suspension_reason }}</p>
+          </div>
+          <div v-if="agent.status === 'rejected' && agent.rejection_reason" class="mt-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+            <div class="flex items-center gap-2 mb-1">
+              <AlertTriangle class="w-4 h-4 text-red-700" />
+              <span class="text-sm font-semibold text-red-900">Rejection Reason</span>
+            </div>
+            <p class="text-sm text-red-800">{{ agent.rejection_reason }}</p>
+          </div>
         </div>
       </div>
 
@@ -163,6 +180,33 @@
       </div>
     </div>
 
+    <!-- Reject Dialog -->
+    <Modal :show="showRejectDialogModal" max-width="md" @close="showRejectDialogModal = false">
+      <div class="px-6 py-4">
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Reject Agent Application</h3>
+
+        <!-- Fee paid warning -->
+        <div v-if="rejectHasPaidFee" class="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 flex items-start gap-2">
+          <AlertTriangle class="w-5 h-5 text-yellow-700 mt-0.5" />
+          <div>
+            <p class="text-sm font-semibold text-yellow-900">⚠ This agent has a fee payment on record.</p>
+            <p class="text-xs text-yellow-800 mt-1">Please process a refund via the Stripe dashboard before confirming rejection.</p>
+          </div>
+        </div>
+
+        <FormField label="Rejection Reason (required)">
+          <Textarea v-model="rejectReason" placeholder="Reason for rejection..." rows="3" />
+        </FormField>
+        <div class="flex justify-end gap-3 mt-4">
+          <Button variant="outline" @click="showRejectDialogModal = false">Cancel</Button>
+          <Button variant="destructive" @click="confirmReject" :disabled="isRejecting || !rejectReason.trim()">
+            <span v-if="isRejecting">Rejecting...</span>
+            <span v-else>Confirm Rejection</span>
+          </Button>
+        </div>
+      </div>
+    </Modal>
+
     <!-- Approval Confirmation Dialog -->
     <div v-if="showApproveDialogModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeApproveDialog">
       <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -194,10 +238,15 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { router, usePage } from '@inertiajs/vue3'
+import { router, usePage, useForm } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Button from '../Design/Components/Button.vue'
+import Modal from '../../Components/Modal.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Textarea from '../Design/Components/Textarea.vue'
+import Badge from '../Design/Components/Badge.vue'
+import { AlertTriangle } from 'lucide-vue-next'
 
 defineOptions({ layout: AdminLayout })
 
@@ -232,6 +281,35 @@ const getFeeStatusPillClass = (status) => {
 
 const showApproveDialogModal = ref(false)
 const isApproving = ref(false)
+
+const showRejectDialogModal = ref(false)
+const isRejecting = ref(false)
+const rejectReason = ref('')
+const rejectHasPaidFee = ref(false)
+
+const showRejectDialogFn = () => {
+  rejectHasPaidFee.value = false
+  rejectReason.value = ''
+  showRejectDialogModal.value = true
+}
+
+const confirmReject = () => {
+  if (!rejectReason.value.trim()) return
+  isRejecting.value = true
+  router.post(`/admin/agents/${props.agent.id}/reject`, { rejection_reason: rejectReason.value, confirm: true }, {
+    onSuccess: () => {
+      showRejectDialogModal.value = false
+      isRejecting.value = false
+      router.visit('/admin/agents/list')
+    },
+    onError: (errors) => {
+      isRejecting.value = false
+      if (errors.has_paid_fee) {
+        rejectHasPaidFee.value = true
+      }
+    },
+  })
+}
 
 const agentName = computed(() => {
   if (!props.agent) return ''

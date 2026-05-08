@@ -229,4 +229,75 @@ class AgentRegistrationController extends Controller
             return back()->withErrors(['error' => 'Failed to register agent. '.$e->getMessage()])->withInput();
         }
     }
+
+    public function verifyEmail(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string|size:6',
+        ]);
+
+        $service = app(\App\Services\RegistrationVerificationService::class);
+        $verified = $service->verify($request->email, $request->code);
+
+        if (! $verified) {
+            return back()->withErrors(['code' => 'Invalid or expired verification code.']);
+        }
+
+        return back()->with('email_verified', true);
+    }
+
+    public function resendCode(\Illuminate\Http\Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        try {
+            $service = app(\App\Services\RegistrationVerificationService::class);
+            $service->resend($request->email);
+
+            return back()->with('success', 'Verification code resent.');
+        } catch (\App\Exceptions\VerificationDailyLimitException $e) {
+            return back()->withErrors(['email' => 'Daily verification limit reached. Try again tomorrow.']);
+        }
+    }
+
+    public function stripeSuccess(\Illuminate\Http\Request $request)
+    {
+        return \Inertia\Inertia::render('Agent/PaymentComplete', [
+            'status' => 'success',
+            'session_id' => $request->get('session_id'),
+        ]);
+    }
+
+    public function stripeCancelled(\Illuminate\Http\Request $request)
+    {
+        return \Inertia\Inertia::render('Agent/PaymentComplete', [
+            'status' => 'cancelled',
+        ]);
+    }
+
+    public function completePayment(\Illuminate\Http\Request $request)
+    {
+        $user = auth()->user();
+        $agent = $user?->agents()->first();
+
+        return \Inertia\Inertia::render('Agent/PaymentComplete', [
+            'agent' => $agent,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function submitPayment(\Illuminate\Http\Request $request)
+    {
+        $user = auth()->user();
+        $agent = $user?->agents()->first();
+
+        if (! $agent) {
+            return back()->withErrors(['error' => 'Agent record not found.']);
+        }
+
+        // Stripe payment initiation handled via FeeService when Cashier is integrated.
+        // For now return pending confirmation.
+        return back()->with('success', 'Payment request submitted. An administrator will confirm your payment.');
+    }
 }

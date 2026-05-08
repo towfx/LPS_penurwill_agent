@@ -123,6 +123,18 @@
               </Button>
             </form>
 
+            <!-- Inline result for reset / no_password -->
+            <div v-if="checkResult === 'reset'" class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <p class="text-sm text-yellow-800 font-medium mb-2">Account found — password reset required</p>
+              <p class="text-xs text-yellow-700 mb-3">This email has an account but no password set. Please reset your password to log in.</p>
+              <a href="/forgot-password" class="text-gold hover:text-amber-700 font-semibold text-sm">Reset Password →</a>
+            </div>
+            <div v-if="checkResult === 'no_password'" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <p class="text-sm text-blue-800 font-medium mb-2">Account found — set a password</p>
+              <p class="text-xs text-blue-700 mb-3">Your account was created without a password. Use "Forgot Password" to set one.</p>
+              <a href="/forgot-password" class="text-gold hover:text-amber-700 font-semibold text-sm">Set Password →</a>
+            </div>
+
             <div class="mt-8 text-center">
               <p class="text-sm text-forest-light">
                 Already have an account?
@@ -165,43 +177,41 @@ import Button from './Design/Components/Button.vue'
 // Reactive data
 const email = ref('')
 const isLoading = ref(false)
+const checkResult = ref(null) // null | 'new' | 'login' | 'reset' | 'no_password'
 
 // Methods
 const handleContinue = async () => {
   if (!email.value) return
 
   isLoading.value = true
+  checkResult.value = null
 
   try {
-    // Check if email exists in users table
-    const response = await fetch('/api/check-email', {
+    const response = await fetch('/get-started/check-email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({ email: email.value })
     })
 
     const data = await response.json()
+    const status = data.status || 'new'
 
-    if (data.exists) {
-      // Email exists, redirect to login
-      router.visit('/login', {
-        data: { email: email.value }
-      })
+    if (status === 'new') {
+      router.visit('/register-as-agent', { data: { email: email.value } })
+    } else if (status === 'login') {
+      router.visit('/login', { data: { email: email.value } })
+    } else if (status === 'reset' || status === 'no_password') {
+      checkResult.value = status
     } else {
-      // Email doesn't exist, redirect to register
-      router.visit('/register-as-agent', {
-        data: { email: email.value }
-      })
+      router.visit('/register-as-agent', { data: { email: email.value } })
     }
   } catch (error) {
     console.error('Error checking email:', error)
-    // Fallback to register page
-    router.visit('/register-as-agent', {
-      data: { email: email.value }
-    })
+    router.visit('/register-as-agent', { data: { email: email.value } })
   } finally {
     isLoading.value = false
   }

@@ -4,12 +4,13 @@ import { router, useForm, usePage } from '@inertiajs/vue3'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import { formatCurrency } from '../../lib/utils.js'
-import { DollarSign, Calendar, CheckCircle, Upload, Download, Check, XCircle } from 'lucide-vue-next'
+import { DollarSign, Calendar, CheckCircle, Upload, Download, Check, XCircle, Ban, MessageSquare } from 'lucide-vue-next'
 import Modal from '../../Components/Modal.vue'
 import axios from 'axios'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Button from '../Design/Components/Button.vue'
 import FormField from '../Design/Components/FormField.vue'
+import Textarea from '../Design/Components/Textarea.vue'
 
 defineOptions({ layout: AdminLayout })
 
@@ -204,6 +205,33 @@ const markAsPaid = () => {
 // Download bank transfer file
 const downloadBankTransfer = () => {
   window.open(`/admin/payout/${props.payout.id}/download-bank-transfer`, '_blank')
+}
+
+// Cancel payout
+const showCancelDialog = ref(false)
+const cancelNote = ref('')
+const isCancelling = ref(false)
+
+const cancelPayout = () => {
+  if (!cancelNote.value.trim()) {
+    dialogMessage.value = 'Admin note is required to cancel a payout.'
+    showErrorDialog.value = true
+    return
+  }
+  isCancelling.value = true
+  router.post(`/admin/payout/${props.payout.id}/cancel`, { admin_note: cancelNote.value }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showCancelDialog.value = false
+      isCancelling.value = false
+      cancelNote.value = ''
+    },
+    onError: (errors) => {
+      isCancelling.value = false
+      dialogMessage.value = errors.admin_note || errors.message || 'Failed to cancel payout.'
+      showErrorDialog.value = true
+    },
+  })
 }
 </script>
 
@@ -453,13 +481,68 @@ const downloadBankTransfer = () => {
       </div>
     </div>
 
-    <!-- Mark as Paid Button -->
-    <div v-if="payout.status !== 'paid'" class="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+    <!-- Notes Section -->
+    <div v-if="payout.agent_note || payout.admin_note" class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
+      <h3 class="text-lg font-semibold text-forest-dark mb-4 flex items-center gap-2">
+        <MessageSquare class="w-5 h-5 text-stone-500" /> Notes
+      </h3>
+      <div class="space-y-3">
+        <div v-if="payout.agent_note">
+          <p class="text-xs font-medium text-stone-500 uppercase mb-1">Agent Note</p>
+          <p class="text-sm text-stone-800 bg-stone-50 rounded-lg p-3 border border-stone-200">{{ payout.agent_note }}</p>
+        </div>
+        <div v-if="payout.admin_note">
+          <p class="text-xs font-medium text-stone-500 uppercase mb-1">Admin Note</p>
+          <p class="text-sm text-stone-800 bg-amber-50 rounded-lg p-3 border border-amber-200">{{ payout.admin_note }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div v-if="payout.status !== 'paid' && payout.status !== 'cancelled'" class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 flex items-center gap-3">
       <Button @click="showMarkAsPaidDialog = true">
         <Check class="w-5 h-5 mr-2" />
         Mark as Paid
       </Button>
+      <Button variant="destructive" @click="showCancelDialog = true">
+        <Ban class="w-5 h-5 mr-2" />
+        Cancel Payout
+      </Button>
     </div>
+    <div v-else-if="payout.status === 'paid'" class="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+      <span class="text-accent-green font-medium flex items-center gap-2">
+        <CheckCircle class="w-5 h-5" /> This payout has been paid.
+      </span>
+    </div>
+    <div v-else-if="payout.status === 'cancelled'" class="bg-white rounded-lg shadow-sm border border-red-200 bg-red-50 p-6">
+      <span class="text-accent-red font-medium flex items-center gap-2">
+        <Ban class="w-5 h-5" /> This payout has been cancelled.
+      </span>
+    </div>
+
+    <!-- Cancel Payout Dialog -->
+    <Modal
+      :show="showCancelDialog"
+      max-width="md"
+      @close="showCancelDialog = false"
+    >
+      <div class="px-6 py-4">
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Cancel Payout</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          This will cancel the payout and notify the agent. An admin note is required.
+        </p>
+        <FormField label="Admin Note (required)">
+          <Textarea v-model="cancelNote" placeholder="Reason for cancellation..." rows="3" />
+        </FormField>
+        <div class="flex justify-end gap-3 mt-4">
+          <Button variant="outline" @click="showCancelDialog = false">Cancel</Button>
+          <Button variant="destructive" @click="cancelPayout" :disabled="isCancelling || !cancelNote.trim()">
+            <span v-if="isCancelling">Cancelling...</span>
+            <span v-else>Confirm Cancellation</span>
+          </Button>
+        </div>
+      </div>
+    </Modal>
 
     <!-- Mark as Paid Confirmation Dialog -->
     <Modal

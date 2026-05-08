@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+import { usePage, router } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
 import StatsCard from '../Design/Components/StatsCard.vue'
 import LineChart from '../Design/Components/LineChart.vue'
@@ -9,7 +9,8 @@ import PageHeader from '../Design/Components/PageHeader.vue'
 import Badge from '../Design/Components/Badge.vue'
 import Button from '../Design/Components/Button.vue'
 import { formatCurrency } from '../../lib/utils.js'
-import { TrendingUp, Users, DollarSign, Target, AlertTriangle } from 'lucide-vue-next'
+import { TrendingUp, Users, DollarSign, Target, AlertTriangle, Link as LinkIcon } from 'lucide-vue-next'
+import { Link } from '@inertiajs/vue3'
 
 defineOptions({ layout: AgentLayout })
 
@@ -92,6 +93,10 @@ const lifecycle = computed(() => {
   return { alert: null }
 })
 
+const agentContext = computed(() => page.props.agentContext || {})
+const agentStatus = computed(() => agentContext.value.agent_status || agent.value?.status)
+const feePaymentStatus = computed(() => agentContext.value.fee_payment_status || agent.value?.fee_payment_status)
+
 const salesLabels = computed(() => Object.keys(salesByDay.value).map(day => day.toString()))
 const salesData = computed(() => Object.values(salesByDay.value))
 const referralsLabels = computed(() => Object.keys(referralsByDay.value))
@@ -131,6 +136,55 @@ function getStatusVariant(status) {
         </Badge>
       </template>
     </PageHeader>
+
+    <!-- Suspended Banner (GAP-05) -->
+    <div
+      v-if="agentStatus === 'suspended'"
+      class="rounded-lg border border-yellow-300 bg-yellow-50 p-4 mb-4 flex items-start gap-3"
+    >
+      <AlertTriangle class="w-5 h-5 mt-0.5 flex-shrink-0 text-yellow-700" />
+      <div class="flex-1">
+        <p class="font-semibold text-yellow-900">Your account has been suspended</p>
+        <p class="text-sm text-yellow-800 mt-1">
+          {{ agent?.suspension_reason || 'Please contact support for more information.' }}
+        </p>
+      </div>
+      <Button variant="outline" size="sm" @click="() => router.post('/agent/appeal-suspension', { message: 'I would like to appeal my suspension.' })">
+        Appeal
+      </Button>
+    </div>
+
+    <!-- Rejected Banner (GAP-09) -->
+    <div
+      v-if="agentStatus === 'rejected'"
+      class="rounded-lg border border-red-300 bg-red-50 p-4 mb-4 flex items-start gap-3"
+    >
+      <AlertTriangle class="w-5 h-5 mt-0.5 flex-shrink-0 text-red-700" />
+      <div class="flex-1">
+        <p class="font-semibold text-red-900">Your application was rejected</p>
+        <p class="text-sm text-red-800 mt-1">
+          {{ agent?.rejection_reason || 'Please contact support for more information.' }}
+        </p>
+      </div>
+      <Button variant="outline" size="sm" @click="() => router.post('/agent/request-approval')">
+        Request Re-approval
+      </Button>
+    </div>
+
+    <!-- Payment Pending Banner -->
+    <div
+      v-if="feePaymentStatus === 'pending' && agentStatus !== 'suspended' && agentStatus !== 'rejected'"
+      class="rounded-lg border border-blue-300 bg-blue-50 p-4 mb-4 flex items-start gap-3"
+    >
+      <AlertTriangle class="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-700" />
+      <div class="flex-1">
+        <p class="font-semibold text-blue-900">Registration fee payment pending</p>
+        <p class="text-sm text-blue-800 mt-1">Complete your payment to activate full account access.</p>
+      </div>
+      <Button variant="default" size="sm" @click="() => router.visit('/agent/payment/complete')">
+        Complete Payment
+      </Button>
+    </div>
 
     <!-- Renewal / Expiry Alert Banner -->
     <div
