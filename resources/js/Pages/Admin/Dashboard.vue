@@ -1,14 +1,10 @@
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-2">
-      <span>Admin</span> / <span class="text-stone-900 font-medium">Dashboard</span>
-    </nav>
-    <!-- Title & Description -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-1 flex items-center gap-2">
-      <Settings class="inline text-gold" size="28" /> Admin Dashboard
-    </h1>
-    <p class="text-stone-700 mb-6">System overview, analytics, and management tools.</p>
+    <PageHeader
+      title="Admin Dashboard"
+      description="System overview, analytics, and management tools."
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Dashboard' }]"
+    />
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -122,12 +118,12 @@
 
           <!-- Quick Action Buttons -->
           <div class="grid grid-cols-2 gap-2">
-            <a href="/admin/agents/add" class="bg-gold text-white text-center py-2 px-3 rounded-lg text-sm font-medium hover:bg-gold/90 transition-colors">
+            <Button variant="default" size="sm" @click="() => router.visit('/admin/agents/add')">
               Add Agent
-            </a>
-            <a :href="commissionsUrl" class="bg-accent-blue text-white text-center py-2 px-3 rounded-lg text-sm font-medium hover:bg-accent-blue/90 transition-colors">
+            </Button>
+            <Button variant="secondary" size="sm" @click="() => router.visit(commissionsUrl)">
               View Commissions
-            </a>
+            </Button>
           </div>
         </div>
 
@@ -201,6 +197,9 @@ import PieChart from '../Design/Components/PieChart.vue'
 import ActivityTimeline from '../Design/Components/ActivityTimeline.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { TrendingUp, Users, DollarSign, Target, Settings, Activity, AlertTriangle } from 'lucide-vue-next'
+import { router } from '@inertiajs/vue3'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Button from '../Design/Components/Button.vue'
 
 defineOptions({ layout: AdminLayout })
 

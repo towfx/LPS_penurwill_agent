@@ -1,16 +1,17 @@
 <template>
   <div>
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Agents</span> / <span class="text-stone-900 font-medium">Add</span>
-    </nav>
-
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-forest-dark">Add Agent</h1>
-      <Button variant="outline" @click="goBack">
-        <ArrowLeft size="16" class="mr-2" />
-        Back to List
-      </Button>
-    </div>
+    <PageHeader
+      title="Add Agent"
+      description="Create a new agent account with profile, account, and referral information."
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Agents', href: '/admin/agents/list' }, { label: 'Add Agent' }]"
+    >
+      <template #actions>
+        <Button variant="outline" @click="goBack">
+          <ArrowLeft size="16" class="mr-2" />
+          Back to List
+        </Button>
+      </template>
+    </PageHeader>
 
     <Card>
       <CardHeader>
@@ -20,30 +21,12 @@
       <CardContent>
         <form @submit.prevent="submitForm" class="space-y-6">
           <!-- Agent Type Selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Agent Type *</label>
+          <FormField label="Agent Type" :error="errors.profile_type" required>
             <div class="flex space-x-4">
-              <label class="flex items-center">
-                <input
-                  v-model="form.profile_type"
-                  type="radio"
-                  value="individual"
-                  class="mr-2"
-                />
-                Individual
-              </label>
-              <label class="flex items-center">
-                <input
-                  v-model="form.profile_type"
-                  type="radio"
-                  value="company"
-                  class="mr-2"
-                />
-                Company
-              </label>
+              <Radio v-model="form.profile_type" value="individual" name="profile_type" label="Individual" />
+              <Radio v-model="form.profile_type" value="company" name="profile_type" label="Company" />
             </div>
-            <p v-if="errors.profile_type" class="text-red-500 text-sm mt-1">{{ errors.profile_type }}</p>
-          </div>
+          </FormField>
 
           <!-- Individual Fields -->
           <div v-if="isIndividual" class="space-y-4">

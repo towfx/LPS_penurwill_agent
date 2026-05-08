@@ -1,14 +1,15 @@
 <template>
   <div>
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Commissions</span> / <span class="text-stone-900 font-medium">View</span>
-    </nav>
-    <h1 class="text-2xl font-bold text-forest-dark mb-4">View Commission</h1>
+    <PageHeader
+      title="View Commission"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Commissions', href: '/admin/commissions/list' }, { label: 'View' }]"
+    />
   </div>
 </template>
 
 <script setup>
 import AdminLayout from '../Design/AdminLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
 
 defineOptions({ layout: AdminLayout })
 </script>

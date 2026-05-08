@@ -1,16 +1,16 @@
 <template>
   <div>
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Agents</span> / <span class="text-stone-900 font-medium">List</span>
-    </nav>
-
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-forest-dark">Agents List</h1>
-      <Button @click="addAgent">
-        <Plus size="16" class="mr-2" />
-        Add Agent
-      </Button>
-    </div>
+    <PageHeader
+      title="Agents List"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Agents' }, { label: 'List' }]"
+    >
+      <template #actions>
+        <Button @click="addAgent">
+          <Plus size="16" class="mr-2" />
+          Add Agent
+        </Button>
+      </template>
+    </PageHeader>
 
     <AgentsTable />
   </div>
@@ -22,6 +22,7 @@ import { router } from '@inertiajs/vue3'
 import AdminLayout from '../Design/AdminLayout.vue'
 import AgentsTable from '../Design/Components/AgentsTable.vue'
 import Button from '../Design/Components/Button.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
 
 defineOptions({ layout: AdminLayout })
 
