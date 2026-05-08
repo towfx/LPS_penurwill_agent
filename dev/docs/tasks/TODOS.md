@@ -393,58 +393,41 @@ Schema::dropIfExists('partners');
 
 ### Admin — System Settings
 
-- [M] [resources/js/Pages/Admin/SystemSettingsUpdate.vue](resources/js/Pages/Admin/SystemSettingsUpdate.vue) — rebuild form with:
-  - 6 commission rows × (percentage, fixed RM, calc_type dropdown) inputs. Group: Agent / Agent Leader / Business Partner.
-  - **New "Fee Configuration" section**: entry fee + renewal fee + enabled toggle per role (Decision 13).
-  - **New "Role Names" section**: editable text inputs for Agent/Leader/Business Partner labels (Decision 15).
-  - `renewal_reminder_days_before` input.
-  - `skip_zero_commissions` toggle.
-  - `reversal_time_limit` input (integer, days, default 60) — Decision 18.
-  - `email_verification_max_retry` input (integer, default 10) — Decision 27.
-  - `min_payout_amount` input (decimal, default 1.00).
-  - Live commission preview using `CommissionGenerator::regenerateConfigPreview` JSON endpoint (Decision 17 admin preview).
-- [N] `resources/js/Pages/Admin/CommissionRatePreview.vue` — standalone preview page: admin enters a hypothetical sale amount, selects agent + sale source agent; system calls `CommissionGenerator::regenerateConfigPreview()` endpoint and renders a table showing each commission row that would be created (role, type, rate source, calc_type, amount). Linked from SystemSettingsUpdate form.
-- [M] [resources/js/Pages/Admin/SystemSettings.vue](resources/js/Pages/Admin/SystemSettings.vue) — render new fields read-only in same sections.
+- [x] [resources/js/Pages/Admin/SystemSettingsUpdate.vue](resources/js/Pages/Admin/SystemSettingsUpdate.vue) — 6-row commission grid, fee config, role names, lifecycle policies, referral prefix, live preview. Design system components applied (commit `fefed3b` + design refactor commits).
+- [x] `resources/js/Pages/Admin/CommissionRatePreview.vue` — new standalone preview page. Design system components applied.
+- [x] [resources/js/Pages/Admin/SystemSettings.vue](resources/js/Pages/Admin/SystemSettings.vue) — read-only summary, new sections rendered.
 
 ### Admin — Agents
 
-- [M] [resources/js/Pages/Admin/AgentsAdd.vue](resources/js/Pages/Admin/AgentsAdd.vue), [AgentUpdate.vue](resources/js/Pages/Admin/AgentUpdate.vue)
-  - Add `agent_role` select.
-  - Add `parent_agent_id` searchable select (filtered to roles ≥ child role).
-  - Add `company_representative_id_file` upload visible only when `profile_type === 'company'` (bug fix Part 18).
-  - Show `registered_at`, `expires_at`, `renewal_due_at`, `fee_payment_status` fields.
-- [M] [AgentView.vue](resources/js/Pages/Admin/AgentView.vue)
-  - Show role + parent + direct subordinates list.
-  - Show `company_representative_id_file` download link when `profile_type === 'company'` (bug fix).
-  - Show expiry / fee status info.
-- [M] [AgentsList.vue](resources/js/Pages/Admin/AgentsList.vue) — add Role column, Expiry Status column, filter by role.
+- [x] [resources/js/Pages/Admin/AgentsAdd.vue](resources/js/Pages/Admin/AgentsAdd.vue), [AgentUpdate.vue](resources/js/Pages/Admin/AgentUpdate.vue) — agent_role select, parent_agent_id picker, company_representative_id_file upload, lifecycle fields. Design system components applied.
+- [x] [AgentView.vue](resources/js/Pages/Admin/AgentView.vue) — hierarchy panel, subordinates list, lifecycle dates, fee status, company IC download.
+- [x] [AgentsList.vue](resources/js/Pages/Admin/AgentsList.vue) — Role column, Expiry Status column, role filter.
 
 ### Admin — Commissions & Payouts
 
-- [M] [CommissionsList.vue](resources/js/Pages/Admin/CommissionsList.vue), [CommissionDetail.vue](resources/js/Pages/Admin/CommissionDetail.vue) — show `commission_type`, `commission_category`, `commission_calc_type`. 4-tab report layout (Decision 10).
-- [M] [PayoutCreate.vue](resources/js/Pages/Admin/PayoutCreate.vue), [PayoutDetail.vue](resources/js/Pages/Admin/PayoutDetail.vue), [PayoutsList.vue](resources/js/Pages/Admin/PayoutsList.vue) — surface breakdown (Own / Override-Agent / Override-Leader) totals; filter by type. Show "Mark as Refunded" button on payable commissions.
+- [x] [CommissionsList.vue](resources/js/Pages/Admin/CommissionsList.vue), [CommissionDetail.vue](resources/js/Pages/Admin/CommissionDetail.vue) — type/category/calc_type filters, 4-tab report layout.
+- [x] [PayoutCreate.vue](resources/js/Pages/Admin/PayoutCreate.vue), [PayoutDetail.vue](resources/js/Pages/Admin/PayoutDetail.vue), [PayoutsList.vue](resources/js/Pages/Admin/PayoutsList.vue) — breakdown totals, type filter, Mark as Refunded.
 
 ### Admin — Fee Management [N]
 
-- [N] `resources/js/Pages/Admin/FeePayments.vue` — list fee payment history per agent (entry/renewal events, amounts, recorded_by, dates).
+- [x] `resources/js/Pages/Admin/FeePayments.vue` — fee payment history list with filters + manual record modal.
 
 ### Agent
 
-- [M] [resources/js/Pages/Agent/Commissions.vue](resources/js/Pages/Agent/Commissions.vue), [CommissionDetail.vue](resources/js/Pages/Agent/CommissionDetail.vue) — 4-tab breakdown (Decision 10). Show `commission_calc_type` label.
-- [M] [Agent/Sales.vue](resources/js/Pages/Agent/Sales.vue) — for leaders/BPs, show "source agent" column for subordinate sales.
-- [M] [Agent/Dashboard.vue](resources/js/Pages/Agent/Dashboard.vue) — tiles per commission type, subordinate count, renewal/expiry alert banner.
-  - Add **payout progress indicator**: a card showing "Available to Request: RM X.XX / Minimum: RM Y.YY" with a progress bar toward `min_payout_amount`. Show [Request Payout] button as disabled with tooltip when below threshold (Decision 18 → Phase 7 migration 18).
-- [M] [Agent/RequestPayout.vue](resources/js/Pages/Agent/RequestPayout.vue) — pulls pending list by `earning_agent_id`.
-- [M] [resources/js/Pages/Agent/Profile/Edit.vue](resources/js/Pages/Agent/Profile/Edit.vue) — add `company_representative_id_file` upload visible only when `profile_type === 'company'` (bug fix Part 18).
+- [x] [resources/js/Pages/Agent/Commissions.vue](resources/js/Pages/Agent/Commissions.vue), [CommissionDetail.vue](resources/js/Pages/Agent/CommissionDetail.vue) — 4-tab breakdown, commission_calc_type label.
+- [x] [Agent/Sales.vue](resources/js/Pages/Agent/Sales.vue) — source agent column for leaders/BPs.
+- [x] [Agent/Dashboard.vue](resources/js/Pages/Agent/Dashboard.vue) — per-type tiles, subordinate count, renewal/expiry alert banner, payout progress card with min_payout_amount threshold.
+- [x] [Agent/RequestPayout.vue](resources/js/Pages/Agent/RequestPayout.vue) — earning_agent_id query, type column, min_payout enforcement, net ≤ 0 block.
+- [x] [resources/js/Pages/Agent/ProfileEdit.vue](resources/js/Pages/Agent/ProfileEdit.vue) — company_representative_id_file upload for company profiles.
 
 ### Delete
 
-- [D] [resources/js/Pages/Admin/PartnersList.vue](resources/js/Pages/Admin/PartnersList.vue), [PartnersAdd.vue](resources/js/Pages/Admin/PartnersAdd.vue), [PartnerView.vue](resources/js/Pages/Admin/PartnerView.vue), [PartnerUpdate.vue](resources/js/Pages/Admin/PartnerUpdate.vue) — delete or repurpose AgentsList with `?role=business_partner` filter (QNA-02).
-- [M] AppSidebar / AdminLayout — remove "Partners" nav item; add "Hierarchy" view (tree of agents).
+- [x] Partners pages (PartnersList, PartnersAdd, PartnerView, PartnerUpdate) — already absent from repo.
+- [x] AppSidebar — Partners nav removed; Hierarchy + Fee Payments nav added (Sidebar.vue).
 
 ### Global
 
-- Use `$page.props.systemSettings.role_name_agent` etc. instead of hardcoded "Agent" / "Leader" / "Business Partner" strings anywhere in Vue components (Decision 15).
+- [x] `$page.props.systemSettings.role_name_*` used in Dashboard, AgentsAdd, AgentUpdate, SystemSettingsUpdate, CommissionRatePreview — Decision 15 applied.
 
 ---
 
