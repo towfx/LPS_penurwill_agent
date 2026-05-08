@@ -1,27 +1,16 @@
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <Link href="/agent/commissions" class="hover:text-forest-light">Agent</Link> /
-      <Link href="/agent/commissions" class="hover:text-forest-light">Commissions</Link> /
-      <span class="text-stone-900 font-medium">Detail</span>
-    </nav>
-
-    <!-- Title -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-forest-dark">Commission Details</h1>
-        <p class="text-stone-600 mt-1">
-          {{ getAgentName(agent) }} - {{ monthName }} {{ year }}
-        </p>
-      </div>
-      <Link
-        href="/agent/commissions"
-        class="px-4 py-2 text-sm font-medium text-forest-light hover:text-forest-dark transition-colors"
-      >
-        ← Back to List
-      </Link>
-    </div>
+    <PageHeader
+      title="Commission Details"
+      :description="`${getAgentName(agent)} - ${monthName} ${year}`"
+      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Commissions', href: '/agent/commissions' }, { label: 'Detail' }]"
+    >
+      <template #actions>
+        <Link href="/agent/commissions">
+          <Button variant="outline" size="sm">← Back to List</Button>
+        </Link>
+      </template>
+    </PageHeader>
 
     <!-- Summary Card -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
@@ -51,15 +40,10 @@
         <div class="text-center">
           <div v-if="payout" class="inline-flex items-center space-x-2">
             <span class="text-lg font-medium text-forest-dark">Payout Status:</span>
-            <Link
-              :href="getPayoutUrl()"
-              class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full"
-              :class="getPayoutStatusClass(payout.status)"
-            >
-              <svg v-if="payout.paid_at" class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-              </svg>
-              {{ payout.paid_at ? 'Paid' : 'Created' }}
+            <Link :href="getPayoutUrl()">
+              <Badge :variant="getPayoutStatusVariant(payout.status)">
+                {{ payout.paid_at ? 'Paid' : 'Created' }}
+              </Badge>
             </Link>
             <span v-if="payout.paid_at" class="text-sm text-stone-500">
               ({{ formatDate(payout.paid_at) }})
@@ -154,10 +138,9 @@
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                      :class="commission.commission_type === 'own_sales' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                <Badge :variant="commission.commission_type === 'own_sales' ? 'success' : 'default'">
                   {{ commission.commission_type || 'own_sales' }}
-                </span>
+                </Badge>
                 <span v-if="commission.is_reversal" class="ml-1 text-xs text-accent-red">↩ reversal</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -178,9 +161,9 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(commission.status)}`">
+                <Badge :variant="getStatusVariant(commission.status)">
                   {{ commission.status }}
-                </span>
+                </Badge>
               </td>
             </tr>
           </tbody>
@@ -193,6 +176,9 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
 import { formatCurrency } from '../../lib/utils.js'
 
 defineOptions({ layout: AgentLayout })
@@ -250,18 +236,13 @@ const formatDate = (dateString) => {
   })
 }
 
-const getStatusClass = (status) => {
+const getStatusVariant = (status) => {
   switch (status?.toLowerCase()) {
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'approved':
-      return 'bg-green-100 text-green-800'
-    case 'paid':
-      return 'bg-blue-100 text-blue-800'
-    case 'cancelled':
-      return 'bg-red-100 text-red-800'
-    default:
-      return 'bg-stone-100 text-stone-800'
+    case 'pending': return 'warning'
+    case 'approved': return 'success'
+    case 'paid': return 'default'
+    case 'cancelled': return 'destructive'
+    default: return 'secondary'
   }
 }
 
@@ -269,14 +250,11 @@ const getPayoutUrl = () => {
   return `/agent/payouts/detail?year=${props.year}&month=${props.month}`
 }
 
-const getPayoutStatusClass = (status) => {
+const getPayoutStatusVariant = (status) => {
   switch (status?.toLowerCase()) {
-    case 'paid':
-      return 'bg-green-100 text-green-800'
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
-    default:
-      return 'bg-stone-100 text-stone-800'
+    case 'paid': return 'success'
+    case 'pending': return 'warning'
+    default: return 'secondary'
   }
 }
 </script>

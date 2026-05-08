@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Button from '../Design/Components/Button.vue'
 
 defineOptions({ layout: AgentLayout })
 
@@ -103,15 +105,16 @@ const getFileUrl = (field) => {
 
 <template>
   <div>
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Agent</span> / <span class="text-stone-900 font-medium">Profile</span>
-    </nav>
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-forest-dark">Agent Profile</h1>
-      <button @click="goToEdit" class="bg-gold hover:bg-amber-700 text-white px-4 py-2 rounded font-medium transition-colors">
-        Edit Agent Profile
-      </button>
-    </div>
+    <PageHeader
+      title="Agent Profile"
+      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Profile' }]"
+    >
+      <template #actions>
+        <Button variant="default" size="default" @click="goToEdit">
+          Edit Agent Profile
+        </Button>
+      </template>
+    </PageHeader>
 
     <div v-if="!agent" class="text-accent-red">No agent profile found.</div>
     <div v-else class="space-y-6">
@@ -378,12 +381,9 @@ const getFileUrl = (field) => {
                 </div>
                 <span class="font-medium text-gray-700">Shareable URL</span>
               </div>
-              <button
-                @click="copyShareableUrl"
-                class="px-3 py-1 bg-gold hover:bg-amber-700 text-white text-sm rounded font-medium transition-colors"
-              >
+              <Button variant="default" size="sm" @click="copyShareableUrl">
                 Copy
-              </button>
+              </Button>
             </div>
             <div class="p-3 bg-gray-50 rounded border font-mono text-sm break-all">
               {{ shareableUrl }}
@@ -417,9 +417,9 @@ const getFileUrl = (field) => {
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <div class="flex items-center justify-between">
                 <span class="font-mono text-lg font-bold text-amber-800">{{ agent.referral_code?.code || 'YOUR_CODE' }}</span>
-                <button @click="copyReferralCode" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded font-medium transition-colors">
+                <Button variant="default" size="sm" @click="copyReferralCode">
                   Copy Code
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -438,9 +438,9 @@ const getFileUrl = (field) => {
               <div class="bg-gray-50 rounded-lg p-3">
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-sm font-medium text-gray-700">Main Website:</span>
-                  <button @click="copyShareableUrl" class="px-2 py-1 bg-accent-blue hover:bg-accent-blue/80 text-white text-xs rounded transition-colors">
+                  <Button variant="outline" size="sm" @click="copyShareableUrl">
                     Copy
-                  </button>
+                  </Button>
                 </div>
                 <div class="font-mono text-sm text-gray-600 break-all">
                   {{ shareableUrl }}
@@ -558,9 +558,9 @@ const getFileUrl = (field) => {
           </div>
           <h4 class="text-lg font-medium text-gray-900 mb-2">No Bank Account Information</h4>
           <p class="text-gray-500 mb-4">Add your bank account details to receive commission payouts.</p>
-          <button @click="goToEdit" class="bg-accent-blue hover:bg-accent-blue/80 text-white px-6 py-2 rounded font-medium transition-colors">
+          <Button variant="default" size="default" @click="goToEdit">
             Add Bank Account
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -582,9 +582,9 @@ const getFileUrl = (field) => {
           <p class="text-sm text-gray-700 break-all">{{ copiedValue }}</p>
         </div>
         <div class="flex justify-end">
-          <button @click="showCopyDialog = false" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+          <Button variant="default" size="default" @click="showCopyDialog = false">
             OK
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -5,6 +5,9 @@ import AgentLayout from '../Design/AgentLayout.vue'
 import StatsCard from '../Design/Components/StatsCard.vue'
 import LineChart from '../Design/Components/LineChart.vue'
 import BarChart from '../Design/Components/BarChart.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { TrendingUp, Users, DollarSign, Target, AlertTriangle } from 'lucide-vue-next'
 
@@ -104,38 +107,30 @@ function trendText(val, isPercent = false) {
   return (val > 0 ? '+' : '') + val.toFixed(1) + (isPercent ? '%' : '')
 }
 
-function getStatusPillClass(status) {
+function getStatusVariant(status) {
   switch (status?.toLowerCase()) {
-    case 'active':
-      return 'bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-base font-medium'
-    case 'inactive':
-      return 'bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-base font-medium'
-    case 'suspended':
-      return 'bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-base font-medium'
-    case 'banned':
-      return 'bg-red-100 text-red-800 px-3 py-1.5 rounded-full text-base font-medium'
-    default:
-      return 'bg-gray-100 text-gray-800 px-3 py-1.5 rounded-full text-base font-medium'
+    case 'active': return 'success'
+    case 'inactive': return 'warning'
+    case 'suspended': return 'warning'
+    case 'banned': return 'destructive'
+    default: return 'secondary'
   }
 }
 </script>
 
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-2">
-      <span>Agent</span> / <span class="text-stone-900 font-medium">Dashboard</span>
-    </nav>
-    <!-- Title & Description -->
-    <div class="flex items-center justify-between mb-1">
-      <h1 class="text-2xl font-bold text-forest-dark flex items-center gap-2">
-        <DollarSign class="inline text-gold" size="28" /> Agent Dashboard
-      </h1>
-      <span v-if="agent?.status" :class="getStatusPillClass(agent.status)" class="shrink-0">
-        {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
-      </span>
-    </div>
-    <p class="text-stone-700 mb-6">Your performance overview, sales, referrals, and more.</p>
+    <PageHeader
+      title="Agent Dashboard"
+      description="Your performance overview, sales, referrals, and more."
+      :breadcrumbs="[{ label: 'Dashboard' }]"
+    >
+      <template #actions>
+        <Badge v-if="agent?.status" :variant="getStatusVariant(agent.status)" class="capitalize text-sm px-3 py-1">
+          {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
+        </Badge>
+      </template>
+    </PageHeader>
 
     <!-- Renewal / Expiry Alert Banner -->
     <div
@@ -214,21 +209,23 @@ function getStatusPillClass(status) {
     <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 mb-6">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-semibold text-forest-dark">Payout Progress</h2>
-        <a
+        <Button
           v-if="payoutProgress.canRequest"
-          href="/agent/request-payout"
-          class="inline-flex items-center px-4 py-2 bg-gold text-forest-dark text-sm font-medium rounded-lg hover:bg-gold/90"
+          variant="default"
+          size="sm"
+          @click="() => { window.location.href = '/agent/request-payout' }"
         >
           Request Payout
-        </a>
-        <button
+        </Button>
+        <Button
           v-else
+          variant="secondary"
+          size="sm"
           disabled
           :title="`Minimum is ${formatCurrency('RM', payoutProgress.minimum)} — you have ${formatCurrency('RM', payoutProgress.available)}`"
-          class="inline-flex items-center px-4 py-2 bg-stone-200 text-stone-500 text-sm font-medium rounded-lg cursor-not-allowed"
         >
           Request Payout
-        </button>
+        </Button>
       </div>
       <div class="flex items-center justify-between text-sm text-stone-600 mb-2">
         <span>Available: <span class="font-semibold text-forest-dark">{{ formatCurrency('RM', payoutProgress.available) }}</span></span>

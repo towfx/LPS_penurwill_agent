@@ -30,269 +30,141 @@
 
           <!-- Individual Fields -->
           <div v-if="isIndividual" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Individual Name *</label>
-              <input
-                v-model="form.individual_name"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter individual name"
-              />
-              <p v-if="errors.individual_name" class="text-red-500 text-sm mt-1">{{ errors.individual_name }}</p>
-            </div>
+            <FormField label="Individual Name" :error="errors.individual_name" required>
+              <Input v-model="form.individual_name" type="text" placeholder="Enter individual name" :invalid="!!errors.individual_name" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-              <input
-                v-model="form.individual_phone"
-                type="tel"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter phone number"
-              />
-              <p v-if="errors.individual_phone" class="text-red-500 text-sm mt-1">{{ errors.individual_phone }}</p>
-            </div>
+            <FormField label="Phone Number" :error="errors.individual_phone" required>
+              <Input v-model="form.individual_phone" type="text" placeholder="Enter phone number" :invalid="!!errors.individual_phone" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Alternative E-Mail Address</label>
-              <input
-                v-model="form.individual_email"
-                type="email"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter alternative email address (optional)"
-              />
-              <p v-if="errors.individual_email" class="text-red-500 text-sm mt-1">{{ errors.individual_email }}</p>
-            </div>
+            <FormField label="Alternative E-Mail Address" :error="errors.individual_email">
+              <Input v-model="form.individual_email" type="email" placeholder="Enter alternative email address (optional)" :invalid="!!errors.individual_email" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Address *</label>
-              <textarea
-                v-model="form.individual_address"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter address"
-              ></textarea>
-              <p v-if="errors.individual_address" class="text-red-500 text-sm mt-1">{{ errors.individual_address }}</p>
-            </div>
+            <FormField label="Address" :error="errors.individual_address" required>
+              <Textarea v-model="form.individual_address" :rows="3" placeholder="Enter address" :invalid="!!errors.individual_address" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">NRIC/Passport Number</label>
-              <input
-                v-model="form.individual_id_number"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="National registration identification number or Passport Number"
-              />
+            <FormField label="NRIC/Passport Number" :error="errors.individual_id_number">
+              <Input v-model="form.individual_id_number" type="text" placeholder="National registration identification number or Passport Number" :invalid="!!errors.individual_id_number" />
               <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
-              <p v-if="errors.individual_id_number" class="text-red-500 text-sm mt-1">{{ errors.individual_id_number }}</p>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport</label>
-              <input
-                @change="handleIndividualIdFileChange"
-                type="file"
-                accept=".pdf,.jpeg,.jpg,.png"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              />
+            <FormField label="Copy of IC/Passport" :error="errors.individual_id_file">
+              <FileInput @change="handleIndividualIdFileChange" accept=".pdf,.jpeg,.jpg,.png" />
               <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
               <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-              <p v-if="errors.individual_id_file" class="text-red-500 text-sm mt-1">{{ errors.individual_id_file }}</p>
-            </div>
+            </FormField>
           </div>
 
           <!-- Company Fields -->
           <div v-if="isCompany" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative Name *</label>
-              <input
-                v-model="form.company_representative_name"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter representative name"
-              />
-              <p v-if="errors.company_representative_name" class="text-red-500 text-sm mt-1">{{ errors.company_representative_name }}</p>
-            </div>
+            <FormField label="Company Representative Name" :error="errors.company_representative_name" required>
+              <Input v-model="form.company_representative_name" type="text" placeholder="Enter representative name" :invalid="!!errors.company_representative_name" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-              <input
-                v-model="form.company_name"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter company name"
-              />
-              <p v-if="errors.company_name" class="text-red-500 text-sm mt-1">{{ errors.company_name }}</p>
-            </div>
+            <FormField label="Company Name" :error="errors.company_name" required>
+              <Input v-model="form.company_name" type="text" placeholder="Enter company name" :invalid="!!errors.company_name" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Registration Number *</label>
-              <input
-                v-model="form.company_registration_number"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter registration number"
-              />
-              <p v-if="errors.company_registration_number" class="text-red-500 text-sm mt-1">{{ errors.company_registration_number }}</p>
-            </div>
+            <FormField label="Company Registration Number" :error="errors.company_registration_number" required>
+              <Input v-model="form.company_registration_number" type="text" placeholder="Enter registration number" :invalid="!!errors.company_registration_number" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Address *</label>
-              <textarea
-                v-model="form.company_address"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter company address"
-              ></textarea>
-              <p v-if="errors.company_address" class="text-red-500 text-sm mt-1">{{ errors.company_address }}</p>
-            </div>
+            <FormField label="Company Address" :error="errors.company_address" required>
+              <Textarea v-model="form.company_address" :rows="3" placeholder="Enter company address" :invalid="!!errors.company_address" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone *</label>
-              <input
-                v-model="form.company_phone"
-                type="tel"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter company phone"
-              />
-              <p v-if="errors.company_phone" class="text-red-500 text-sm mt-1">{{ errors.company_phone }}</p>
-            </div>
+            <FormField label="Company Phone" :error="errors.company_phone" required>
+              <Input v-model="form.company_phone" type="text" placeholder="Enter company phone" :invalid="!!errors.company_phone" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address</label>
-              <input
-                v-model="form.company_email_address"
-                type="email"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                placeholder="Enter company email address"
-              />
-              <p v-if="errors.company_email_address" class="text-red-500 text-sm mt-1">{{ errors.company_email_address }}</p>
-            </div>
+            <FormField label="Company E-Mail Address" :error="errors.company_email_address">
+              <Input v-model="form.company_email_address" type="email" placeholder="Enter company email address" :invalid="!!errors.company_email_address" />
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate</label>
-              <input
-                @change="handleCompanyRegFileChange"
-                type="file"
-                accept=".pdf,.jpeg,.jpg,.png"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              />
+            <FormField label="Business Registration Certificate" :error="errors.company_reg_file">
+              <FileInput @change="handleCompanyRegFileChange" accept=".pdf,.jpeg,.jpg,.png" />
               <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
               <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-              <p v-if="errors.company_reg_file" class="text-red-500 text-sm mt-1">{{ errors.company_reg_file }}</p>
-            </div>
+            </FormField>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative ID (NRIC/Passport)</label>
-              <input
-                @change="handleCompanyRepIdFileChange"
-                type="file"
-                accept=".pdf,.jpeg,.jpg,.png"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              />
+            <FormField label="Company Representative ID (NRIC/Passport)" :error="errors.company_representative_id_file">
+              <FileInput @change="handleCompanyRepIdFileChange" accept=".pdf,.jpeg,.jpg,.png" />
               <p class="text-sm text-gray-500 mt-1">Copy of the company representative's IC or Passport.</p>
               <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-              <p v-if="errors.company_representative_id_file" class="text-red-500 text-sm mt-1">{{ errors.company_representative_id_file }}</p>
-            </div>
+            </FormField>
           </div>
 
           <!-- About Me / About Company -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }} *
-            </label>
-            <textarea
+          <FormField :label="form.profile_type === 'individual' ? 'About Me' : 'About Company'" :error="errors.about" required>
+            <Textarea
               v-model="form.about"
-              rows="4"
-              maxlength="1000"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
+              :rows="4"
               :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
-            ></textarea>
+              :invalid="!!errors.about"
+            />
             <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
             <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
-            <p v-if="errors.about" class="text-red-500 text-sm mt-1">{{ errors.about }}</p>
-          </div>
+          </FormField>
 
           <!-- User Account Information -->
           <div class="border-t pt-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">User Account Information</h3>
 
             <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                <input
-                  v-model="form.user_email"
-                  type="email"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                  placeholder="Enter email address"
-                />
-                <p v-if="errors.user_email" class="text-red-500 text-sm mt-1">{{ errors.user_email }}</p>
-              </div>
+              <FormField label="Email Address" :error="errors.user_email" required>
+                <Input v-model="form.user_email" type="email" placeholder="Enter email address" :invalid="!!errors.user_email" />
+              </FormField>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
-                <input
-                  v-model="form.user_password"
-                  type="password"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                  placeholder="Enter password"
-                />
-                <p v-if="errors.user_password" class="text-red-500 text-sm mt-1">{{ errors.user_password }}</p>
-              </div>
+              <FormField label="Password" :error="errors.user_password" required>
+                <Input v-model="form.user_password" type="password" placeholder="Enter password" :invalid="!!errors.user_password" />
+              </FormField>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
-                <input
-                  v-model="form.user_password_confirmation"
-                  type="password"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                  placeholder="Confirm password"
-                />
-                <p v-if="errors.user_password_confirmation" class="text-red-500 text-sm mt-1">{{ errors.user_password_confirmation }}</p>
-              </div>
+              <FormField label="Confirm Password" :error="errors.user_password_confirmation" required>
+                <Input v-model="form.user_password_confirmation" type="password" placeholder="Confirm password" :invalid="!!errors.user_password_confirmation" />
+              </FormField>
             </div>
           </div>
 
           <!-- Status -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select
+          <FormField label="Status" :error="errors.status">
+            <Select
               v-model="form.status"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
-              <option value="banned">Banned</option>
-              <option value="expired">Expired</option>
-            </select>
-            <p v-if="errors.status" class="text-red-500 text-sm mt-1">{{ errors.status }}</p>
-          </div>
+              :options="[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'suspended', label: 'Suspended' },
+                { value: 'banned', label: 'Banned' },
+                { value: 'expired', label: 'Expired' },
+              ]"
+              :invalid="!!errors.status"
+            />
+          </FormField>
 
           <!-- Hierarchy -->
           <div class="border-t pt-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Hierarchy</h3>
             <div class="grid gap-4 md:grid-cols-2">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Agent Role *</label>
-                <select
+              <FormField label="Agent Role" :error="errors.agent_role" required>
+                <Select
                   v-model="form.agent_role"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                >
-                  <option value="agent">{{ roleNames.agent }}</option>
-                  <option value="agent_leader">{{ roleNames.leader }}</option>
-                  <option value="business_partner">{{ roleNames.business_partner }}</option>
-                </select>
-                <p v-if="errors.agent_role" class="text-red-500 text-sm mt-1">{{ errors.agent_role }}</p>
-              </div>
+                  :options="[
+                    { value: 'agent', label: roleNames.agent },
+                    { value: 'agent_leader', label: roleNames.leader },
+                    { value: 'business_partner', label: roleNames.business_partner },
+                  ]"
+                  :invalid="!!errors.agent_role"
+                />
+              </FormField>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Parent Agent</label>
-                <input
+              <FormField label="Parent Agent" :error="errors.parent_agent_id">
+                <Input
                   v-model="parentSearchQuery"
                   @input="searchParents"
                   type="text"
                   list="parent-options"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
                   placeholder="Search by name or ID..."
                 />
                 <datalist id="parent-options">
@@ -305,8 +177,7 @@
                 <p class="text-sm text-gray-500 mt-1">
                   Filter shows agents with role ≥ {{ minParentRoleLabel }}.
                 </p>
-                <p v-if="errors.parent_agent_id" class="text-red-500 text-sm mt-1">{{ errors.parent_agent_id }}</p>
-              </div>
+              </FormField>
             </div>
           </div>
 
@@ -314,46 +185,27 @@
           <div class="border-t pt-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Membership Lifecycle</h3>
             <div class="grid gap-4 md:grid-cols-2">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Registered At</label>
-                <input
-                  v-model="form.registered_at"
-                  type="date"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                />
-                <p v-if="errors.registered_at" class="text-red-500 text-sm mt-1">{{ errors.registered_at }}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Expires At</label>
-                <input
-                  v-model="form.expires_at"
-                  type="date"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                />
-                <p v-if="errors.expires_at" class="text-red-500 text-sm mt-1">{{ errors.expires_at }}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Renewal Due At</label>
-                <input
-                  v-model="form.renewal_due_at"
-                  type="date"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                />
-                <p v-if="errors.renewal_due_at" class="text-red-500 text-sm mt-1">{{ errors.renewal_due_at }}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Fee Payment Status</label>
-                <select
+              <FormField label="Registered At" :error="errors.registered_at">
+                <Input v-model="form.registered_at" type="date" :invalid="!!errors.registered_at" />
+              </FormField>
+              <FormField label="Expires At" :error="errors.expires_at">
+                <Input v-model="form.expires_at" type="date" :invalid="!!errors.expires_at" />
+              </FormField>
+              <FormField label="Renewal Due At" :error="errors.renewal_due_at">
+                <Input v-model="form.renewal_due_at" type="date" :invalid="!!errors.renewal_due_at" />
+              </FormField>
+              <FormField label="Fee Payment Status" :error="errors.fee_payment_status">
+                <Select
                   v-model="form.fee_payment_status"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="waived">Waived</option>
-                </select>
-                <p v-if="errors.fee_payment_status" class="text-red-500 text-sm mt-1">{{ errors.fee_payment_status }}</p>
-              </div>
+                  :options="[
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'paid', label: 'Paid' },
+                    { value: 'overdue', label: 'Overdue' },
+                    { value: 'waived', label: 'Waived' },
+                  ]"
+                  :invalid="!!errors.fee_payment_status"
+                />
+              </FormField>
             </div>
           </div>
         </form>
@@ -367,56 +219,21 @@
       </CardHeader>
       <CardContent>
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Account Name</label>
-            <input
-              v-model="form.bank_account_name"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              placeholder="Enter account name"
-            />
-            <p v-if="errors.bank_account_name" class="text-red-500 text-sm mt-1">{{ errors.bank_account_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
-            <input
-              v-model="form.bank_account_number"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              placeholder="Enter account number"
-            />
-            <p v-if="errors.bank_account_number" class="text-red-500 text-sm mt-1">{{ errors.bank_account_number }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
-            <input
-              v-model="form.bank_name"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              placeholder="Enter bank name"
-            />
-            <p v-if="errors.bank_name" class="text-red-500 text-sm mt-1">{{ errors.bank_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
-            <input
-              v-model="form.iban"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              placeholder="Enter IBAN"
-            />
-            <p v-if="errors.iban" class="text-red-500 text-sm mt-1">{{ errors.iban }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">SWIFT Code</label>
-            <input
-              v-model="form.swift_code"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              placeholder="Enter SWIFT code"
-            />
-            <p v-if="errors.swift_code" class="text-red-500 text-sm mt-1">{{ errors.swift_code }}</p>
-          </div>
+          <FormField label="Account Name" :error="errors.bank_account_name">
+            <Input v-model="form.bank_account_name" type="text" placeholder="Enter account name" :invalid="!!errors.bank_account_name" />
+          </FormField>
+          <FormField label="Account Number" :error="errors.bank_account_number">
+            <Input v-model="form.bank_account_number" type="text" placeholder="Enter account number" :invalid="!!errors.bank_account_number" />
+          </FormField>
+          <FormField label="Bank Name" :error="errors.bank_name">
+            <Input v-model="form.bank_name" type="text" placeholder="Enter bank name" :invalid="!!errors.bank_name" />
+          </FormField>
+          <FormField label="IBAN" :error="errors.iban">
+            <Input v-model="form.iban" type="text" placeholder="Enter IBAN" :invalid="!!errors.iban" />
+          </FormField>
+          <FormField label="SWIFT Code" :error="errors.swift_code">
+            <Input v-model="form.swift_code" type="text" placeholder="Enter SWIFT code" :invalid="!!errors.swift_code" />
+          </FormField>
         </div>
       </CardContent>
     </Card>
@@ -428,36 +245,19 @@
       </CardHeader>
       <CardContent>
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Referral Code</label>
+          <FormField label="Referral Code" :error="errors.referral_code">
             <div class="flex gap-2">
-              <input
-                v-model="form.referral_code"
-                type="text"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent font-mono"
-                placeholder="Enter unique referral code"
-              />
+              <Input v-model="form.referral_code" type="text" placeholder="Enter unique referral code" :invalid="!!errors.referral_code" class="flex-1 font-mono" />
               <Button type="button" variant="outline" @click="regenerateCode" class="shrink-0">
                 Regenerate
               </Button>
             </div>
-            <p v-if="errors.referral_code" class="text-red-500 text-sm mt-1">{{ errors.referral_code }}</p>
             <p class="text-sm text-gray-500 mt-1">Referral code must be unique across all agents</p>
             <p class="text-sm text-gray-500 mt-1">Prefix: {{ referralCodePrefix }} (auto-generated)</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Commission Rate (%)</label>
-            <input
-              v-model="form.referral_commission_rate"
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
-              placeholder="Enter commission rate"
-            />
-            <p v-if="errors.referral_commission_rate" class="text-red-500 text-sm mt-1">{{ errors.referral_commission_rate }}</p>
-          </div>
+          </FormField>
+          <FormField label="Commission Rate (%)" :error="errors.referral_commission_rate">
+            <Input v-model="form.referral_commission_rate" type="number" placeholder="Enter commission rate" :invalid="!!errors.referral_commission_rate" />
+          </FormField>
         </div>
       </CardContent>
     </Card>
@@ -494,12 +294,8 @@
           <p class="text-sm text-gray-600 mt-2">Do you want to save anyway?</p>
         </div>
         <div class="flex justify-end space-x-3">
-          <button @click="closeBankWarningDialog" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium transition-colors">
-            Cancel
-          </button>
-          <button @click="proceedWithSave" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-medium transition-colors">
-            Save Anyway
-          </button>
+          <Button variant="outline" @click="closeBankWarningDialog">Cancel</Button>
+          <Button variant="default" @click="proceedWithSave">Save Anyway</Button>
         </div>
       </div>
     </div>
@@ -521,9 +317,7 @@
           <p class="text-sm text-gray-700">{{ generalErrorMessage }}</p>
         </div>
         <div class="flex justify-end">
-          <button @click="closeErrorDialog" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium transition-colors">
-            Close
-          </button>
+          <Button variant="destructive" @click="closeErrorDialog">Close</Button>
         </div>
       </div>
     </div>
@@ -540,6 +334,13 @@ import CardHeader from '../Design/Components/CardHeader.vue'
 import CardContent from '../Design/Components/CardContent.vue'
 import CardTitle from '../Design/Components/CardTitle.vue'
 import Button from '../Design/Components/Button.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Input from '../Design/Components/Input.vue'
+import Select from '../Design/Components/Select.vue'
+import Radio from '../Design/Components/Radio.vue'
+import FileInput from '../Design/Components/FileInput.vue'
+import Textarea from '../Design/Components/Textarea.vue'
 
 defineOptions({ layout: AdminLayout })
 

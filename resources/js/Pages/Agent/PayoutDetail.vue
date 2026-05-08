@@ -1,14 +1,15 @@
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <Link href="/agent/payouts" class="hover:text-forest-dark transition-colors">Agent</Link> /
-      <Link href="/agent/payouts" class="hover:text-forest-dark transition-colors">Payouts</Link> /
-      <span class="text-stone-900 font-medium">Payout Detail</span>
-    </nav>
-
-    <!-- Title -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-6">Payout Detail</h1>
+    <PageHeader
+      title="Payout Detail"
+      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Payouts', href: '/agent/payouts' }, { label: 'Payout Detail' }]"
+    >
+      <template #actions>
+        <Link href="/agent/payouts">
+          <Button variant="outline" size="sm">← Back to Payouts</Button>
+        </Link>
+      </template>
+    </PageHeader>
 
     <!-- Summary Card -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden mb-6">
@@ -63,9 +64,9 @@
             </div>
             <div>
               <p class="text-sm text-stone-500">Status</p>
-              <span :class="getPayoutStatusClass(payout.status)" class="inline-flex px-3 py-1.5 rounded-full text-xs font-medium">
+              <Badge :variant="getPayoutStatusVariant(payout.status)">
                 {{ payout.status.charAt(0).toUpperCase() + payout.status.slice(1) }}
-              </span>
+              </Badge>
             </div>
           </div>
         </div>
@@ -77,23 +78,18 @@
       <h3 class="text-lg font-semibold text-forest-dark mb-4">Bank Transfer File</h3>
       <div v-if="payout.bank_transfer_file" class="space-y-3">
         <div class="flex items-center gap-3">
-          <span class="inline-flex px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Available
-          </span>
+          <Badge variant="success">Available</Badge>
           <span class="text-sm text-stone-600">{{ payout.bank_transfer_file }}</span>
         </div>
-        <a
-          :href="`/agent/payout/${payout.id}/download-bank-transfer`"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-accent-blue text-white rounded-md font-medium hover:bg-accent-blue/90 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2 transition-colors"
-        >
-          <Download class="w-4 h-4" />
-          Download Bank Transfer File
+        <a :href="`/agent/payout/${payout.id}/download-bank-transfer`">
+          <Button variant="outline" size="sm">
+            <Download class="w-4 h-4 mr-1" />
+            Download Bank Transfer File
+          </Button>
         </a>
       </div>
       <div v-else class="text-stone-500">
-        <span class="inline-flex px-3 py-1.5 rounded-full text-xs font-medium bg-stone-100 text-stone-800">
-          Not Available
-        </span>
+        <Badge variant="secondary">Not Available</Badge>
         <p class="mt-2 text-sm">Bank transfer file has not been uploaded yet.</p>
       </div>
     </div>
@@ -130,14 +126,9 @@
             </div>
             <div>
               <span class="text-sm font-medium text-stone-600">Status:</span>
-              <span
-                :class="`
-                  inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                  ${getPayoutStatusClass(payout.status)}
-                `"
-              >
+              <Badge :variant="getPayoutStatusVariant(payout.status)" class="ml-1">
                 {{ payout.status.charAt(0).toUpperCase() + payout.status.slice(1) }}
-              </span>
+              </Badge>
             </div>
             <div v-if="payout.paid_at">
               <span class="text-sm font-medium text-stone-600">Paid Date:</span>
@@ -233,14 +224,9 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span
-                  :class="`
-                    inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                    ${getStatusClass(item.commission.status)}
-                  `"
-                >
+                <Badge :variant="getStatusVariant(item.commission.status)">
                   {{ item.commission.status }}
-                </span>
+                </Badge>
               </td>
             </tr>
           </tbody>
@@ -253,6 +239,9 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { DollarSign, Calendar, CheckCircle, Download } from 'lucide-vue-next'
 
@@ -297,16 +286,12 @@ const formatDate = (dateString) => {
   })
 }
 
-const getPayoutStatusClass = (status) => {
+const getPayoutStatusVariant = (status) => {
   switch (status?.toLowerCase()) {
-    case 'paid':
-      return 'bg-blue-100 text-blue-800'
-    case 'approved':
-      return 'bg-green-100 text-green-800'
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
-    default:
-      return 'bg-stone-100 text-stone-800'
+    case 'paid': return 'default'
+    case 'approved': return 'success'
+    case 'pending': return 'warning'
+    default: return 'secondary'
   }
 }
 
@@ -320,18 +305,13 @@ const formatDateRequest = () => {
   return `${day} ${month} ${year}`
 }
 
-const getStatusClass = (status) => {
+const getStatusVariant = (status) => {
   switch (status?.toLowerCase()) {
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'approved':
-      return 'bg-green-100 text-green-800'
-    case 'paid':
-      return 'bg-blue-100 text-blue-800'
-    case 'cancelled':
-      return 'bg-red-100 text-red-800'
-    default:
-      return 'bg-stone-100 text-stone-800'
+    case 'pending': return 'warning'
+    case 'approved': return 'success'
+    case 'paid': return 'default'
+    case 'cancelled': return 'destructive'
+    default: return 'secondary'
   }
 }
 </script>

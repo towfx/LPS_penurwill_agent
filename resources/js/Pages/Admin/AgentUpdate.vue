@@ -1,254 +1,197 @@
 <template>
   <div>
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Admin</span> / <span>Agents</span> / <span class="text-stone-900 font-medium">Edit Agent</span>
-    </nav>
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-forest-dark">Edit Agent</h1>
-      <div class="flex space-x-2">
-        <button v-if="agent && agent.status !== 'active'" @click="showApproveDialog" class="bg-accent-green hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors">
+    <PageHeader
+      title="Edit Agent"
+      description="Update agent profile, account, hierarchy, and referral information."
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Agents', href: '/admin/agents/list' }, { label: 'Edit Agent' }]"
+    >
+      <template #actions>
+        <Button v-if="agent && agent.status !== 'active'" variant="default" @click="showApproveDialog">
           Approve Agent
-        </button>
-        <button @click="goBack" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors">
-          Back to List
-        </button>
-      </div>
-    </div>
+        </Button>
+        <Button variant="outline" @click="goBack">Back to List</Button>
+      </template>
+    </PageHeader>
 
     <form @submit.prevent="saveAgent" class="space-y-6">
       <!-- Agent Information -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-forest-dark mb-4">Agent Information</h3>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Agent Type</label>
-          <div class="flex space-x-4">
-            <label class="flex items-center">
-              <input type="radio" value="individual" v-model="form.profile_type" class="mr-2" /> Individual
-            </label>
-            <label class="flex items-center">
-              <input type="radio" value="company" v-model="form.profile_type" class="mr-2" /> Company
-            </label>
-          </div>
-        </div>
-
-        <div v-if="isIndividual" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-            <input v-model="form.individual_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.individual_name" class="text-accent-red text-sm mt-1">{{ errors.individual_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-            <input v-model="form.individual_phone" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.individual_phone" class="text-accent-red text-sm mt-1">{{ errors.individual_phone }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Alternative E-Mail Address</label>
-            <input v-model="form.individual_email" type="email" class="w-full px-3 py-2 border rounded" placeholder="Enter alternative email address (optional)" />
-            <p v-if="errors.individual_email" class="text-accent-red text-sm mt-1">{{ errors.individual_email }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-            <textarea v-model="form.individual_address" class="w-full px-3 py-2 border rounded"></textarea>
-            <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">NRIC/Passport Number</label>
-            <input v-model="form.individual_id_number" type="text" class="w-full px-3 py-2 border rounded" placeholder="National registration identification number or Passport Number" />
-            <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
-            <p v-if="errors.individual_id_number" class="text-accent-red text-sm mt-1">{{ errors.individual_id_number }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport</label>
-            <div v-if="agent?.individual_id_file" class="mb-2">
-              <span class="text-sm text-gray-600">Current file: </span>
-              <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
-                View Current File
-              </a>
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent Information</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <FormField label="Agent Type">
+            <div class="flex space-x-4">
+              <Radio v-model="form.profile_type" value="individual" name="profile_type" label="Individual" />
+              <Radio v-model="form.profile_type" value="company" name="profile_type" label="Company" />
             </div>
-            <input
-              @change="handleIndividualIdFileChange"
-              type="file"
-              accept=".pdf,.jpeg,.jpg,.png"
-              class="w-full px-3 py-2 border rounded"
-            />
-            <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
-            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-            <p v-if="errors.individual_id_file" class="text-accent-red text-sm mt-1">{{ errors.individual_id_file }}</p>
-          </div>
-        </div>
+          </FormField>
 
-        <div v-if="isCompany" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-            <input v-model="form.company_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_name" class="text-accent-red text-sm mt-1">{{ errors.company_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Representative</label>
-            <input v-model="form.company_representative_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_representative_name" class="text-accent-red text-sm mt-1">{{ errors.company_representative_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Registration Number</label>
-            <input v-model="form.company_registration_number" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_registration_number" class="text-accent-red text-sm mt-1">{{ errors.company_registration_number }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Address</label>
-            <textarea v-model="form.company_address" class="w-full px-3 py-2 border rounded"></textarea>
-            <p v-if="errors.company_address" class="text-accent-red text-sm mt-1">{{ errors.company_address }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
-            <input v-model="form.company_phone" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address</label>
-            <input v-model="form.company_email_address" type="email" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate</label>
-            <div v-if="agent?.company_reg_file" class="mb-2">
-              <span class="text-sm text-gray-600">Current file: </span>
-              <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
-                View Current File
-              </a>
-            </div>
-            <input
-              @change="handleCompanyRegFileChange"
-              type="file"
-              accept=".pdf,.jpeg,.jpg,.png"
-              class="w-full px-3 py-2 border rounded"
-            />
-            <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
-            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-            <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
+          <div v-if="isIndividual" class="space-y-4">
+            <FormField label="Name" :error="errors.individual_name">
+              <Input v-model="form.individual_name" type="text" :invalid="!!errors.individual_name" />
+            </FormField>
+            <FormField label="Phone" :error="errors.individual_phone">
+              <Input v-model="form.individual_phone" type="text" :invalid="!!errors.individual_phone" />
+            </FormField>
+            <FormField label="Alternative E-Mail Address" :error="errors.individual_email">
+              <Input v-model="form.individual_email" type="email" placeholder="Enter alternative email address (optional)" :invalid="!!errors.individual_email" />
+            </FormField>
+            <FormField label="Address" :error="errors.individual_address">
+              <Textarea v-model="form.individual_address" :invalid="!!errors.individual_address" />
+            </FormField>
+            <FormField label="NRIC/Passport Number" :error="errors.individual_id_number">
+              <Input v-model="form.individual_id_number" type="text" placeholder="National registration identification number or Passport Number" :invalid="!!errors.individual_id_number" />
+              <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
+            </FormField>
+            <FormField label="Copy of IC/Passport" :error="errors.individual_id_file">
+              <div v-if="agent?.individual_id_file" class="mb-2">
+                <span class="text-sm text-gray-600">Current file: </span>
+                <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">View Current File</a>
+              </div>
+              <FileInput @change="handleIndividualIdFileChange" accept=".pdf,.jpeg,.jpg,.png" />
+              <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
+              <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            </FormField>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative ID (NRIC/Passport)</label>
-            <div v-if="agent?.company_representative_id_file" class="mb-2">
-              <span class="text-sm text-gray-600">Current file: </span>
-              <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
-                View Current File
-              </a>
-            </div>
-            <input
-              @change="handleCompanyRepIdFileChange"
-              type="file"
-              accept=".pdf,.jpeg,.jpg,.png"
-              class="w-full px-3 py-2 border rounded"
-            />
-            <p class="text-sm text-gray-500 mt-1">Copy of the company representative's IC or Passport.</p>
-            <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-            <p v-if="errors.company_representative_id_file" class="text-accent-red text-sm mt-1">{{ errors.company_representative_id_file }}</p>
+          <div v-if="isCompany" class="space-y-4">
+            <FormField label="Company Name" :error="errors.company_name">
+              <Input v-model="form.company_name" type="text" :invalid="!!errors.company_name" />
+            </FormField>
+            <FormField label="Representative" :error="errors.company_representative_name">
+              <Input v-model="form.company_representative_name" type="text" :invalid="!!errors.company_representative_name" />
+            </FormField>
+            <FormField label="Registration Number" :error="errors.company_registration_number">
+              <Input v-model="form.company_registration_number" type="text" :invalid="!!errors.company_registration_number" />
+            </FormField>
+            <FormField label="Company Address" :error="errors.company_address">
+              <Textarea v-model="form.company_address" :invalid="!!errors.company_address" />
+            </FormField>
+            <FormField label="Company Phone" :error="errors.company_phone">
+              <Input v-model="form.company_phone" type="text" :invalid="!!errors.company_phone" />
+            </FormField>
+            <FormField label="Company E-Mail Address" :error="errors.company_email_address">
+              <Input v-model="form.company_email_address" type="email" :invalid="!!errors.company_email_address" />
+            </FormField>
+            <FormField label="Business Registration Certificate" :error="errors.company_reg_file">
+              <div v-if="agent?.company_reg_file" class="mb-2">
+                <span class="text-sm text-gray-600">Current file: </span>
+                <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">View Current File</a>
+              </div>
+              <FileInput @change="handleCompanyRegFileChange" accept=".pdf,.jpeg,.jpg,.png" />
+              <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
+              <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            </FormField>
+            <FormField label="Company Representative ID (NRIC/Passport)" :error="errors.company_representative_id_file">
+              <div v-if="agent?.company_representative_id_file" class="mb-2">
+                <span class="text-sm text-gray-600">Current file: </span>
+                <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">View Current File</a>
+              </div>
+              <FileInput @change="handleCompanyRepIdFileChange" accept=".pdf,.jpeg,.jpg,.png" />
+              <p class="text-sm text-gray-500 mt-1">Copy of the company representative's IC or Passport.</p>
+              <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
+            </FormField>
           </div>
-        </div>
 
-        <!-- About Me / About Company -->
-        <div class="space-y-4 mt-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }}
-            </label>
-            <textarea
-              v-model="form.about"
-              rows="4"
-              maxlength="1000"
-              class="w-full px-3 py-2 border rounded"
-              :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
-            ></textarea>
-            <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
-            <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
-            <p v-if="errors.about" class="text-accent-red text-sm mt-1">{{ errors.about }}</p>
+          <!-- About Me / About Company -->
+          <div class="mt-4">
+            <FormField :label="form.profile_type === 'individual' ? 'About Me' : 'About Company'" :error="errors.about">
+              <Textarea
+                v-model="form.about"
+                :rows="4"
+                :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
+                :invalid="!!errors.about"
+              />
+              <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
+              <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
+            </FormField>
           </div>
-        </div>
 
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <FormField label="Status" :error="errors.status">
             <div class="flex items-center gap-3">
-              <select v-model="form.status" class="flex-1 px-3 py-2 border rounded">
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
-                <option value="banned">Banned</option>
-                <option value="expired">Expired</option>
-              </select>
+              <Select
+                v-model="form.status"
+                :options="[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'suspended', label: 'Suspended' },
+                  { value: 'banned', label: 'Banned' },
+                  { value: 'expired', label: 'Expired' },
+                ]"
+                class="flex-1"
+              />
               <span v-if="agent" :class="getStatusPillClass(agent.status)" class="shrink-0">
                 {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
               </span>
             </div>
-          </div>
-        </div>
-      </div>
+          </FormField>
+        </CardContent>
+      </Card>
 
       <!-- Hierarchy & Membership -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-forest-dark mb-4">Hierarchy &amp; Membership</h3>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Agent Role *</label>
-            <select v-model="form.agent_role" class="w-full px-3 py-2 border rounded">
-              <option value="agent">{{ roleNames.agent }}</option>
-              <option value="agent_leader">{{ roleNames.leader }}</option>
-              <option value="business_partner">{{ roleNames.business_partner }}</option>
-            </select>
-            <p v-if="errors.agent_role" class="text-accent-red text-sm mt-1">{{ errors.agent_role }}</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Agent</label>
-            <input
-              v-model="parentSearchQuery"
-              @input="searchParents"
-              type="text"
-              list="parent-options"
-              class="w-full px-3 py-2 border rounded"
-              placeholder="Search by name or ID..."
-            />
-            <datalist id="parent-options">
-              <option
-                v-for="p in parentOptions"
-                :key="p.id"
-                :value="`${p.name} (#${p.id} — ${p.agent_role})`"
+      <Card>
+        <CardHeader>
+          <CardTitle>Hierarchy &amp; Membership</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="grid gap-4 md:grid-cols-2">
+            <FormField label="Agent Role" :error="errors.agent_role" required>
+              <Select
+                v-model="form.agent_role"
+                :options="[
+                  { value: 'agent', label: roleNames.agent },
+                  { value: 'agent_leader', label: roleNames.leader },
+                  { value: 'business_partner', label: roleNames.business_partner },
+                ]"
+                :invalid="!!errors.agent_role"
               />
-            </datalist>
-            <p class="text-sm text-gray-500 mt-1">Filter shows agents with role ≥ child role.</p>
-            <p v-if="errors.parent_agent_id" class="text-accent-red text-sm mt-1">{{ errors.parent_agent_id }}</p>
-          </div>
+            </FormField>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Registered At</label>
-            <input v-model="form.registered_at" type="date" class="w-full px-3 py-2 border rounded" />
-          </div>
+            <FormField label="Parent Agent" :error="errors.parent_agent_id">
+              <Input
+                v-model="parentSearchQuery"
+                @input="searchParents"
+                type="text"
+                list="parent-options"
+                placeholder="Search by name or ID..."
+              />
+              <datalist id="parent-options">
+                <option
+                  v-for="p in parentOptions"
+                  :key="p.id"
+                  :value="`${p.name} (#${p.id} — ${p.agent_role})`"
+                />
+              </datalist>
+              <p class="text-sm text-gray-500 mt-1">Filter shows agents with role ≥ child role.</p>
+            </FormField>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Expires At</label>
-            <input v-model="form.expires_at" type="date" class="w-full px-3 py-2 border rounded" />
-          </div>
+            <FormField label="Registered At">
+              <Input v-model="form.registered_at" type="date" />
+            </FormField>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Renewal Due At</label>
-            <input v-model="form.renewal_due_at" type="date" class="w-full px-3 py-2 border rounded" />
-          </div>
+            <FormField label="Expires At">
+              <Input v-model="form.expires_at" type="date" />
+            </FormField>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Fee Payment Status</label>
-            <select v-model="form.fee_payment_status" class="w-full px-3 py-2 border rounded">
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-              <option value="overdue">Overdue</option>
-              <option value="waived">Waived</option>
-            </select>
+            <FormField label="Renewal Due At">
+              <Input v-model="form.renewal_due_at" type="date" />
+            </FormField>
+
+            <FormField label="Fee Payment Status">
+              <Select
+                v-model="form.fee_payment_status"
+                :options="[
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'paid', label: 'Paid' },
+                  { value: 'overdue', label: 'Overdue' },
+                  { value: 'waived', label: 'Waived' },
+                ]"
+              />
+            </FormField>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Downgrade warning modal -->
       <div v-if="showDowngradeWarning" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -262,37 +205,29 @@
             Subordinates must be manually reassigned if desired.
           </p>
           <div class="flex justify-end space-x-3">
-            <button @click="showDowngradeWarning = false" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-medium">
-              Cancel
-            </button>
-            <button @click="confirmDowngradeAndSave" class="bg-accent-red hover:bg-red-700 text-white px-4 py-2 rounded font-medium">
-              Continue Anyway
-            </button>
+            <Button variant="outline" @click="showDowngradeWarning = false">Cancel</Button>
+            <Button variant="destructive" @click="confirmDowngradeAndSave">Continue Anyway</Button>
           </div>
         </div>
       </div>
 
       <!-- Login Information -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-forest-dark mb-4">Login Information</h3>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Login Email</label>
-            <input :value="agent?.user_email || ''" type="email" disabled class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-600 cursor-not-allowed" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">New Password (leave blank to keep current)</label>
-            <input v-model="form.user_password" type="password" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.user_password" class="text-accent-red text-sm mt-1">{{ errors.user_password }}</p>
-          </div>
-          <div v-if="form.user_password">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-            <input v-model="form.user_password_confirmation" type="password" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.user_password_confirmation" class="text-accent-red text-sm mt-1">{{ errors.user_password_confirmation }}</p>
-          </div>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Login Information</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <FormField label="Login Email">
+            <Input :value="agent?.user_email || ''" type="email" disabled />
+          </FormField>
+          <FormField label="New Password (leave blank to keep current)" :error="errors.user_password">
+            <Input v-model="form.user_password" type="password" :invalid="!!errors.user_password" />
+          </FormField>
+          <FormField v-if="form.user_password" label="Confirm Password" :error="errors.user_password_confirmation">
+            <Input v-model="form.user_password_confirmation" type="password" :invalid="!!errors.user_password_confirmation" />
+          </FormField>
+        </CardContent>
+      </Card>
 
       <!-- Bank Account Information -->
       <div class="bg-white rounded-lg shadow p-6">

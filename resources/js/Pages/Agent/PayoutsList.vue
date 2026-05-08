@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { DollarSign, Calendar, CheckCircle, Plus, Eye } from 'lucide-vue-next'
 
@@ -52,17 +55,13 @@ const formatDateRequest = () => {
   return `${day} ${month} ${year}`
 }
 
-// Get status badge class
-const getStatusClass = (status) => {
+// Get status badge variant
+const getStatusVariant = (status) => {
   switch (status?.toLowerCase()) {
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-xs font-medium'
-    case 'approved':
-      return 'bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-xs font-medium'
-    case 'paid':
-      return 'bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-xs font-medium'
-    default:
-      return 'bg-stone-100 text-stone-800 px-3 py-1.5 rounded-full text-xs font-medium'
+    case 'pending': return 'warning'
+    case 'approved': return 'success'
+    case 'paid': return 'default'
+    default: return 'secondary'
   }
 }
 
@@ -84,22 +83,19 @@ const viewPayout = (id) => {
 
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Agent</span> / <span class="text-stone-900 font-medium">Payouts</span>
-    </nav>
-
-    <!-- Title and Create Button -->
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-forest-dark">My Payouts</h1>
-      <a
-        href="/agent/request-payout"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-accent-green text-white rounded-md font-medium hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
-      >
-        <Plus class="w-4 h-4" />
-        Create Payout
-      </a>
-    </div>
+    <PageHeader
+      title="My Payouts"
+      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Payouts' }]"
+    >
+      <template #actions>
+        <a href="/agent/request-payout">
+          <Button variant="default" size="default">
+            <Plus class="w-4 h-4 mr-1" />
+            Create Payout
+          </Button>
+        </a>
+      </template>
+    </PageHeader>
 
     <!-- Summary Card -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden mb-6">
@@ -215,21 +211,18 @@ const viewPayout = (id) => {
                 {{ payout.items_count }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span :class="getStatusClass(payout.status)">
+                <Badge :variant="getStatusVariant(payout.status)">
                   {{ payout.status.charAt(0).toUpperCase() + payout.status.slice(1) }}
-                </span>
+                </Badge>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                 {{ payout.paid_at ? formatDateTime(payout.paid_at) : '—' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
-                <button
-                  @click.stop="viewPayout(payout.id)"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-accent-blue hover:text-accent-blue/80 focus:outline-none"
-                >
-                  <Eye class="w-4 h-4" />
+                <Button variant="ghost" size="sm" @click.stop="viewPayout(payout.id)">
+                  <Eye class="w-4 h-4 mr-1" />
                   View
-                </button>
+                </Button>
               </td>
             </tr>
           </tbody>
