@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->respond(function (\Illuminate\Http\Response $response) {
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
             $status = $response->getStatusCode();
             $pageMap = [403 => 'Error/403', 404 => 'Error/404', 419 => 'Error/419', 500 => 'Error/500'];
             if (isset($pageMap[$status]) && request()->header('X-Inertia')) {
