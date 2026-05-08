@@ -1,12 +1,28 @@
 # Commission Enhancement — Implementation TODOS
 
 **Status**: Decisions locked (see `DECISION_OUTCOMES.md`). This file is the actionable build list.
-**Updated**: 2026-04-30 (CRD: Fee Management + Flexible Commission Configuration integrated)
+**Updated**: 2026-05-08 (Workflow & component documentation integrated)
 **Scope**: All concrete changes (modify) and additions (new) needed to deliver the hierarchical commission system + fee management across DB, models, services, controllers, UI, seeders, and tests.
 
 > Conventions:
 > - **[M]** = modify existing | **[N]** = new file/artifact | **[D]** = delete/deprecate
 > - File paths are relative to repo root. All QNA items resolved (`TODOS_QNA.md`).
+
+---
+
+## 📋 Reference Documentation
+
+**Before starting implementation, read these documents:**
+
+- **[`dev/docs/ROLES_WORKFLOW.md`](dev/docs/ROLES_WORKFLOW.md)** — Complete business process + UI/UX workflow. Defines all user roles, registration flow, onboarding, admin operations, and agent workflows. **Reference when:** designing screens (Phase 4), implementing registration (Phase 4/7), setting up navigation, validating feature requirements. Updated 2026-05-06, **APPROVED**.
+
+- **[`dev/docs/vue-components.md`](dev/docs/vue-components.md)** — Single index of all reusable Vue components in the Design System (`resources/js/Pages/Design/Components/`). Prevents duplicate component creation. **Reference when:** building any new page or form, needing form fields, status display, or layout chrome. Lists available components, planned reusable cards, and build guidelines.
+
+- **[`DECISION_OUTCOMES.md`](dev/docs/DECISION_OUTCOMES.md)** — Locked design decisions (1–27) with rationale. **Reference when:** unclear about a requirement or trade-off.
+
+- **[`TODOS_QNA.md`](dev/docs/tasks/TODOS_QNA.md)** — Q&A resolutions from stakeholder clarification rounds. **Reference when:** ambiguous about implementation detail.
+
+---
 
 ## Resolved QNA highlights (deltas from initial draft)
 
@@ -363,7 +379,7 @@ Schema::dropIfExists('partners');
 
 ## Phase 3.5 — Design System Pre-flight (before any Vue work)
 
-> **Do this before writing a single new Vue page.** The design reference file may need gaps filled so the team has a complete visual spec to work from.
+> **Do this before writing a single new Vue page.** The design reference file may need gaps filled so the team has a complete visual spec to work from. **Reference:** [`dev/docs/vue-components.md`](dev/docs/vue-components.md) for the complete component inventory before building.
 
 - [x] Open `/design/design-01` in the browser and review the current state.
 - [x] Work through the `@TODO` comments inside `resources/js/Pages/Design/Design01.vue` — complete any sections marked critical before Phase 4 begins (especially: form elements, all button variants, status badges, modal pattern).
@@ -372,6 +388,8 @@ Schema::dropIfExists('partners');
 ---
 
 ## Phase 4 — Frontend (Inertia/Vue) (≈3 days)
+
+> **Before building any page:** Read [`dev/docs/ROLES_WORKFLOW.md`](dev/docs/ROLES_WORKFLOW.md) for the complete UI/UX spec (sections 4–7 detail all admin + agent screens). Reference [`dev/docs/vue-components.md`](dev/docs/vue-components.md) for available components — **use existing components, avoid duplicating UI logic.** Check "Planned reusable cards" section for card patterns you'll need (High/Medium priority).
 
 ### Admin — System Settings
 
@@ -488,6 +506,8 @@ Schema::dropIfExists('partners');
 ## Phase 7 — Gap Resolutions (UI/UX + Notification System + Registration Rebuild)
 
 > All items below are derived from GAP-01 through GAP-18 decisions. Implement after Phase 6 QA is clean.
+> 
+> **Reference:** [`dev/docs/ROLES_WORKFLOW.md`](dev/docs/ROLES_WORKFLOW.md) **§3 (Onboarding Workflow)** for complete registration multi-step flow, email verification, payment flow, and all UI layouts. **§4.6** for agent approval / role upgrade workflows. **§5–7** for agent/leader/BP dashboards and workflows. Use these as the authoritative spec for all Phase 7 frontend work.
 
 ### Migrations [N]
 
@@ -849,3 +869,52 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 | Seeders | SystemSettingsSeeder | — |
 | Middleware | HandleInertiaRequests | — |
 | Tests | — | 6 new feature test files |
+
+---
+
+## Implementation Guide — Refer Back to Documentation
+
+**During implementation, keep these documents open:**
+
+### When designing or building any **Admin** screen (Phase 4, 7)
+→ Refer to [`ROLES_WORKFLOW.md` **§4** (Admin Workflow)](dev/docs/ROLES_WORKFLOW.md#4-admin-workflow)
+- Section 4.1: Admin Dashboard requirements
+- Section 4.2: Agent management (list, add, edit, view)
+- Section 4.3: Commission management (list, detail, filters)
+- Section 4.4: Payout management (list, detail, create, approval flow)
+- Section 4.5: System Settings (fee config, role names, commission rates)
+- Section 4.6: New Application Review & Agent Promotion workflows
+
+### When designing or building any **Agent** screen (Phase 4, 7)
+→ Refer to [`ROLES_WORKFLOW.md` **§5–7** (Agent Workflows)](dev/docs/ROLES_WORKFLOW.md#5-agent-base-workflow) — sections differ by role:
+- **Base Agent (§5)**: Dashboard, sales, commissions, payouts, profile, referral code
+- **Agent Leader (§6)**: Inherits all base agent screens + team management screens
+- **Business Partner (§7)**: Inherits leader screens + network management screens
+
+### When building the **registration flow** (Phase 7)
+→ Refer to [`ROLES_WORKFLOW.md` **§3** (Onboarding Workflow)](dev/docs/ROLES_WORKFLOW.md#3-onboarding-workflow)
+- Section 3.1: Complete 6-step registration wizard layout (all steps)
+- Section 3.2: Email notifications on submission
+- Section 3.3: Full decision tree / flow
+- Section 3.4: Role assignment & upgrade (admin)
+- Sections 3.5–3.6: Fee collection & renewal lifecycle
+
+### When building any **form or component** (Phase 4, 7)
+→ Refer to [`dev/docs/vue-components.md`](dev/docs/vue-components.md)
+- **Available components** section: use existing UI primitives (Button, Input, Select, Card, etc.) — do NOT reinvent
+- **Planned reusable cards** section: check if your page needs a High/Medium priority card pattern before building inline
+- **Build guidelines**: only extract new components when ≥2 pages need the same pattern
+- Component path: `resources/js/Pages/Design/Components/<Name>.vue`
+
+### When uncertain about **requirements, constraints, or trade-offs**
+→ Refer to [`DECISION_OUTCOMES.md`](dev/docs/DECISION_OUTCOMES.md) for locked design decisions (1–27) + rationale
+
+### When implementing **schema or backend logic**
+→ Refer to this file (TODOS.md) **plus** [`TODOS_QNA.md`](dev/docs/tasks/TODOS_QNA.md) for Q&A clarifications on ambiguous items
+
+**Quick decision tree:**
+- "Where should this screen live?" → ROLES_WORKFLOW.md (find the screen in the inventory)
+- "What form fields/inputs do I need?" → vue-components.md (FormField, Input, Select, etc.)
+- "What card pattern should I use?" → vue-components.md (Planned reusable cards section)
+- "Why is this designed this way?" → DECISION_OUTCOMES.md (find the decision number)
+- "What's the exact SQL for the migration?" → TODOS.md (in the Migrations section)
