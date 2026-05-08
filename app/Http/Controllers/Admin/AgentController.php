@@ -4,15 +4,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\AgentsExport;
 use App\Http\Controllers\Controller;
+use App\Mail\AccountCreatedByAdminNotification;
 use App\Models\ActivityLog;
 use App\Models\Agent;
+use App\Models\AgentNotification;
+use App\Models\FeePayment;
 use App\Models\User;
 use App\Services\AgentHierarchy;
 use App\Services\FeeService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -217,6 +223,17 @@ class AgentController extends Controller
             ActivityLog::logCustom($adminUser, 'user_agent_linked', "Admin linked user {$user->email} to agent {$agent->id}", $agent);
 
             DB::commit();
+
+            // Send account creation email (outside transaction so email failure doesn't roll back)
+            try {
+                $tempPassword = $request->user_password;
+                Mail::to($user->email)->send(new AccountCreatedByAdminNotification($user, $agent, $tempPassword));
+            } catch (\Throwable $e) {
+                Log::warning('AgentController: AccountCreatedByAdminNotification failed', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return redirect()->route('admin.agents.list')->with('success', 'Agent created successfully!');
         } catch (\Exception $e) {
@@ -606,7 +623,7 @@ class AgentController extends Controller
     /**
      * Approve agent application
      */
-    public function approve($id, FeeService $feeService)
+    public function approve($id, FeeService $feeService, NotificationService $notificationService)
     {
         $adminUser = Auth::user();
         $agent = Agent::findOrFail($id);
@@ -638,12 +655,111 @@ class AgentController extends Controller
 
             DB::commit();
 
+            // Notify agent of approval
+            $notificationService->notify(
+                $agent,
+                AgentNotification::TYPE_AGENT_APPROVED,
+                'Application Approved',
+                'Congratulations! Your agent application has been approved. You can now access your dashboard.',
+                Agent::class,
+                $agent->id,
+            );
+
+            // Notify parent of new team member
+            if ($agent->parent_agent_id) {
+                $parent = Agent::find($agent->parent_agent_id);
+                if ($parent) {
+                    $notificationService->notify(
+                        $parent,
+                        AgentNotification::TYPE_NEW_TEAM_MEMBER,
+                        'New Team Member',
+                        "A new agent ({$agent->name}) has joined your team.",
+                        Agent::class,
+                        $agent->id,
+                    );
+                }
+            }
+
             return redirect()->route('admin.agents.list')->with('success', 'Agent approved successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
 
             return back()->withErrors(['error' => 'Failed to approve agent. '.$e->getMessage()]);
         }
+    }
+
+    /**
+     * Reject an agent application.
+     * If the agent has a paid fee, returns has_paid_fee flag for Vue confirmation modal.
+     */
+    public function reject(Request $request, $id, NotificationService $notificationService)
+    {
+        $request->validate(['rejection_reason' => 'nullable|string|max:1000']);
+
+        $adminUser = Auth::user();
+        $agent = Agent::findOrFail($id);
+
+        $hasPaidFee = $agent->fee_payment_status === Agent::FEE_STATUS_PAID
+            || FeePayment::where('agent_id', $agent->id)->exists();
+
+        if ($hasPaidFee && ! $request->boolean('confirm_rejection')) {
+            return response()->json([
+                'has_paid_fee' => true,
+                'message' => '⚠ This agent has a fee payment on record. Please process a refund via the payment dashboard before confirming rejection.',
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $beforeData = $agent->toArray();
+            $agent->update([
+                'status' => 'rejected',
+                'rejection_reason' => $request->rejection_reason,
+            ]);
+            ActivityLog::logUpdate($adminUser, $agent, $beforeData, $agent->toArray());
+            ActivityLog::logCustom($adminUser, 'agent_rejected', "Admin rejected agent #{$agent->id}", $agent);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to reject agent. '.$e->getMessage()]);
+        }
+
+        $notificationService->notify(
+            $agent,
+            AgentNotification::TYPE_AGENT_REJECTED,
+            'Application Rejected',
+            $request->rejection_reason
+                ? "Your application was not approved: {$request->rejection_reason}"
+                : 'Your application was not approved at this time.',
+            Agent::class,
+            $agent->id,
+        );
+
+        return redirect()->route('admin.agents.list')->with('success', 'Agent rejected.');
+    }
+
+    /**
+     * Agent-side: reset status to pending and notify admin.
+     */
+    public function requestApproval(Request $request, NotificationService $notificationService)
+    {
+        $agent = auth()->user()->agents()->first();
+        if (! $agent) {
+            return response()->json(['error' => 'Agent not found.'], 404);
+        }
+
+        $agent->update(['status' => 'pending']);
+
+        $notificationService->notifyAdmin(
+            AgentNotification::TYPE_APPROVAL_REQUESTED,
+            "Re-approval Request — {$agent->name}",
+            "Agent #{$agent->id} ({$agent->name}) has requested re-approval.",
+            Agent::class,
+            $agent->id,
+        );
+
+        return back()->with('success', 'Re-approval request submitted.');
     }
 
     /**

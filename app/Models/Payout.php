@@ -24,6 +24,8 @@ class Payout extends Model
         'paid_at',
         'created_by',
         'bank_transfer_file',
+        'agent_note',
+        'admin_note',
     ];
 
     /**

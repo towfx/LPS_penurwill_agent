@@ -53,6 +53,11 @@ class Agent extends Model
         'expires_at',
         'renewal_due_at',
         'fee_payment_status',
+        // Phase 7 — registration + status fields
+        'tc_accepted_at',
+        'first_login_at',
+        'suspension_reason',
+        'rejection_reason',
     ];
 
     /**
@@ -68,6 +73,8 @@ class Agent extends Model
             'registered_at' => 'date',
             'expires_at' => 'date',
             'renewal_due_at' => 'date',
+            'tc_accepted_at' => 'datetime',
+            'first_login_at' => 'datetime',
         ];
     }
 
@@ -186,6 +193,16 @@ class Agent extends Model
     public function feePayments()
     {
         return $this->hasMany(FeePayment::class);
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(AgentNotification::class);
+    }
+
+    public function isFirstLogin(): bool
+    {
+        return $this->first_login_at === null;
     }
 
     public function getNameAttribute()

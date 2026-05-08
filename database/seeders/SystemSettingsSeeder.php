@@ -54,6 +54,13 @@ class SystemSettingsSeeder extends Seeder
             ];
         }
 
+        // Phase 7 fields
+        if (Schema::hasColumn('system_settings', 'min_payout_amount')) {
+            $defaults += [
+                'min_payout_amount' => 1.00,
+            ];
+        }
+
         // Calc-type fields
         if (Schema::hasColumn('system_settings', 'commission_calc_type')) {
             $defaults += [

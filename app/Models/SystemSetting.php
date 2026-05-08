@@ -33,6 +33,7 @@ class SystemSetting extends Model
             'renewal_fee_agent_enabled' => 'boolean',
             'commission_fixed_amount' => 'decimal:2',
             'partner_commission_fixed_amount' => 'decimal:2',
+            'min_payout_amount' => 'decimal:2',
         ];
 
         foreach (self::RATE_KEYS as $key) {

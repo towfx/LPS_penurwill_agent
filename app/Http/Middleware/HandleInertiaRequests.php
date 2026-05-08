@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AgentNotification;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -45,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => session('error'),
             ],
             'systemSettings' => fn () => $this->systemSettings(),
+            'agentContext' => fn () => $this->agentContext($request),
         ]);
     }
 
@@ -73,6 +75,35 @@ class HandleInertiaRequests extends Middleware
             'renewal_reminder_days_before' => $settings->renewal_reminder_days_before ?? null,
             'referral_code_prefix' => $settings->referral_code_prefix ?? null,
         ];
+    }
+
+    /**
+     * Share agent-specific context (unread count, status flags) for dashboard banners.
+     * Returns empty array for non-agents or unauthenticated requests.
+     */
+    protected function agentContext(Request $request): array
+    {
+        try {
+            $user = $request->user();
+            if (! $user || ! $user->hasRole('agent')) {
+                return [];
+            }
+
+            $agent = $user->agents()->first();
+            if (! $agent) {
+                return [];
+            }
+
+            $unreadCount = AgentNotification::forAgent($agent->id)->unread()->count();
+
+            return [
+                'unread_inbox_count' => $unreadCount,
+                'agent_status' => $agent->status,
+                'fee_payment_status' => $agent->fee_payment_status,
+            ];
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**

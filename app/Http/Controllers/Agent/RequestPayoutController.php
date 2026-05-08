@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Agent;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Agent;
+use App\Models\AgentNotification;
 use App\Models\Commission;
 use App\Models\Payout;
 use App\Models\PayoutItem;
+use App\Models\SystemSetting;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,13 +77,14 @@ class RequestPayoutController extends Controller
 
     /**
      * Store a new payout request — automatically includes pending reversals
-     * (Decision 19); blocks if net total ≤ 0.
+     * (Decision 19); blocks if net total ≤ 0 or below min_payout_amount.
      */
     public function store(Request $request)
     {
         $request->validate([
             'commissions' => 'required|array|min:1',
             'commissions.*' => 'required|exists:commissions,id',
+            'agent_note' => 'nullable|string|max:500',
         ]);
 
         $agent = auth()->user()->agents()->first();
@@ -128,11 +132,20 @@ class RequestPayoutController extends Controller
                     ], 422);
                 }
 
+                $minPayout = (float) (SystemSetting::first()?->min_payout_amount ?? 1.00);
+                if ($netTotal < $minPayout) {
+                    return response()->json([
+                        'status' => 'failed',
+                        'message' => "Minimum payout amount is {$minPayout}. Your net total is {$netTotal}.",
+                    ], 422);
+                }
+
                 $payout = Payout::create([
                     'agent_id' => $agent->id,
                     'amount' => $netTotal,
                     'status' => 'pending',
                     'created_by' => $user->id,
+                    'agent_note' => $request->agent_note,
                 ]);
 
                 foreach ($allCommissions as $commission) {
@@ -146,6 +159,19 @@ class RequestPayoutController extends Controller
                 }
 
                 ActivityLog::logCreate($user, $payout, $payout->toArray());
+
+                // Notify admin inbox of payout request
+                try {
+                    app(NotificationService::class)->notifyAdmin(
+                        AgentNotification::TYPE_PAYOUT_CREATED,
+                        "Payout Request — {$agent->name}",
+                        "Agent {$agent->name} has submitted a payout request for RM {$netTotal}.",
+                        Payout::class,
+                        $payout->id,
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('RequestPayoutController: admin notification failed', ['payout_id' => $payout->id, 'error' => $e->getMessage()]);
+                }
 
                 // Notify the seeded business-partner agent (QNA-03)
                 try {

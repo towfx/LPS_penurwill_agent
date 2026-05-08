@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PayoutCancelledNotification;
 use App\Models\ActivityLog;
 use App\Models\Agent;
+use App\Models\AgentNotification;
 use App\Models\Commission;
 use App\Models\Payout;
 use App\Models\PayoutItem;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class PayoutController extends Controller
@@ -527,5 +532,53 @@ class PayoutController extends Controller
             return redirect()->route('admin.commissions.list')
                 ->with('success', 'Payout updated successfully.');
         });
+    }
+
+    /**
+     * Cancel a payout. Admin note is required.
+     */
+    public function cancel(Request $request, $id, NotificationService $notificationService)
+    {
+        $request->validate([
+            'admin_note' => 'required|string|max:1000',
+        ]);
+
+        $user = auth()->user();
+        $payout = Payout::with('agent')->findOrFail($id);
+
+        if ($payout->status === 'paid') {
+            return back()->withErrors(['error' => 'Cannot cancel a payout that has already been paid.']);
+        }
+
+        $before = $payout->toArray();
+        $payout->update([
+            'status' => 'cancelled',
+            'admin_note' => $request->admin_note,
+        ]);
+        ActivityLog::logUpdate($user, $payout, $before, $payout->toArray());
+        ActivityLog::logCustom($user, 'payout_cancelled', "Admin cancelled payout #{$payout->id}: {$request->admin_note}", $payout);
+
+        // Notify agent
+        if ($payout->agent) {
+            $notificationService->notify(
+                $payout->agent,
+                AgentNotification::TYPE_PAYOUT_CANCELLED,
+                'Payout Cancelled',
+                "Your payout of {$payout->amount} has been cancelled. Reason: {$request->admin_note}",
+                Payout::class,
+                $payout->id,
+            );
+
+            try {
+                $agentUser = $payout->agent->users()->first();
+                if ($agentUser?->email) {
+                    Mail::to($agentUser->email)->send(new PayoutCancelledNotification($payout));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('PayoutController: cancel email failed', ['payout_id' => $payout->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return redirect()->route('admin.payouts.list')->with('success', 'Payout cancelled.');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\ReversalWindowExpiredException;
 use App\Models\ActivityLog;
+use App\Models\AgentNotification;
 use App\Models\Commission;
 use App\Models\Sale;
 use App\Models\SystemSetting;
@@ -41,7 +42,7 @@ class RefundService
     {
         $this->checkReversalEligibility($sale);
 
-        return DB::transaction(function () use ($sale, $admin) {
+        $reversals = DB::transaction(function () use ($sale, $admin) {
             $reversals = collect();
             $commissions = Commission::where('sale_id', $sale->id)
                 ->where('is_reversal', false)
@@ -88,5 +89,25 @@ class RefundService
 
             return $reversals;
         });
+
+        // Notify all earners in the commission chain (after transaction commits)
+        if ($reversals->isNotEmpty()) {
+            try {
+                $notificationService = app(NotificationService::class);
+                $notificationService->notifyChain(
+                    $reversals->first(),
+                    AgentNotification::TYPE_COMMISSION_REVERSED,
+                    'Commission Reversed',
+                    "A commission for sale #{$sale->id} has been reversed.",
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('RefundService: notifyChain failed', [
+                    'sale_id' => $sale->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $reversals;
     }
 }

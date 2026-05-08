@@ -15,6 +15,12 @@ Route::get('/get-started', function () {
 
 Route::get('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'show'])->name('register-as-agent');
 Route::post('/register-as-agent', [App\Http\Controllers\AgentRegistrationController::class, 'store'])->name('register-as-agent.store');
+Route::post('/register-as-agent/verify-email', [App\Http\Controllers\AgentRegistrationController::class, 'verifyEmail'])->name('register-as-agent.verify-email');
+Route::post('/register-as-agent/resend-code', [App\Http\Controllers\AgentRegistrationController::class, 'resendCode'])->name('register-as-agent.resend-code');
+Route::get('/register-as-agent/payment/success', [App\Http\Controllers\AgentRegistrationController::class, 'stripeSuccess'])->name('register-as-agent.payment.success');
+Route::get('/register-as-agent/payment/cancelled', [App\Http\Controllers\AgentRegistrationController::class, 'stripeCancelled'])->name('register-as-agent.payment.cancelled');
+
+Route::post('/get-started/check-email', [App\Http\Controllers\GetStartedController::class, 'checkEmail'])->name('get-started.check-email');
 
 // Static Terms & Conditions page (linked from registration Step 5 T&C checkbox).
 Route::get('/terms', fn () => Inertia::render('Terms'))->name('terms');
@@ -24,6 +30,10 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
+    // First-login onboarding guide (all authenticated users)
+    Route::get('/get-started-guide', [App\Http\Controllers\Agent\OnboardingController::class, 'show'])->name('get-started-guide');
+    Route::post('/get-started-guide/complete', [App\Http\Controllers\Agent\OnboardingController::class, 'complete'])->name('get-started-guide.complete');
+
     Route::get('/dashboard', function () {
         $user = auth()->user();
 
@@ -105,6 +115,16 @@ Route::middleware([
         Route::get('/partners/{id}/update', [App\Http\Controllers\Admin\PartnerController::class, 'edit'])->name('partners.update');
         Route::put('/partners/{id}/update', [App\Http\Controllers\Admin\PartnerController::class, 'update'])->name('partners.update.store');
         Route::delete('/partners/{id}/delete', [App\Http\Controllers\Admin\PartnerController::class, 'destroy'])->name('partners.delete');
+
+        // Activity Log
+        Route::get('/activity-log', [App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-log');
+        Route::get('/activity-log/export', [App\Http\Controllers\Admin\ActivityLogController::class, 'export'])->name('activity-log.export');
+
+        // Agent lifecycle actions
+        Route::post('/agents/{id}/reject', [AgentController::class, 'reject'])->name('agents.reject');
+
+        // Payout cancel
+        Route::post('/payout/{id}/cancel', [App\Http\Controllers\Admin\PayoutController::class, 'cancel'])->name('payout.cancel');
     });
 
     // Agent routes (require agent role)
@@ -127,6 +147,22 @@ Route::middleware([
         Route::get('/request-payout', [App\Http\Controllers\Agent\RequestPayoutController::class, 'index'])->name('request-payout');
         Route::post('/request_payout', [App\Http\Controllers\Agent\RequestPayoutController::class, 'store']);
         Route::get('/payout/{id}/detail', [App\Http\Controllers\Agent\PayoutController::class, 'show'])->name('payout.detail');
+
+        // Payment completion (post-registration)
+        Route::get('/payment/complete', [App\Http\Controllers\AgentRegistrationController::class, 'completePayment'])->name('payment.complete');
+        Route::post('/payment/complete', [App\Http\Controllers\AgentRegistrationController::class, 'submitPayment'])->name('payment.complete.submit');
+
+        // Referral stats
+        Route::get('/referral', [App\Http\Controllers\Agent\ReferralController::class, 'index'])->name('referral');
+
+        // Inbox / notifications
+        Route::get('/inbox', [App\Http\Controllers\Agent\NotificationController::class, 'index'])->name('inbox');
+        Route::post('/inbox/{id}/read', [App\Http\Controllers\Agent\NotificationController::class, 'markRead'])->name('inbox.read');
+        Route::post('/inbox/read-all', [App\Http\Controllers\Agent\NotificationController::class, 'markAllRead'])->name('inbox.read-all');
+
+        // Suspension appeal + re-approval
+        Route::post('/appeal-suspension', [App\Http\Controllers\Agent\AppealController::class, 'store'])->name('appeal-suspension');
+        Route::post('/request-approval', [AgentController::class, 'requestApproval'])->name('request-approval');
     });
 
 });

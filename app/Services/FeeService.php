@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\Agent;
+use App\Models\AgentNotification;
 use App\Models\FeePayment;
 use App\Models\SystemSetting;
 use App\Models\User;
@@ -21,7 +22,7 @@ class FeeService
      */
     public function applyEntryFee(Agent $agent, User $recordedBy, string $method = FeePayment::METHOD_MANUAL, ?string $reference = null): FeePayment
     {
-        return DB::transaction(function () use ($agent, $recordedBy, $method, $reference) {
+        $payment = DB::transaction(function () use ($agent, $recordedBy, $method, $reference) {
             $role = $agent->agent_role ?? Agent::ROLE_AGENT;
             $amount = $this->getFeeAmountFor($role, FeePayment::TYPE_ENTRY);
             $duration = $this->getMembershipDurationDays();
@@ -58,6 +59,25 @@ class FeeService
 
             return $payment;
         });
+
+        // Notify agent (after transaction commits)
+        try {
+            app(NotificationService::class)->notify(
+                $agent,
+                AgentNotification::TYPE_FEE_PAYMENT,
+                'Entry Fee Recorded',
+                "Your entry fee of {$payment->amount} has been recorded.",
+                FeePayment::class,
+                $payment->id,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FeeService: entry fee notification failed', [
+                'agent_id' => $agent->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $payment;
     }
 
     /**
