@@ -2,6 +2,9 @@
 import { ref, computed, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
@@ -309,14 +312,11 @@ watch(() => props.commissions, (newCommissions) => {
 
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Agent</span> / <span class="text-stone-900 font-medium">Request Payout</span>
-    </nav>
-
-    <!-- Title -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-2">Request Payout</h1>
-    <p class="text-stone-600 mb-6">Select sales to include into this payout request</p>
+    <PageHeader
+      title="Request Payout"
+      description="Select sales to include into this payout request"
+      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Payouts', href: '/agent/payouts' }, { label: 'Request Payout' }]"
+    />
 
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
@@ -393,15 +393,16 @@ watch(() => props.commissions, (newCommissions) => {
         </p>
 
         <!-- Request Payout Button -->
-        <button
+        <Button
+          variant="default"
+          size="default"
           @click="requestPayout"
           :disabled="selectedCount === 0 || isSubmitting || totalCommission <= 0 || totalCommission < minPayoutAmount"
           :title="totalCommission < minPayoutAmount ? `Minimum payout: ${formatCurrency('RM', minPayoutAmount)}` : ''"
-          class="w-full md:w-auto px-6 py-3 bg-accent-green text-white rounded-md font-medium hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <span v-if="isSubmitting">Processing...</span>
           <span v-else>Request Payout</span>
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -475,10 +476,9 @@ watch(() => props.commissions, (newCommissions) => {
                 {{ commission.invoice_number || '—' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                      :class="commission.commission_type === 'own_sales' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                <Badge :variant="commission.commission_type === 'own_sales' ? 'success' : 'default'">
                   {{ commission.commission_type || 'own_sales' }}
-                </span>
+                </Badge>
                 <span v-if="commission.is_reversal" class="ml-1 text-xs text-accent-red">↩ reversal</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
@@ -508,12 +508,9 @@ watch(() => props.commissions, (newCommissions) => {
         <p class="text-lg text-stone-900 mb-6">{{ successMessage }}</p>
 
         <!-- OK Button -->
-        <button
-          @click="closeSuccessDialog"
-          class="px-6 py-2 bg-accent-green text-white rounded-md font-medium hover:bg-accent-green/90 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
-        >
+        <Button variant="default" size="default" @click="closeSuccessDialog">
           OK
-        </button>
+        </Button>
       </div>
     </Modal>
   </div>

@@ -2,7 +2,14 @@
 import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
 import Badge from '../Design/Components/Badge.vue'
+import Button from '../Design/Components/Button.vue'
+import Input from '../Design/Components/Input.vue'
+import Textarea from '../Design/Components/Textarea.vue'
+import FormField from '../Design/Components/FormField.vue'
+import Radio from '../Design/Components/Radio.vue'
+import FileInput from '../Design/Components/FileInput.vue'
 
 defineOptions({ layout: AgentLayout })
 
@@ -110,17 +117,7 @@ const copyShareableUrl = async () => {
   }
 }
 
-const handleIndividualIdFileChange = (event) => {
-  form.value.individual_id_file = event.target.files[0]
-}
-
-const handleCompanyRegFileChange = (event) => {
-  form.value.company_reg_file = event.target.files[0]
-}
-
-const handleCompanyRepIdFileChange = (event) => {
-  form.value.company_representative_id_file = event.target.files[0]
-}
+// File inputs are handled via v-model with FileInput component
 
 // Helper function to generate file URL with cache-busting parameter
 const getFileUrl = (field) => {
@@ -229,166 +226,114 @@ const saveProfile = async () => {
 
 <template>
   <div>
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Agent</span> / <span class="text-stone-900 font-medium">Edit Profile</span>
-    </nav>
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold text-forest-dark">Edit Agent Profile</h1>
-      <Badge v-if="agent?.status" :variant="getStatusVariant(agent.status)" class="capitalize text-xl px-8 py-3">
-        {{ agent.status }}
-      </Badge>
-    </div>
+    <PageHeader
+      title="Edit Agent Profile"
+      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Profile', href: '/agent/profile' }, { label: 'Edit Profile' }]"
+    >
+      <template #actions>
+        <Badge v-if="agent?.status" :variant="getStatusVariant(agent.status)" class="capitalize text-xl px-8 py-3">
+          {{ agent.status }}
+        </Badge>
+      </template>
+    </PageHeader>
 
     <form @submit.prevent="saveProfile" class="space-y-6">
       <!-- Agent Information -->
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-forest-dark mb-4">Agent Information</h3>
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Agent Type</label>
+        <FormField label="Agent Type" class="mb-4">
           <div class="flex space-x-4">
-            <label class="flex items-center">
-              <input type="radio" value="individual" v-model="form.profile_type" class="mr-2" /> Individual
-            </label>
-            <label class="flex items-center">
-              <input type="radio" value="company" v-model="form.profile_type" class="mr-2" /> Company
-            </label>
+            <Radio v-model="form.profile_type" value="individual" name="profile_type" label="Individual" />
+            <Radio v-model="form.profile_type" value="company" name="profile_type" label="Company" />
           </div>
-        </div>
+        </FormField>
 
         <div v-if="isIndividual" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-            <input v-model="form.individual_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.individual_name" class="text-accent-red text-sm mt-1">{{ errors.individual_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-            <input v-model="form.individual_phone" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.individual_phone" class="text-accent-red text-sm mt-1">{{ errors.individual_phone }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Alternative E-Mail Address</label>
-            <input v-model="form.individual_email" type="email" class="w-full px-3 py-2 border rounded" placeholder="Enter alternative email address (optional)" />
-            <p v-if="errors.individual_email" class="text-accent-red text-sm mt-1">{{ errors.individual_email }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-            <textarea v-model="form.individual_address" class="w-full px-3 py-2 border rounded"></textarea>
-            <p v-if="errors.individual_address" class="text-accent-red text-sm mt-1">{{ errors.individual_address }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">NRIC/Passport Number</label>
-            <input v-model="form.individual_id_number" type="text" class="w-full px-3 py-2 border rounded" placeholder="National registration identification number or Passport Number" />
+          <FormField label="Name" :error="errors.individual_name" required>
+            <Input v-model="form.individual_name" type="text" :invalid="!!errors.individual_name" />
+          </FormField>
+          <FormField label="Phone" :error="errors.individual_phone" required>
+            <Input v-model="form.individual_phone" type="text" :invalid="!!errors.individual_phone" />
+          </FormField>
+          <FormField label="Alternative E-Mail Address" :error="errors.individual_email">
+            <Input v-model="form.individual_email" type="email" placeholder="Enter alternative email address (optional)" :invalid="!!errors.individual_email" />
+          </FormField>
+          <FormField label="Address" :error="errors.individual_address" required>
+            <Textarea v-model="form.individual_address" :invalid="!!errors.individual_address" />
+          </FormField>
+          <FormField label="NRIC/Passport Number" :error="errors.individual_id_number" required>
+            <Input v-model="form.individual_id_number" type="text" placeholder="National registration identification number or Passport Number" :invalid="!!errors.individual_id_number" />
             <p class="text-sm text-gray-500 mt-1">National registration identification number or Passport Number</p>
-            <p v-if="errors.individual_id_number" class="text-accent-red text-sm mt-1">{{ errors.individual_id_number }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Copy of IC/Passport</label>
+          </FormField>
+          <FormField label="Copy of IC/Passport" :error="errors.individual_id_file">
             <div v-if="agent?.individual_id_file" class="mb-2">
               <span class="text-sm text-gray-600">Current file: </span>
               <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
                 View Current File
               </a>
             </div>
-            <input
-              @change="handleIndividualIdFileChange"
-              type="file"
-              accept=".pdf,.jpeg,.jpg,.png"
-              class="w-full px-3 py-2 border rounded"
-            />
+            <FileInput v-model="form.individual_id_file" accept=".pdf,.jpeg,.jpg,.png" />
             <p class="text-sm text-gray-500 mt-1">Upload copy of national registration identity card or Passport file</p>
             <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-            <p v-if="errors.individual_id_file" class="text-accent-red text-sm mt-1">{{ errors.individual_id_file }}</p>
-          </div>
+          </FormField>
         </div>
 
         <div v-if="isCompany" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-            <input v-model="form.company_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_name" class="text-accent-red text-sm mt-1">{{ errors.company_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Representative</label>
-            <input v-model="form.company_representative_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_representative_name" class="text-accent-red text-sm mt-1">{{ errors.company_representative_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Registration Number</label>
-            <input v-model="form.company_registration_number" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_registration_number" class="text-accent-red text-sm mt-1">{{ errors.company_registration_number }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Address</label>
-            <textarea v-model="form.company_address" class="w-full px-3 py-2 border rounded"></textarea>
-            <p v-if="errors.company_address" class="text-accent-red text-sm mt-1">{{ errors.company_address }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
-            <input v-model="form.company_phone" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_phone" class="text-accent-red text-sm mt-1">{{ errors.company_phone }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company E-Mail Address</label>
-            <input v-model="form.company_email_address" type="email" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.company_email_address" class="text-accent-red text-sm mt-1">{{ errors.company_email_address }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Business Registration Certificate</label>
+          <FormField label="Company Name" :error="errors.company_name" required>
+            <Input v-model="form.company_name" type="text" :invalid="!!errors.company_name" />
+          </FormField>
+          <FormField label="Representative" :error="errors.company_representative_name" required>
+            <Input v-model="form.company_representative_name" type="text" :invalid="!!errors.company_representative_name" />
+          </FormField>
+          <FormField label="Registration Number" :error="errors.company_registration_number" required>
+            <Input v-model="form.company_registration_number" type="text" :invalid="!!errors.company_registration_number" />
+          </FormField>
+          <FormField label="Company Address" :error="errors.company_address" required>
+            <Textarea v-model="form.company_address" :invalid="!!errors.company_address" />
+          </FormField>
+          <FormField label="Company Phone" :error="errors.company_phone" required>
+            <Input v-model="form.company_phone" type="text" :invalid="!!errors.company_phone" />
+          </FormField>
+          <FormField label="Company E-Mail Address" :error="errors.company_email_address" required>
+            <Input v-model="form.company_email_address" type="email" :invalid="!!errors.company_email_address" />
+          </FormField>
+          <FormField label="Business Registration Certificate" :error="errors.company_reg_file">
             <div v-if="agent?.company_reg_file" class="mb-2">
               <span class="text-sm text-gray-600">Current file: </span>
               <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
                 View Current File
               </a>
             </div>
-            <input
-              @change="handleCompanyRegFileChange"
-              type="file"
-              accept=".pdf,.jpeg,.jpg,.png"
-              class="w-full px-3 py-2 border rounded"
-            />
+            <FileInput v-model="form.company_reg_file" accept=".pdf,.jpeg,.jpg,.png" />
             <p class="text-sm text-gray-500 mt-1">Company SSM document/certificate</p>
             <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-            <p v-if="errors.company_reg_file" class="text-accent-red text-sm mt-1">{{ errors.company_reg_file }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Company Representative ID (NRIC/Passport)</label>
+          </FormField>
+          <FormField label="Company Representative ID (NRIC/Passport)" :error="errors.company_representative_id_file">
             <div v-if="agent?.company_representative_id_file" class="mb-2">
               <span class="text-sm text-gray-600">Current file: </span>
               <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 text-sm">
                 View Current File
               </a>
             </div>
-            <input
-              @change="handleCompanyRepIdFileChange"
-              type="file"
-              accept=".pdf,.jpeg,.jpg,.png"
-              class="w-full px-3 py-2 border rounded"
-            />
+            <FileInput v-model="form.company_representative_id_file" accept=".pdf,.jpeg,.jpg,.png" />
             <p class="text-sm text-gray-500 mt-1">Copy of the company representative's IC or Passport.</p>
             <p class="text-sm text-gray-500">Accepted formats: PDF, JPEG, JPG, PNG (Max 10MB)</p>
-            <p v-if="errors.company_representative_id_file" class="text-accent-red text-sm mt-1">{{ errors.company_representative_id_file }}</p>
-          </div>
+          </FormField>
         </div>
 
         <!-- About Me / About Company -->
         <div class="space-y-4 mt-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              {{ form.profile_type === 'individual' ? 'About Me' : 'About Company' }}
-            </label>
-            <textarea
+          <FormField :label="form.profile_type === 'individual' ? 'About Me' : 'About Company'" :error="errors.about">
+            <Textarea
               v-model="form.about"
-              rows="4"
-              maxlength="1000"
-              class="w-full px-3 py-2 border rounded"
+              :rows="4"
               :placeholder="form.profile_type === 'individual' ? 'Tell us about yourself in 100 words' : 'Tell us about your company in 100 words'"
-            ></textarea>
+              :invalid="!!errors.about"
+            />
             <p class="text-sm text-gray-500 mt-1">Tell us about yourself / your company in 100 words</p>
             <p class="text-sm text-gray-400 mt-1">Word count: {{ aboutWordCount }} / 100 words</p>
-            <p v-if="errors.about" class="text-accent-red text-sm mt-1">{{ errors.about }}</p>
-          </div>
+          </FormField>
         </div>
       </div>
 
@@ -397,40 +342,30 @@ const saveProfile = async () => {
         <h3 class="text-lg font-semibold text-forest-dark mb-4">Bank Account Information</h3>
 
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Account Name</label>
-            <input v-model="form.bank_account_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.bank_account_name" class="text-accent-red text-sm mt-1">{{ errors.bank_account_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
-            <input v-model="form.bank_account_number" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.bank_account_number" class="text-accent-red text-sm mt-1">{{ errors.bank_account_number }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
-            <input v-model="form.bank_name" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.bank_name" class="text-accent-red text-sm mt-1">{{ errors.bank_name }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
-            <input v-model="form.iban" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.iban" class="text-accent-red text-sm mt-1">{{ errors.iban }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">SWIFT Code</label>
-            <input v-model="form.swift_code" type="text" class="w-full px-3 py-2 border rounded" />
-            <p v-if="errors.swift_code" class="text-accent-red text-sm mt-1">{{ errors.swift_code }}</p>
-          </div>
+          <FormField label="Account Name" :error="errors.bank_account_name">
+            <Input v-model="form.bank_account_name" type="text" :invalid="!!errors.bank_account_name" />
+          </FormField>
+          <FormField label="Account Number" :error="errors.bank_account_number">
+            <Input v-model="form.bank_account_number" type="text" :invalid="!!errors.bank_account_number" />
+          </FormField>
+          <FormField label="Bank Name" :error="errors.bank_name">
+            <Input v-model="form.bank_name" type="text" :invalid="!!errors.bank_name" />
+          </FormField>
+          <FormField label="IBAN" :error="errors.iban">
+            <Input v-model="form.iban" type="text" :invalid="!!errors.iban" />
+          </FormField>
+          <FormField label="SWIFT Code" :error="errors.swift_code">
+            <Input v-model="form.swift_code" type="text" :invalid="!!errors.swift_code" />
+          </FormField>
         </div>
       </div>
 
       <!-- Form Actions -->
       <div class="flex justify-end">
-        <button type="submit" :disabled="isSaving" class="bg-gold hover:bg-amber-700 text-white px-6 py-2 rounded font-medium transition-colors">
+        <Button type="submit" variant="default" size="default" :disabled="isSaving">
           <span v-if="isSaving">Saving...</span>
           <span v-else>Save</span>
-        </button>
+        </Button>
       </div>
     </form>
   </div>

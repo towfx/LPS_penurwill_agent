@@ -2,6 +2,9 @@
 import { ref, computed, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
+import PageHeader from '../Design/Components/PageHeader.vue'
+import Select from '../Design/Components/Select.vue'
+import Badge from '../Design/Components/Badge.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
@@ -64,17 +67,13 @@ const formatDateTime = (dateString) => {
   })
 }
 
-// Get commission status pill class
-const getStatusClass = (status) => {
+// Get commission status badge variant
+const getStatusVariant = (status) => {
   switch (status?.toLowerCase()) {
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full text-xs font-medium'
-    case 'approved':
-      return 'bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-xs font-medium'
-    case 'paid':
-      return 'bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-xs font-medium'
-    default:
-      return 'bg-stone-100 text-stone-800 px-3 py-1.5 rounded-full text-xs font-medium'
+    case 'pending': return 'warning'
+    case 'approved': return 'success'
+    case 'paid': return 'default'
+    default: return 'secondary'
   }
 }
 
@@ -116,13 +115,10 @@ const applyFilters = () => {
 
 <template>
   <div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm text-stone-500 mb-4">
-      <span>Agent</span> / <span class="text-stone-900 font-medium">Sales</span>
-    </nav>
-
-    <!-- Title -->
-    <h1 class="text-2xl font-bold text-forest-dark mb-6">My Sales</h1>
+    <PageHeader
+      title="My Sales"
+      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Sales' }]"
+    />
 
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
@@ -139,7 +135,6 @@ const applyFilters = () => {
             placeholder="Select date range"
             @update:model-value="updateDateRange"
             class="w-full"
-            :class="'px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light focus:border-forest-light'"
           />
         </div>
 
@@ -148,16 +143,16 @@ const applyFilters = () => {
           <label class="block text-sm font-medium text-stone-700 mb-2">
             Commission Status
           </label>
-          <select
+          <Select
             v-model="selectedStatus"
-            @change="updateStatus"
-            class="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-forest-light focus:border-forest-light"
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="paid">Paid</option>
-          </select>
+            :options="[
+              { value: 'all', label: 'All' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'paid', label: 'Paid' },
+            ]"
+            @update:modelValue="updateStatus"
+          />
         </div>
       </div>
     </div>
@@ -234,12 +229,9 @@ const applyFilters = () => {
                 {{ formatCurrency('RM', sale.commission?.amount ?? 0) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
-                <span
-                  v-if="sale.commission"
-                  :class="getStatusClass(sale.commission.status)"
-                >
+                <Badge v-if="sale.commission" :variant="getStatusVariant(sale.commission.status)">
                   {{ sale.commission.status.charAt(0).toUpperCase() + sale.commission.status.slice(1) }}
-                </span>
+                </Badge>
                 <span v-else class="text-stone-400">—</span>
               </td>
             </tr>
