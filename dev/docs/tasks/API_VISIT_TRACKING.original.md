@@ -2,7 +2,7 @@
 
 ## Overview
 
-Visit tracking API tracks user visits via agent referral codes. Monitors traffic/engagement from marketing channels. Supports REST endpoints and cross-domain tracking pixels.
+The visit tracking API allows you to track user visits to your website or application using agent referral codes. This helps monitor traffic and engagement from different marketing channels. The API now supports both REST endpoints and cross-domain tracking pixels.
 
 ## API Version
 
@@ -49,12 +49,12 @@ POST /api/agents/track/visit
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `referral_code` | string | Yes | Agent's referral code |
-| `visit_url` | string | Yes | Visited URL (must be valid URL) |
-| `visit_time` | string | Yes | ISO 8601 timestamp of visit |
-| `referral_page` | string | No | Referring page URL |
+| `referral_code` | string | Yes | The agent's referral code |
+| `visit_url` | string | Yes | The URL that was visited (must be a valid URL) |
+| `visit_time` | string | Yes | ISO 8601 timestamp of when the visit occurred |
+| `referral_page` | string | No | The referring page URL |
 | `session_id` | string | No | Unique session identifier |
-| `page_title` | string | No | Title of visited page |
+| `page_title` | string | No | Title of the visited page |
 | `user_agent` | string | No | Browser user agent string |
 | `screen_resolution` | string | No | Screen resolution (e.g., "1920x1080") |
 | `language` | string | No | Browser language (e.g., "en-US") |
@@ -90,18 +90,18 @@ fetch('/api/agents/track/visit', {
 GET /api/pixel/track
 ```
 
-Tracking pixel enables cross-domain tracking without CORS issues. Returns 1x1 transparent GIF.
+The tracking pixel allows cross-domain tracking without CORS issues. It returns a 1x1 transparent GIF image.
 
 #### Query Parameters
 
 | Parameter | Short | Required | Description |
 |-----------|-------|----------|-------------|
-| `referral_code` | `rc` | Yes | Agent's referral code |
-| `visit_url` | `url` | Yes | Visited URL |
+| `referral_code` | `rc` | Yes | The agent's referral code |
+| `visit_url` | `url` | Yes | The URL that was visited |
 | `visit_time` | `t` | No | ISO 8601 timestamp (defaults to current time) |
-| `referral_page` | `ref` | No | Referring page URL |
+| `referral_page` | `ref` | No | The referring page URL |
 | `session_id` | `sid` | No | Unique session identifier |
-| `page_title` | `title` | No | Title of visited page |
+| `page_title` | `title` | No | Title of the visited page |
 | `user_agent` | `ua` | No | Browser user agent string |
 | `screen_resolution` | `sr` | No | Screen resolution |
 | `language` | `lang` | No | Browser language |
@@ -199,18 +199,18 @@ trackVisitPixel('AGENT123', window.location.href, document.title);
 ## Implementation Notes
 
 ### REST API
-1. **IP Address**: API auto-captures visitor IP
-2. **User Agent**: Falls back to request user agent if not provided
-3. **Activity Logging**: All visits logged for audit
-4. **Validation**: Referral code must be active, linked to active agent
-5. **Database**: Visits stored in `agent_visits` table with performance indexing
+1. **IP Address**: The API automatically captures the visitor's IP address
+2. **User Agent**: If not provided, the API will use the request's user agent
+3. **Activity Logging**: All visits are logged in the activity log for audit purposes
+4. **Validation**: The referral code must be active and associated with an active agent
+5. **Database**: Visits are stored in the `agent_visits` table with proper indexing for performance
 
 ### Tracking Pixel
-1. **Cross-Domain**: Works across domains without CORS issues
-2. **Fault Tolerant**: Always returns pixel even if tracking fails
+1. **Cross-Domain**: Works across different domains without CORS issues
+2. **Fault Tolerant**: Always returns a pixel image, even if tracking fails
 3. **CORS Headers**: Includes proper CORS headers for cross-domain requests
-4. **Short Parameters**: Abbreviated param names minimize URL length
-5. **No-Cache**: Pixel responses uncached for accurate tracking
+4. **Short Parameters**: Uses abbreviated parameter names to minimize URL length
+5. **No-Cache**: Pixel responses are not cached to ensure accurate tracking
 
 ## Usage Examples
 
@@ -316,21 +316,21 @@ $pixelUrl = 'https://api.penurwill.com/api/pixel/track?' . http_build_query([
 POST /api/agents/track/sale
 ```
 
-Track sales conversions linked to agent referral code. Creates sale record, auto-calculates commission from agent's commission rate.
+Track sales conversions associated with an agent's referral code. This endpoint creates a sale record and automatically calculates commission based on the agent's commission rate.
 
 #### Request Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `referral_code` | string | Yes | Agent's referral code (max 50 chars) |
-| `customer_name` | string | Yes | Customer name (max 255 chars) |
-| `customer_email` | string | Yes | Customer email (valid email, max 255 chars) |
-| `customer_phone` | string | No | Customer phone (max 20 chars) |
-| `sale_amount` | number | Yes | Sale amount (min 0.01) |
-| `product_name` | string | Yes | Product/service name (max 255 chars) |
-| `sale_date` | string | Yes | Sale date YYYY-MM-DD (today or earlier) |
-| `notes` | string | No | Additional notes (max 1000 chars) |
-| `source` | string | No | Sale source e.g. "website", "phone", "email" (max 100 chars) |
+| `referral_code` | string | Yes | The agent's referral code (max 50 characters) |
+| `customer_name` | string | Yes | Name of the customer (max 255 characters) |
+| `customer_email` | string | Yes | Email address of the customer (valid email, max 255 characters) |
+| `customer_phone` | string | No | Phone number of the customer (max 20 characters) |
+| `sale_amount` | number | Yes | The sale amount (minimum 0.01) |
+| `product_name` | string | Yes | Name of the product/service sold (max 255 characters) |
+| `sale_date` | string | Yes | Date of the sale in YYYY-MM-DD format (must be today or earlier) |
+| `notes` | string | No | Additional notes about the sale (max 1000 characters) |
+| `source` | string | No | Source of the sale (e.g., "website", "phone", "email") (max 100 characters) |
 
 #### Example Request
 
@@ -411,12 +411,12 @@ fetch('/api/agents/track/sale', {
 
 #### Implementation Notes
 
-- **Commission Calculation**: Auto-calculated from agent's custom rate, defaults to 10% if none set
-- **Sale Record**: Created in `sales` table
-- **Commission Record**: Auto-created with status "pending"
-- **Activity Logging**: Sale and commission both logged
-- **IP Address**: API auto-captures visitor IP
-- **User Agent**: API auto-captures request user agent
+- **Commission Calculation**: The commission is automatically calculated based on the agent's custom commission rate, or defaults to 10% if no custom rate is set
+- **Sale Record**: A sale record is created in the `sales` table with the provided information
+- **Commission Record**: A commission record is automatically created with status "pending"
+- **Activity Logging**: Both the sale and commission are logged in the activity log
+- **IP Address**: The API automatically captures the visitor's IP address
+- **User Agent**: The API automatically captures the request's user agent
 
 ---
 
@@ -426,13 +426,13 @@ fetch('/api/agents/track/sale', {
 GET /api/agents/track/code/{code}
 ```
 
-Retrieve referral code info including agent details and activation status.
+Retrieve information about a specific referral code, including agent details and activation status.
 
 #### URL Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `code` | string | Yes | Referral code to look up |
+| `code` | string | Yes | The referral code to look up |
 
 #### Example Request
 
@@ -493,17 +493,17 @@ console.log(response.data);
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `referral_code` | string | Referral code |
-| `agent_name` | string | Agent name linked to code |
-| `agent_type` | string | Agent type: "individual" or "company" |
-| `is_active` | boolean | Whether referral code is active |
-| `created_at` | string | ISO 8601 creation timestamp |
+| `referral_code` | string | The referral code |
+| `agent_name` | string | Name of the agent associated with the code |
+| `agent_type` | string | Type of agent: "individual" or "company" |
+| `is_active` | boolean | Whether the referral code is currently active |
+| `created_at` | string | ISO 8601 timestamp of when the referral code was created |
 
 #### Implementation Notes
 
-- **Validation**: Only active codes linked to active agents returned
-- **Use Case**: Validate codes before tracking visits or sales
-- **Public Access**: No authentication required
+- **Validation**: Only active referral codes associated with active agents are returned
+- **Use Case**: This endpoint is useful for validating referral codes before tracking visits or sales
+- **Public Access**: This endpoint is publicly accessible and does not require authentication
 
 ---
 
@@ -681,5 +681,5 @@ curl -X GET https://api.penurwill.com/api/agents/track/code/AGENT123
 
 - `POST /api/agents/track/referral` - Track customer referrals
 - `POST /api/agents/track/sale` - Track sales conversions
-- `GET /api/agents/track/code/{code}` - Get referral code info
-- `GET /api/agents/track/version` - Get API version info
+- `GET /api/agents/track/code/{code}` - Get referral code information
+- `GET /api/agents/track/version` - Get API version information 

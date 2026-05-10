@@ -1,6 +1,6 @@
 # Commission Enhancement: Quick Reference Guide
 
-**For Developers**: Start here before reading full documents.
+**For Developers**: Start here before reading the full documents.
 
 ---
 
@@ -23,7 +23,7 @@
 - Solution: Refactor TrackingService to use CommissionGenerator
 - Timeline: Phase 0 (before other phases)
 
-**Action**:
+**Action**: 
 ```php
 // TrackingService::trackSale() needs updating
 $sale = Sale::create($data);
@@ -47,7 +47,7 @@ $this->generator->generateForSale($sale);  // NEW
 ### 3. **User Role vs Agent Role SYNC** 🟠 HIGH PRIORITY
 - Current: Spatie User roles (user.roles) separate from Agent roles (agent.agent_role)
 - Problem: Can create inconsistent states
-- Solution: Decide sync strategy
+- Solution: Decide on sync strategy
 
 **Options**:
 - A: Keep separate (needs validation)
@@ -58,7 +58,7 @@ $this->generator->generateForSale($sale);  // NEW
 
 ### 4. **PayoutItem Design NOT SPECIFIED** 🟠 HIGH PRIORITY
 - Current: No way to filter payouts by commission_type efficiently
-- Problem: Payout reports slow with large datasets
+- Problem: Payout reports will be slow with large datasets
 - Solution: Choose denormalization strategy
 
 **Recommended**: Add commission_type + commission_category to PayoutItem
@@ -285,11 +285,11 @@ commission_category ENUM('business_partner', 'agent_leader', 'agent') NULLABLE
 ## 🚨 Common Mistakes to Avoid
 
 ❌ **DON'T**:
-- Assume `$commission->agent` is earning agent (might be sales agent for overrides)
+- Assume `$commission->agent` is the earning agent (might be sales agent for overrides)
 - Forget to validate parent_agent_id hierarchy before saving
 - Mix percentage and fixed amount logic without checking type
 - Hardcode commission percentages (always use SystemSetting)
-- Forget `earning_agent_id` when creating override commissions
+- Forget to add `earning_agent_id` when creating override commissions
 - Assume all Agent records have proper roles (test with NULL/missing role)
 - Forget transaction wrapping when creating multiple commissions
 - Create PayoutItem without commission_type (if denormalizing)
@@ -297,7 +297,7 @@ commission_category ENUM('business_partner', 'agent_leader', 'agent') NULLABLE
 ✅ **DO**:
 - Use explicit method names: `$commission->earningAgent()` vs `$commission->salesAgent()`
 - Validate hierarchy in AgentHierarchy service before any changes
-- Check `commission_type` field before calculation
+- Check `commission_type` field before doing calculation
 - Always use CommissionCalculator and CommissionConfig services
 - Add `earning_agent_id` for override commissions
 - Add migration to set roles for existing agents
@@ -379,13 +379,13 @@ $breakdown = $repo->getPayoutBreakdown($agent, 2026, 4);
 
 ## ✅ Success Criteria
 
-Implementation complete when:
+Your implementation is complete when:
 - [ ] All tests pass (existing + new)
 - [ ] Commission breakdown appears in payout reports
-- [ ] Agent hierarchy settable via admin UI
+- [ ] Agent hierarchy can be set via admin UI
 - [ ] Fixed amount commissions work correctly
-- [ ] No duplicate commissions for same sale
-- [ ] PayoutItems filterable by commission_type
+- [ ] No duplicate commissions created for same sale
+- [ ] PayoutItems can be filtered by commission_type
 - [ ] TrackingService uses CommissionGenerator
 - [ ] No backward compatibility issues with existing payouts
 - [ ] Performance: 1000+ agent queries complete in <500ms

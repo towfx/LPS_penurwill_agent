@@ -8,7 +8,7 @@
 
 ## 📚 What You Have
 
-Package contains **4 comprehensive documents** (plus this README) covering commission system enhancement from every angle:
+This package contains **4 comprehensive documents** (plus this README) covering the commission system enhancement from every angle:
 
 ### Document Overview
 
@@ -17,33 +17,33 @@ Package contains **4 comprehensive documents** (plus this README) covering commi
 | 1 | **NEW_REQUIREMENT.md** | 12KB | Complete specification, database schema, implementation roadmap | ⏭️ Second |
 | 2 | **ANALYSIS_AND_DECISIONS.md** | 18KB | 10 critical gaps, existing system issues, decision matrix, recommendations | 🔴 **FIRST** |
 | 3 | **QUICK_REFERENCE.md** | 10KB | Quick start guide for developers, debugging tips, common mistakes | ✅ After decisions |
-| 4 | **DECISION_OUTCOMES.md** | 8KB | Template to record 12 key decisions | 📝 During review |
+| 4 | **DECISION_OUTCOMES.md** | 8KB | Template to record your 12 key decisions | 📝 During review |
 | 5 | **README.md** | This file | Navigation guide and action plan | 👈 You are here |
 
 ---
 
-## 🎯 Immediate Action Items
+## 🎯 Your Immediate Action Items
 
 ### Step 1: Read ANALYSIS_AND_DECISIONS.md (⏱️ 30 minutes)
 
-**Why First?** Contains 10 critical gaps — must address before any code written.
+**Why First?** Contains 10 critical gaps that must be addressed before any code is written.
 
-**Focus on**:
+**Focus on these sections**:
 - Part A: CRITICAL GAPS (Issues 1-10)
 - Part E: DECISION MATRIX (Choose between options)
 - Part G: OPEN QUESTIONS (Clarify with stakeholders)
 
 **What you'll learn**:
 - ❌ What's MISSING from NEW_REQUIREMENT.md
-- ⚠️ Existing system issues affecting implementation
-- 📊 Trade-offs between approaches
-- 🔴 Blocking issues to resolve first
+- ⚠️ What existing system issues will affect implementation
+- 📊 Trade-offs between different approaches
+- 🔴 Blocking issues that must be resolved first
 
 ---
 
 ### Step 2: Make 12 Key Decisions (⏱️ 45 minutes)
 
-Fill **DECISION_OUTCOMES.md**:
+Fill out **DECISION_OUTCOMES.md** with your choices:
 
 1. **TrackingService Refactoring**: How to integrate new commission generator?
 2. **Partner vs Agent Hierarchy**: Keep separate or merge?
@@ -62,12 +62,12 @@ Fill **DECISION_OUTCOMES.md**:
 
 ### Step 3: Read NEW_REQUIREMENT.md (⏱️ 45 minutes)
 
-**Why Third?** Full spec makes more sense after understanding gaps and decisions.
+**Why Third?** Full specification will make more sense after understanding gaps and decisions.
 
-**Focus on**:
-- Part 1: EXISTING SYSTEM (what's there)
+**Focus on these sections**:
+- Part 1: EXISTING SYSTEM (what's already there)
 - Part 2: NEW REQUIREMENTS (what you're building)
-- Part 3: PATCHES vs NEW (what changes vs new)
+- Part 3: PATCHES vs NEW (what changes vs what's new)
 - Part 4: DATABASE SCHEMA (exact SQL)
 - Part 5: IMPLEMENTATION ROADMAP (phases 1-6)
 
@@ -76,18 +76,18 @@ Fill **DECISION_OUTCOMES.md**:
 ### Step 4: Hand to Developer (⏱️ 15 minutes)
 
 Give developer:
-1. **QUICK_REFERENCE.md** - Quick start guide
+1. **QUICK_REFERENCE.md** - Their quick start guide
 2. **NEW_REQUIREMENT.md** - Full specification
 3. **DECISION_OUTCOMES.md** - Your decisions
 4. This README as navigation guide
 
-Developer references **ANALYSIS_AND_DECISIONS.md** when hitting questions.
+Developer will refer to **ANALYSIS_AND_DECISIONS.md** when they hit questions.
 
 ---
 
-## 📊 Problem in a Nutshell
+## 📊 The Problem in a Nutshell
 
-### Current State
+### Current State (What Exists)
 ```
 Agents earn commission from their own sales only
   ↓
@@ -98,7 +98,7 @@ Flat rate structure (% based)
 No hierarchy or team management
 ```
 
-### New State
+### New State (What You're Building)
 ```
 Three agent roles: Agent, Agent Leader, Business Partner
   ↓
@@ -110,11 +110,11 @@ Hierarchical structure with reporting breakdown
 ```
 
 ### Critical Issue
-**Document doesn't address TrackingService refactoring** — where 99% of sales created via API. Must fix in Phase 0 or new commission system won't work.
+**The document doesn't address TrackingService refactoring**, which is where 99% of sales are created via API. This must be fixed in Phase 0 or the new commission system won't work.
 
 ---
 
-## 🚨 5 Blocking Issues (Must Resolve)
+## 🚨 The 5 Blocking Issues (Must Resolve)
 
 ### 1. **TrackingService Integration** 🔴 CRITICAL
 - **Problem**: New CommissionGenerator won't be used for API sales
@@ -163,7 +163,7 @@ Hierarchical structure with reporting breakdown
 | Error handling | ⚠️ 50% | Few details | Needs work |
 | Performance considerations | ✅ 80% | Query optimization good | Good |
 
-**Overall**: Document **80-85% production-ready**. Remaining 15-20% decision-dependent gaps filled once options chosen.
+**Overall**: Document is **80-85% production-ready**. Remaining 15-20% are decision-dependent gaps that will be filled once you choose options.
 
 ---
 
@@ -198,7 +198,7 @@ START HERE
 
 ## ✅ Pre-Implementation Checklist
 
-Before assigning work to developer:
+Before assigning work to developer, complete:
 
 - [ ] Read all 4 analysis documents
 - [ ] Answer all 12 decision questions
@@ -243,25 +243,25 @@ Before assigning work to developer:
 
 ## 📞 Document FAQ
 
-**Q: Which document read first?**  
+**Q: Which document should I read first?**  
 A: ANALYSIS_AND_DECISIONS.md, then this README's Step 1-2.
 
-**Q: I'm developer. Where start?**  
+**Q: I'm a developer. Where do I start?**  
 A: QUICK_REFERENCE.md (5 min overview), then NEW_REQUIREMENT.md (full spec), then ask questions.
 
-**Q: Need quick decision.**  
-A: ANALYSIS_AND_DECISIONS.md Part E (Decision Matrix).
+**Q: I need to make a decision quickly.**  
+A: Go to ANALYSIS_AND_DECISIONS.md Part E (Decision Matrix) for comparison.
 
-**Q: Document doesn't answer question.**  
+**Q: The document doesn't answer my question.**  
 A: Check ANALYSIS_AND_DECISIONS.md Part G (Open Questions).
 
 **Q: What changed from earlier version?**  
-A: Version 1.0 — first comprehensive analysis.
+A: This is version 1.0 - first comprehensive analysis.
 
 **Q: Can we skip Phase 0?**  
 A: No. TrackingService refactoring is blocking issue #1.
 
-**Q: All decisions need stakeholder approval?**  
+**Q: Do all decisions need stakeholder approval?**  
 A: Decisions 1-5 (critical), maybe 6-8 (config), less critical 9-12.
 
 ---
@@ -299,7 +299,7 @@ A: Decisions 1-5 (critical), maybe 6-8 (config), less critical 9-12.
 
 ### DECISION_OUTCOMES.md
 ✅ 12-question decision template  
-✅ Option comparison per decision  
+✅ Option comparison for each decision  
 ✅ Sign-off and approval section  
 ✅ Timeline planning  
 ✅ Readiness checklist  
@@ -310,11 +310,11 @@ A: Decisions 1-5 (critical), maybe 6-8 (config), less critical 9-12.
 
 ## 🏁 Success Metrics
 
-Implementation complete when:
+Your implementation is complete and successful when:
 
 **Functionality**:
-- [ ] Agents assignable roles (Agent, Agent Leader, Business Partner)
-- [ ] Hierarchy settable (Agent has parent Agent Leader, etc.)
+- [ ] Agents can be assigned roles (Agent, Agent Leader, Business Partner)
+- [ ] Hierarchy can be set (Agent has parent Agent Leader, etc.)
 - [ ] Commission generation creates multiple records (own + override)
 - [ ] Payout reports show breakdown by commission type
 - [ ] Fixed amount and percentage commissions both work
@@ -338,17 +338,17 @@ Implementation complete when:
 
 ## 💡 Pro Tips
 
-1. **Read ANALYSIS_AND_DECISIONS.md first** — Don't skip to NEW_REQUIREMENT.md. Gaps + decisions matter more than full spec.
+1. **Read ANALYSIS_AND_DECISIONS.md first** - Don't skip to NEW_REQUIREMENT.md. Gaps + decisions matter more than full spec.
 
-2. **Fill DECISION_OUTCOMES.md completely** — No blanks. Incomplete decisions = implementation delays.
+2. **Fill DECISION_OUTCOMES.md completely** - Don't leave blanks. Incomplete decisions = implementation delays.
 
-3. **Phase 0 non-negotiable** — TrackingService refactor before everything else or new system won't work.
+3. **Phase 0 is non-negotiable** - TrackingService refactor must happen before everything else or new system won't work.
 
-4. **Test backward compatibility early** — Start with existing commission data week 1, not week 6.
+4. **Test backward compatibility early** - Start testing with existing commission data in week 1, not week 6.
 
-5. **Partner with business** — Decisions 2, 4, 9 require stakeholder input. Get them early.
+5. **Partner with business** - Decisions 2, 4, 9 require stakeholder input. Get them involved early.
 
-6. **Document assumptions** — If implementing differently from document, update DECISION_OUTCOMES.md.
+6. **Document your assumptions** - If implementing something different from document, update DECISION_OUTCOMES.md.
 
 ---
 
@@ -369,7 +369,7 @@ Implementation complete when:
 
 **Questions about getting started?** → Check QUICK_REFERENCE.md
 
-**Need to record decision?** → Use DECISION_OUTCOMES.md
+**Need to record a decision?** → Use DECISION_OUTCOMES.md
 
 ---
 

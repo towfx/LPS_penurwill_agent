@@ -1,7 +1,3 @@
-The compressed file content was provided inline. The fix: add the missing H1 heading at the top. Here is the fixed compressed file:
-
----
-
 # Commission Enhancement: Decision Outcomes
 
 **Status**: ✅ **DECISIONS LOCKED IN** - Ready for Phase 0 Implementation
@@ -13,7 +9,7 @@ The compressed file content was provided inline. The fix: add the missing H1 hea
 
 ### ✋ Decision 1: TrackingService Refactoring Approach
 
-**Question**: How handle commission generation in TrackingService?
+**Question**: How should we handle commission generation in TrackingService?
 
 ---
 
@@ -29,22 +25,22 @@ TrackingService (API endpoint)
 
 **Pros**:
 - ✅ **Cleanest code**: Single responsibility - TrackingService validates/creates sale, CommissionGenerator creates commissions
-- ✅ **DRY**: Commission logic in ONE place
+- ✅ **DRY principle**: No code duplication - commission logic in ONE place
 - ✅ **Testable**: Can mock CommissionGenerator in tests
-- ✅ **Reusable**: Other controllers (admin, dashboard) can use CommissionGenerator
+- ✅ **Reusable**: Other controllers (admin, dashboard) can also use CommissionGenerator
 - ✅ **Maintainable**: Change commission logic → only update CommissionGenerator
-- ✅ **Future-proof**: Easy add listeners/events without touching TrackingService
+- ✅ **Future-proof**: Easy to add listeners/events later without touching TrackingService
 
 **Cons**:
-- ⚠️ Minor: Need new CommissionGenerator service
-- ⚠️ Minor: Requires dependency injection understanding
+- ⚠️ Minor: Need to create new CommissionGenerator service (small extra file)
+- ⚠️ Minor: Requires understanding of dependency injection
 
-**Complexity**: 🟢 **LOW** (3-5 hours)
-- Extract 15-20 lines into new service
+**Complexity**: 🟢 **LOW** (3-5 hours to implement)
+- Just extract 15-20 lines of code into new service
 - Update 1 file (TrackingService)
-- Add 1 file (CommissionGenerator)
+- Add 1 new file (CommissionGenerator)
 
-**Database Changes**: None
+**Database Changes**: None needed
 
 **Code Maintenance**:
 ```php
@@ -68,8 +64,8 @@ public function generateForSale(Sale $sale): array {
 
 **Long-term Maintenance**: 🟢 **EXCELLENT**
 - Commission rules change? Only edit CommissionGenerator
-- New commission types? Only add to CommissionGenerator
-- No scattered commission logic
+- New commission types needed? Only add to CommissionGenerator
+- No scattered commission logic across multiple files
 
 ---
 
@@ -99,12 +95,12 @@ Estimated effort: 4 hours
 
 **Question**: How do Partner and Agent hierarchies relate?
 
-**Context**: System has:
+**Context**: Currently, the system has:
 - **Partner model**: Company-level entity managing multiple agents
 - **Agent model**: Individual/company agents with `partner_id` foreign key
 - **New requirement**: Agent-to-agent hierarchy for override commissions
 
-**Problem**: Two separate hierarchies that conflict. Use single unified hierarchy.
+**The Problem**: Two separate hierarchies that can conflict. The solution is to use a single unified hierarchy.
 
 ---
 
@@ -160,21 +156,21 @@ NOTE: No production data exists yet! Can just update code and tests.
 **Pros**:
 - ✅ **Simplest overall**: Single Agent model does everything
 - ✅ **Easiest to maintain**: One hierarchy, one role field
-- ✅ **Clearest for users**: No hierarchy confusion
+- ✅ **Clearest for users**: No confusion about hierarchies
 - ✅ **Best for commission logic**: Natural match for "Agent Leader" and "Business Partner" roles
-- ✅ **No data migration**: No production Partner data exists
-- ✅ **Can rename tables**: "agents" → "accounts" or "personnel" if clearer
+- ✅ **No data migration needed**: No production Partner data exists
+- ✅ **Can rename tables**: Can rename "agents" to "accounts" or "personnel" if clearer
 - ✅ **Unified access control**: All via agents_users, not separate partners/partner_users
-- ✅ **Future flexibility**: Easy add new roles (Franchise, Distributor, etc.)
+- ✅ **Future flexibility**: Easy to add new roles (Franchise, Distributor, etc.)
 
 **Cons**:
-- ⚠️ Partner model removed (no data affected)
-- ⚠️ Code using Partner model needs updates (minimal per code review)
+- ⚠️ Partner model removed (but no data affected)
+- ⚠️ Code using Partner model needs updates (should be minimal based on code review)
 - ⚠️ Tests using Partner removed/updated
 
-**Complexity**: 🟢 **LOW** (5-6 hours refactoring)
-- No data migration
-- Code refactoring + test updates
+**Complexity**: 🟢 **LOW** (5-6 hours for refactoring)
+- No data migration (no Partner data exists)
+- Just code refactoring and test updates
 - Model relationships simple
 
 **Database Changes**:
@@ -210,24 +206,25 @@ match($agent->agent_role) {
 
 **Long-term Maintenance**: 🟢 **EXCELLENT**
 - One model, one hierarchy
-- Easy to understand + extend
+- Easy to understand
+- Easy to extend (add new roles)
 - Clean audit trail
 - Simple queries
 
 **Hidden Consequences** (all positive):
-- Partner reports → Agent reports (same data, clearer)
-- Easier commission hierarchy visualization
-- Easier "move agent between parents"
-- Easier partner-level reporting
-- Easier role-based permissions
+- Partner reports become Agent reports (same data, clearer)
+- Easier to implement commission hierarchy visualization
+- Easier to add "move agent between parents" feature
+- Easier to implement partner-level reporting
+- Easier to add role-based permissions
 
-**Why This Works**:
-- ✅ Simple to understand + maintain
-- ✅ Database cheap → no harm in slightly denormalized structure
-- ✅ Add extra UI screens without code complexity
-- ✅ Easy workflow (monthly commission cutoff, approval process)
+**Why This Works Well for You**:
+- ✅ Simple to understand and maintain
+- ✅ Database is cheap → no harm in slightly denormalized structure
+- ✅ Can add extra UI screens (Partner Dashboard, Agent Dashboard) without code complexity
+- ✅ Easy to introduce workflow (monthly commission cutoff, approval process, etc.)
 - ✅ No data migration burden
-- ✅ Clean architecture
+- ✅ Clean architecture going forward
 
 ---
 
@@ -288,14 +285,14 @@ Example:
 
 ### ✋ Decision 3: PayoutItem Denormalization
 
-**Question**: How should payout reports show commission breakdown by type?
+**Question**: How should payout reports show breakdown of commissions by type?
 
-**Context**: Payout reports need:
+**Context**: Payout reports need to show:
 - Own sales commission total
-- Override commission from Agent sales total
+- Override commission from Agent sales total  
 - Override commission from Agent Leader sales total
 
-**Problem**: PayoutItem just links commissions to payouts. Breakdown requires querying Commission table.
+**The Problem**: Currently PayoutItem just links commissions to payouts. To show breakdown, must look in Commission table.
 
 ---
 
@@ -382,17 +379,17 @@ Admin clicks "Approve" → Email sent ✅
 Simple, fast, understandable.
 ```
 
-**Estimated Query Volume** (provide these to validate):
-- Payouts per agent per month: 1 (standard)
-- Max agents: 200-500
+**Estimated Query Volume** (provide these if you want to validate):
+- Payouts per agent per month: 1 (standard case)
+- Max agents in system: 200-500
 - Monthly report queries: ~500-2000
-- Real-time reporting: Not required, monthly cutoff fine
+- Need real-time reporting: Not required, monthly cutoff is fine
 
 ---
 
 ### ✋ Decision 4: Commission Recalculation Policy
 
-**Question**: When agent moves or changes role, what happens to already-earned commissions?
+**Question**: When an agent moves to a different parent or changes role, what happens to commissions they've already earned?
 
 **Scenario Example**:
 ```
@@ -427,23 +424,25 @@ Example:
 ```
 
 **Pros**:
-- ✅ **Simplest**: No reversal logic
-- ✅ **Clean audit trail**: Earnings immutable once created
-- ✅ **Fast operation**: Just update parent_agent_id
-- ✅ **Easy to explain**: "Past earnings fixed, future follow new manager"
-- ✅ **No corruption risk**: No complex calculation/reversal
-- ✅ **Matches accounting**: Fixed historical records
+- ✅ **Simplest to implement**: No reversal logic needed
+- ✅ **Clean audit trail**: Earnings are immutable once created
+- ✅ **Fast operation**: Just update parent_agent_id, done
+- ✅ **Easy to explain**: "Your past earnings are fixed, future earnings follow your new manager"
+- ✅ **No data corruption risk**: No complex calculation/reversal process
+- ✅ **Matches accounting**: Like fixed historical records
 - ✅ **Easy to debug**: Commission earning never changes
-- ✅ **Good for workflow**: No recalculation at monthly cutoff
+- ✅ **Good for workflow**: No recalculation needed for monthly cutoff
 
 **Cons**:
-- ⚠️ **Possible fairness issue**: Budi gets commission even without actually managing Ali
-  - BUT: Rare in real business
-  - AND: Admin can handle manually (block moves with pending, or manual override)
+- ⚠️ **Possible fairness issue**: If Budi didn't actually manage Ali, he still gets commission
+  - BUT: This is rare in real business (you don't move agents without reason)
+  - AND: Can be handled by admin (block moves with pending, or handle manually)
 
 **Complexity**: 🟢 **LOW**
 - Just update parent_agent_id
-- No reversal, no commission updates, no recalculation
+- No reversal logic
+- No commission updates
+- No recalculation
 - 1-2 lines of code
 
 **Code Implementation**:
@@ -477,16 +476,17 @@ New Sales:
 ```
 
 **Long-term Maintenance**: 🟢 **EXCELLENT**
-- No recalculation logic
-- No reversal edge cases
+- No recalculation logic to maintain
+- No reversal edge cases to handle
 - Clear business logic
+- Easy to understand
 
 **When This Works Well**:
-- Most agent moves legitimate (promotion, team change)
+- Most agent moves are legitimate (promotion, team change)
 - Pending commissions usually paid quickly (weekly/monthly)
-- Admin handles edge cases manually
+- Admin can handle edge cases manually
 
-**Hidden Benefit**: Works well with monthly workflow!
+**Hidden Benefit**: Works well with your workflow!
 ```
 Monthly Cutoff Process:
 
@@ -540,8 +540,8 @@ Works well with monthly cutoff workflow.
 **Decision**: SystemSetting + AgentCommissionRate ✅
 
 **Approach**:
-- Global settings: flexible types (% and fixed RM)
-- Individual agent rates: flexible types
+- Global settings: support flexible types (% and fixed RM)
+- Individual agent rates: support flexible types
 - ReferralCode stays percentage-only
 - Good balance between flexibility and simplicity
 
@@ -552,10 +552,10 @@ Works well with monthly cutoff workflow.
 **Decision**: Simplified Priority ✅ *(updated — ReferralCode rates removed)*
 
 **Priority Order** (confirmed):
-1. `AgentCommissionRate` (highest — per-agent kind override)
-2. `SystemSetting` role-based rate (lowest — global default)
+1. `AgentCommissionRate` (highest priority — per-agent kind override)
+2. `SystemSetting` role-based rate (lowest priority — global default)
 
-**Removed**: `ReferralCode.commission_rate` no longer part of calculation priority. ReferralCode links visits to agents for attribution but carries no rate override. All rate decisions go through AgentCommissionRate or SystemSetting.
+**Removed**: `ReferralCode.commission_rate` is **no longer part of the calculation priority**. ReferralCode continues to link visits to agents for attribution but does not carry a commission rate override. All rate decisions go through AgentCommissionRate or SystemSetting.
 
 **Commission Calculation Flow** (document in CommissionCalculator docblock):
 ```
@@ -587,10 +587,10 @@ getApplicableRate(Agent $agent, string $kind):
 **Decision**: Override only if parent exists with correct role ✅
 
 **Rules**:
-- Agent → no override
-- Agent with parent Agent Leader → 1 override
-- Agent with parent Business Partner → 1 override
-- Agent Leader with parent Business Partner → 2 overrides
+- Agent → no override created
+- Agent with parent Agent Leader → 1 override created
+- Agent with parent Business Partner → 1 override created
+- Agent Leader with parent Business Partner → 2 overrides created
 
 ---
 
@@ -612,7 +612,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 **Decision**: New system only — no backward compat tests required ✅
 
-**Rationale**: No production data. Focus testing on new commission system only.
+**Rationale**: No production data exists yet. Focus testing on new commission system only.
 
 ---
 
@@ -622,16 +622,16 @@ getApplicableRate(Agent $agent, string $kind):
 
 **Aggressive Timeline**: **2 weeks total** ✅
 
-**Target**: Core commission system live ASAP
+**Target**: Get core commission system live ASAP
 - Fast implementation with iterative improvements
-- Release MVP, add features incrementally
+- Release MVP version, add features incrementally
 - All phases compressed to meet timeline
 
 ---
 
 ## FINAL DECISIONS SUMMARY
 
-**All 12 critical decisions locked**:
+**All 12 critical decisions have been locked in**:
 
 1. TrackingService approach: **Option A** ✅
 2. Partner vs Agent hierarchy: **Option D** ✅
@@ -654,7 +654,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 13: Fee Management Storage (CRD April 2026)
 
-**Question**: Store entry/renewal fees as flat columns on `system_settings` or separate `fee_configurations` table?
+**Question**: Store entry/renewal fees as flat columns on `system_settings` or in a separate `fee_configurations` table?
 
 **Decision**: Flat columns on `system_settings`. No join overhead. Admin edits all fees on one settings page. Consistent with existing convention. 8 new columns total.
 
@@ -664,11 +664,11 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 14: Commission Calculation Type Column Naming (CRD April 2026)
 
-**Question**: CRD introduces `commission_type` (percentage vs fixed). Existing plan uses `commission_type` / `commission_category` for hierarchy role. How to resolve naming conflict?
+**Question**: The CRD introduces `commission_type` (percentage vs fixed). The existing plan uses `commission_type` / `commission_category` for hierarchy role (own_sales, override_agent, override_agent_leader). How to resolve the naming conflict without breaking the existing plan?
 
 **Decision**: Introduce `commission_calc_type` (enum: `percentage`, `fixed`) on `system_settings`, `commissions`, and `agent_commission_rates`. Reserve `commission_category` for hierarchy role.
 
-**UX vs Architecture**: CRD intends either/or UX. Architecture stays additive (both rate and fixed_amount stored). When `commission_calc_type = 'percentage'` → set `commission_fixed_amount = 0`. When `commission_calc_type = 'fixed'` → set rate = 0. UI exposes as choice; additive system from Decision 8 / QNA-01 intact.
+**UX vs Architecture note**: CRD intends either/or UX. Architecture stays additive (both rate and fixed_amount stored). When `commission_calc_type = 'percentage'` → set `commission_fixed_amount = 0`. When `commission_calc_type = 'fixed'` → set rate = 0. UI exposes it as a choice; the additive system from Decision 8 / QNA-01 remains intact.
 
 **Status**: LOCKED ✅
 
@@ -676,7 +676,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 15: Role Name Editability Storage (CRD April 2026)
 
-**Question**: Store editable role display names in `system_settings`, Spatie role metadata, or dedicated `role_labels` table?
+**Question**: Store editable role display names in `system_settings`, Spatie role metadata, or a dedicated `role_labels` table?
 
 **Decision**: 3 new string columns on `system_settings` (`role_name_agent`, `role_name_leader`, `role_name_business_partner`). Frontend reads from Inertia shared props via `HandleInertiaRequests::share()`. No hardcoded role label strings in Vue files.
 
@@ -686,9 +686,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 16: Renewal & Expiry Lifecycle Field Location (CRD April 2026)
 
-**Question**: Track `registered_at`, `expires_at`, `renewal_due_at`, `fee_payment_status` on `agents` table or separate `agent_memberships` table?
+**Question**: Track `registered_at`, `expires_at`, `renewal_due_at`, and `fee_payment_status` on the `agents` table or in a separate `agent_memberships` table?
 
-**Decision**: 4 nullable columns on `agents` (`registered_at`, `expires_at`, `renewal_due_at`, `fee_payment_status`). No extra join. If membership history needed later, columns can migrate via migration.
+**Decision**: 4 nullable columns on `agents` (`registered_at`, `expires_at`, `renewal_due_at`, `fee_payment_status`). No extra join. If membership history is needed in future, columns can be moved to a separate table via migration.
 
 **Status**: LOCKED ✅
 
@@ -696,9 +696,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 17: Commission Reversal on Refund (CRD April 2026)
 
-**Question**: How to reverse commission when sale is refunded?
+**Question**: How to reverse a commission when a sale is refunded?
 
-**Decision**: Create new negative-amount Commission row (reversal entry). Original record untouched for audit. Reversal row: `is_reversal = true`, `original_commission_id` FK, `status = 'cancelled'`, `amount = -(original.amount)`. Payout blocked if any commission in batch has `status = 'cancelled'`.
+**Decision**: Create a new negative-amount Commission row (reversal entry). Original record stays untouched for audit. Reversal row: `is_reversal = true`, `original_commission_id` FK, `status = 'cancelled'`, `amount = -(original.amount)`. Payout is blocked if any commission in the batch has `status = 'cancelled'`.
 
 **Status**: LOCKED ✅
 
@@ -706,7 +706,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## UPDATED FINAL DECISIONS SUMMARY
 
-**35 critical decisions locked**:
+**35 critical decisions are now locked in**:
 
 1. TrackingService approach: **Option A** ✅
 2. Partner vs Agent hierarchy: **Option D** ✅
@@ -748,9 +748,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 18: Commission Reversal Time Limit (Gap Resolution)
 
-**Question**: Can admins reverse commission on sale from months/years ago?
+**Question**: Can admins reverse a commission on a sale made months or years ago?
 
-**Decision**: Add `reversal_time_limit` integer column to `system_settings` (days). Default: 60. `RefundService::reverseSale()` checks `sale.created_at >= now()->subDays($setting->reversal_time_limit)` before creating reversal rows. If outside window, throw `ReversalWindowExpiredException` and block with error to admin.
+**Decision**: Add `reversal_time_limit` integer column to `system_settings` (days). Default: 60. `RefundService::reverseSale()` checks `sale.created_at >= now()->subDays($setting->reversal_time_limit)` before creating reversal rows. If outside the window, throw a `ReversalWindowExpiredException` and block the action with an error message to admin.
 
 **Status**: LOCKED ✅
 
@@ -758,9 +758,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 19: Clawback from Already-Paid Commissions (Gap Resolution)
 
-**Question**: If reversal targets commission already in completed payout, how is money recovered?
+**Question**: If a commission reversal targets a commission already included in a completed payout, how is the money recovered from the agent?
 
-**Decision**: Negative-amount reversal Commission row created immediately (Decision 17). On next payout request, `RequestPayoutController` totals all eligible commissions (pending, not in open/closed payout). Any `is_reversal = true` rows for that agent with `status = pending` included as negative amounts. Request total shown to agent is net figure. System blocks payout requests where net total ≤ 0. Automatic — no separate clawback flow.
+**Decision**: The negative-amount reversal Commission row is created immediately (Decision 17). When the agent next submits a payout request, `RequestPayoutController` totals all **eligible commissions** (pending, not in open/closed payout). If any `is_reversal = true` rows exist for that agent with `status = pending`, they are included in the total as negative amounts. The request total displayed to the agent shows the net figure. The system blocks payout requests where the net total is ≤ 0. This is automatic — no separate clawback flow needed.
 
 **Status**: LOCKED ✅
 
@@ -768,13 +768,13 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 20: Role Downgrade Consequences (Gap Resolution)
 
-**Question**: When admin downgrades Leader → Agent (or BP → Leader), what happens?
+**Question**: When admin downgrades an agent from Leader → Agent (or BP → Leader), what happens?
 
 **Decision**:
-- **Subordinate structure preserved**: `parent_agent_id` of existing subordinates NOT changed. Subordinates remain linked to downgraded agent as parent.
-- **Override commissions stop**: After role change, `CommissionGenerator` won't create override commissions (no longer meets role threshold). Past commissions immutable (Decision 4).
-- **Admin popup warning**: When admin saves downgrade AND agent has direct subordinates, show blocking confirmation modal: "⚠ This agent has {N} subordinates. After downgrade they will no longer earn override commissions from those agents. Subordinates must be manually reassigned if desired. Continue?"
-- **Payout uses current role**: Always reads `agent_role` at request time. No recalculation of past commissions.
+- **Subordinate structure preserved**: `parent_agent_id` of existing subordinates is NOT changed. Subordinates remain linked to the downgraded agent as their parent (even though the parent is now a lower role).
+- **Override commissions stop**: After the role change, `CommissionGenerator` will not create override commissions for the downgraded agent (they no longer meet the role threshold). Past commissions are immutable (Decision 4).
+- **Admin popup warning**: When admin saves a role change that is a downgrade AND the agent has direct subordinates, show a blocking confirmation modal: "⚠ This agent has {N} subordinates. After downgrade they will no longer earn override commissions from those agents. Subordinates must be manually reassigned if desired. Continue?"
+- **Payout uses current role**: Payout generation and commission eligibility always reads `agent_role` at request time. No recalculation of past commissions.
 
 **Status**: LOCKED ✅
 
@@ -782,13 +782,13 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 21: Admin Reject After Stripe Payment (Gap Resolution)
 
-**Question**: If admin rejects paid applicant, what happens to payment?
+**Question**: If admin rejects a paid applicant, what happens to their payment?
 
 **Decision**:
-- Rejection of paid agent = **last resort** (admin should request corrected documents first).
-- **No automated refund**. When admin clicks [Reject Application] on fee-paid agent, modal reminder popup: "⚠ This agent has a completed fee payment. Stripe refunds must be processed manually via the Stripe dashboard. Please refund before or after rejecting. [Confirm Rejection]".
-- **Automation is TODO** (Phase 7+): Future enhancement to trigger Stripe refund via Cashier automatically on rejection. List in TODOS.md backlog.
-- Stripe dashboard refund: Admins can initiate refunds against any Checkout Session ID stored in `fee_payments.payment_reference`.
+- Rejection of a paid agent is treated as a **last resort** (admin should request corrected documents first in most cases).
+- There is **no automated refund** in the system. When admin clicks [Reject Application] on a fee-paid agent, a modal reminder popup is displayed: "⚠ This agent has a completed fee payment. Stripe refunds must be processed manually via the Stripe dashboard. Please refund before or after rejecting. [Confirm Rejection]".
+- **Automation is a TODO** (Phase 7+): Future enhancement to trigger Stripe refund via Cashier automatically on rejection. List in TODOS.md backlog.
+- Stripe dashboard refund: Yes, admins can initiate refunds from the Stripe dashboard against any Checkout Session ID stored in `fee_payments.payment_reference`.
 
 **Status**: LOCKED ✅
 
@@ -796,14 +796,14 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 22: Admin-Created Agent Fee Handling (Gap Resolution)
 
-**Question**: When admin creates agent via `/admin/agents/add`, does fee apply? What if admin approves without verifying payment?
+**Question**: When admin directly creates an agent via `/admin/agents/add`, does the fee apply? What if admin approves without verifying payment?
 
 **Decision**:
-- Fee **mandatory** for all agents regardless of creation method — until approved.
-- Admin may upload manual bank transfer receipt on behalf of agent (same as self-registration manual path).
-- Admin clicks **[Approve Agent]** without fee record: approval **skips fee entirely** — no fee_payments row, `fee_payment_status` set to `waived`. Intentional: admin takes explicit responsibility.
-- Admin clicks **[Approve Agent]** with fee paid: normal approval flow, `FeeService::applyEntryFee` called.
-- [Approve Agent] button always visible (not blocked by fee), but UI shows current fee status clearly.
+- Fee is **mandatory** for all agents regardless of how they were created — until the agent is approved.
+- Admin may upload a manual bank transfer receipt on behalf of the agent (same as the self-registration manual path).
+- If admin clicks **[Approve Agent]** without a fee record: the approval **skips fee entirely** — no fee_payments row is created and `fee_payment_status` is set to `waived`. This is intentional: admin takes explicit responsibility.
+- If admin clicks **[Approve Agent]** when fee is already paid: normal approval flow, `FeeService::applyEntryFee` is called.
+- The [Approve Agent] button is always visible (not blocked by fee), but the UI shows the current fee status clearly so admin makes an informed choice.
 
 **Status**: LOCKED ✅
 
@@ -811,9 +811,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 23: Stripe Package (Gap Resolution)
 
-**Question**: Which Stripe integration library?
+**Question**: Which Stripe integration library to use?
 
-**Decision**: **Laravel Cashier** (`laravel/cashier`). Rationale: native Laravel integration, handles Checkout Sessions, webhook verification, charge records with minimal boilerplate. `FeeService` wraps Cashier calls so rest of codebase never imports Cashier directly.
+**Decision**: **Laravel Cashier** (`laravel/cashier`). Rationale: native Laravel integration, handles Checkout Sessions, webhook verification, and charge records with minimal boilerplate. `FeeService` wraps Cashier calls so the rest of the codebase never imports Cashier directly.
 
 **Status**: LOCKED ✅
 
@@ -821,9 +821,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 24: API Response Backward Compatibility (Gap Resolution)
 
-**Question**: Tracking API (`POST /api/agents/track/sale`) currently returns single commission. With multi-level commissions, response changes. How to handle existing integrations?
+**Question**: The tracking API (`POST /api/agents/track/sale`) currently returns a single commission. With multi-level commissions, the response will change. How to handle existing integrations?
 
-**Decision**: No API versioning. Response returns **first (own_sales) commission** for sale agent + agent info — same shape as today. Override commissions internal, not surfaced to external API callers. `AgentTrackingController` returns `$commissions->firstWhere('commission_type', 'own_sales')`. No breaking change for existing integrations.
+**Decision**: No API versioning needed. The response will return **the first (own_sales) commission** for the sale agent + the sale agent's info — same shape as today. Override commissions are internal and not surfaced to external API callers. `AgentTrackingController` returns `$commissions->firstWhere('commission_type', 'own_sales')`. Existing integrations will see no breaking change.
 
 **Status**: LOCKED ✅
 
@@ -833,7 +833,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 **Question**: What precision for fixed commission amounts?
 
-**Decision**: All commission/fee monetary columns use `DECIMAL(10,2)`. SystemSetting rate/fixed columns stored as `DECIMAL(10,2)`. `CommissionCalculator::calculate()` explicitly casts inputs to `float` before arithmetic to prevent string-math bugs.
+**Decision**: All commission/fee monetary columns use `DECIMAL(10,2)`. SystemSetting rate/fixed columns that are human-entered are stored as `DECIMAL(10,2)` as well. `CommissionCalculator::calculate()` explicitly casts inputs to `float` before arithmetic to prevent string-math bugs. No silent string concatenation.
 
 **Status**: LOCKED ✅
 
@@ -841,9 +841,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 26: Cache Invalidation on SystemSetting Update (Gap Resolution)
 
-**Question**: Current plan caches SystemSetting 1 hour. Rate change + sale within cache window = old rate used.
+**Question**: Current plan caches SystemSetting for 1 hour. If a rate is changed and a sale arrives within the cache window, the old rate is used.
 
-**Decision**: **Flush entire `commission_config` cache key on every `SystemSetting` update** — no partial flush, no TTL dependency. `SystemSettingController::update()` calls `CommissionConfig::flush()` as last step before redirect. 1-hour TTL acts as safety net only. Acceptable trade-off: admins change settings rarely.
+**Decision**: **Always flush the entire `commission_config` cache key whenever `SystemSetting` is updated** — no partial flush, no TTL dependency. `SystemSettingController::update()` calls `CommissionConfig::flush()` as the last step before redirect. The 1-hour TTL acts only as a safety net. Acceptable trade-off: admins change settings rarely; the 1-request lag after manual flush is negligible.
 
 **Status**: LOCKED ✅
 
@@ -851,13 +851,13 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 27: Email Verification Retry Limit (Gap Resolution)
 
-**Question**: How many failed verification attempts before lockout? Can users get new code?
+**Question**: How many failed verification attempts before lockout? Can users get a new code?
 
 **Decision**:
 - Max attempts per code: configurable via `email_verification_max_retry` in `system_settings`. Default: **10**.
 - Expiry per code: 15 minutes from generation.
-- After exhausting max attempts, user must **Resend** for fresh code (resets counter).
-- Daily limit: tracked per email per calendar day. If total daily attempts exceed `email_verification_max_retry`, block rest of day: "Too many attempts. Please try again tomorrow."
+- After exhausting max attempts for a given code, the user must request a **Resend** to get a fresh code (resets attempts counter for the new code).
+- Daily limit: tracked per email per calendar day. If total daily attempts (across all codes) exceed `email_verification_max_retry`, block for the rest of the day and show: "Too many attempts. Please try again tomorrow."
 - Resend cooldown: 60 seconds between resend requests (enforced in Vue UI + server-side timestamp check).
 
 **Status**: LOCKED ✅
@@ -866,9 +866,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 28: Stripe Credentials (Configuration Decision 2026-05-04)
 
-**Question**: Is Stripe account set up?
+**Question**: Is the Stripe account set up?
 
-**Decision**: Stripe account exists. Keys not committed to source control. Add `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` to `.env` before Phase 7. Reference `.env.example` for required variable names. Keys provided separately by project owner.
+**Decision**: Stripe account exists. Keys are not committed to source control. Add `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` to `.env` before starting Phase 7 development. Reference `.env.example` for the required variable names. Keys are provided separately by the project owner.
 
 **Status**: LOCKED ✅
 
@@ -876,9 +876,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 29: Terms & Conditions Page (Configuration Decision 2026-05-04)
 
-**Question**: Where does T&C link in registration Step 5 point? Who writes content?
+**Question**: Where does the T&C link in registration Step 5 point? Who writes the content?
 
-**Decision**: Static public page at `/terms` (`Terms.vue`). No auth required. Placeholder content during development. Real legal text copied in before go-live. Page must exist so T&C checkbox in registration Step 5 can link to it. Route added outside auth middleware group in `routes/web.php`.
+**Decision**: Static public page at `/terms` (`Terms.vue`). No authentication required. Placeholder content is inserted during development. Real legal text is copied into the file before go-live. The page must exist so the T&C checkbox in registration Step 5 can link to it. Route is added outside the auth middleware group in `routes/web.php`.
 
 **Status**: LOCKED ✅
 
@@ -886,9 +886,9 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 30: System Bank Account for Manual Transfers (Configuration Decision 2026-05-04)
 
-**Question**: Which bank account details does registration wizard display for manual bank transfer?
+**Question**: Which bank account details does the registration wizard display for manual bank transfer payment?
 
-**Decision**: Display bank details from `Agent::find(1)->bankAccount`. Agent #1 = seeded default Business Partner (system owner). Admin must ensure Agent #1's bank account populated before enabling manual transfer flow in production.
+**Decision**: Display bank details from `Agent::find(1)->bankAccount`. Agent #1 is the seeded default Business Partner (system owner). Admin must ensure Agent #1's bank account is populated before enabling manual transfer flow in production.
 
 **Status**: LOCKED ✅
 
@@ -896,7 +896,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 ## Decision 31: Commission Rate Defaults (Configuration Decision 2026-05-04)
 
-**Question**: What are default commission rates seeded into SystemSettings?
+**Question**: What are the default commission rates seeded into SystemSettings?
 
 **Decision**:
 - Agent own-sales: **10%**
@@ -904,7 +904,7 @@ getApplicableRate(Agent $agent, string $kind):
 - Business Partner override on agent sales: **2%**
 - Business Partner override on Agent Leader sales: **3%**
 
-All four seeded into SystemSettings as percentage columns. `AgentCommissionRate` rows can override per-agent-per-kind without changing global defaults.
+All four values seeded into SystemSettings as percentage columns. `AgentCommissionRate` rows can override these per-agent-per-kind without changing the global defaults.
 
 **Status**: LOCKED ✅
 
@@ -912,14 +912,14 @@ All four seeded into SystemSettings as percentage columns. `AgentCommissionRate`
 
 ## Decision 32: Fee Defaults (Configuration Decision 2026-05-04)
 
-**Question**: What are default entry and renewal fees seeded into SystemSettings?
+**Question**: What are the default entry and renewal fees seeded into SystemSettings?
 
 **Decision**:
 - Business Partner: entry **RM 3,000** / renewal **RM 1,000**
 - Agent Leader: entry **RM 100** / renewal **RM 100**
 - Agent: entry **RM 100** / renewal **RM 100**
 
-All six seeded as `DECIMAL(10,2)` columns in `system_settings`.
+All six values seeded as `DECIMAL(10,2)` columns in `system_settings`.
 
 **Status**: LOCKED ✅
 
@@ -927,9 +927,9 @@ All six seeded as `DECIMAL(10,2)` columns in `system_settings`.
 
 ## Decision 33: Membership Duration (Configuration Decision 2026-05-04)
 
-**Question**: How long is membership valid after approval? Hardcoded or configurable?
+**Question**: How long is a membership valid after approval? Is this hardcoded or configurable?
 
-**Decision**: **365 days**, stored as `membership_duration_days` integer column in `system_settings` with default 365. `FeeService::applyEntryFee()` reads this value instead of hardcoding. Admin can adjust on System Settings page. Migration #7 (Phase 1) adds column.
+**Decision**: **365 days**, stored as `membership_duration_days` integer column in `system_settings` with default 365. `FeeService::applyEntryFee()` reads this value instead of hardcoding 365. Admin can adjust on System Settings page. Migration #7 (Phase 1) adds the column.
 
 **Status**: LOCKED ✅
 
@@ -937,9 +937,9 @@ All six seeded as `DECIMAL(10,2)` columns in `system_settings`.
 
 ## Decision 34: Default Business Partner Agent (Configuration Decision 2026-05-04)
 
-**Question**: Which agent is system owner / default upline?
+**Question**: Which agent is the system owner / default upline?
 
-**Decision**: **Agent #1**, seeded by `BusinessPartnerSeeder` with `agent_role='business_partner'` and `is_default=true`. Used as: (a) default upline fallback when no referral code supplied during registration; (b) target for `NotificationService::notifyAdmin()`; (c) bank account source for manual transfer display. `is_default=true` flag added to agents table in Phase 1 migration #1.
+**Decision**: **Agent #1**, seeded by `BusinessPartnerSeeder` with `agent_role='business_partner'` and `is_default=true`. Used as: (a) default upline fallback when no referral code is supplied during registration; (b) target for `NotificationService::notifyAdmin()`; (c) bank account source for manual transfer display. `is_default=true` flag added to agents table in Phase 1 migration #1.
 
 **Status**: LOCKED ✅
 
@@ -947,8 +947,8 @@ All six seeded as `DECIMAL(10,2)` columns in `system_settings`.
 
 ## Decision 35: Referral Code Prefix (Configuration Decision 2026-05-04)
 
-**Question**: What prefix for auto-generated referral codes? Current system generates `REF-XXXXXXXX`.
+**Question**: What prefix is used for auto-generated referral codes? The current system generates `REF-XXXXXXXX`.
 
-**Decision**: Change default prefix to **`PENURWILL-`**. Stored as `referral_code_prefix` string column (max 50 chars) in `system_settings`, default `'PENURWILL-'`. `ReferralCode` generation reads this setting. Migration #7 (Phase 1) adds column. Admin can change prefix on System Settings page for future codes (existing codes not renamed).
+**Decision**: Change default prefix to **`PENURWILL-`**. Stored as `referral_code_prefix` string column (max 50 chars) in `system_settings`, default `'PENURWILL-'`. `ReferralCode` generation reads this setting. Migration #7 (Phase 1) adds the column. Admin can change the prefix on the System Settings page for future codes (existing codes are not renamed).
 
 **Status**: LOCKED ✅
