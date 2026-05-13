@@ -46,6 +46,7 @@ class FeeService
                 'amount' => $amount,
                 'payment_method' => $method,
                 'payment_reference' => $reference,
+                'status' => FeePayment::STATUS_CONFIRMED,
                 'paid_at' => now(),
                 'recorded_by' => $recordedBy->id,
             ]);
@@ -112,6 +113,7 @@ class FeeService
                 'amount' => $amount,
                 'payment_method' => $method,
                 'payment_reference' => $reference,
+                'status' => FeePayment::STATUS_CONFIRMED,
                 'paid_at' => now(),
                 'recorded_by' => $recordedBy->id,
             ]);
@@ -125,6 +127,97 @@ class FeeService
 
             return $payment;
         });
+    }
+
+    /**
+     * Confirm a pending payment.
+     */
+    public function confirmPayment(FeePayment $payment, User $recordedBy): void
+    {
+        if ($payment->status === FeePayment::STATUS_CONFIRMED) {
+            return;
+        }
+
+        DB::transaction(function () use ($payment, $recordedBy) {
+            $agent = $payment->agent;
+            $role = $payment->role ?: ($agent->agent_role ?? Agent::ROLE_AGENT);
+            $duration = $this->getMembershipDurationDays();
+            $reminderDays = $this->getRenewalReminderDays();
+
+            if ($payment->fee_type === FeePayment::TYPE_ENTRY) {
+                $registeredAt = now()->toDateString();
+                $expiresAt = now()->addDays($duration)->toDateString();
+                $renewalDueAt = now()->addDays(max(1, $duration - $reminderDays))->toDateString();
+
+                $agent->update([
+                    'registered_at' => $registeredAt,
+                    'expires_at' => $expiresAt,
+                    'renewal_due_at' => $renewalDueAt,
+                    'fee_payment_status' => Agent::FEE_STATUS_PAID,
+                ]);
+            } else {
+                $base = $agent->expires_at && $agent->expires_at->isFuture()
+                    ? $agent->expires_at->copy()
+                    : now();
+
+                $expiresAt = $base->copy()->addDays($duration)->toDateString();
+                $renewalDueAt = $base->copy()->addDays(max(1, $duration - $reminderDays))->toDateString();
+
+                $agent->update([
+                    'expires_at' => $expiresAt,
+                    'renewal_due_at' => $renewalDueAt,
+                    'fee_payment_status' => Agent::FEE_STATUS_PAID,
+                    'status' => 'active',
+                ]);
+            }
+
+            $payment->update([
+                'status' => FeePayment::STATUS_CONFIRMED,
+                'paid_at' => now(),
+                'recorded_by' => $recordedBy->id,
+            ]);
+
+            ActivityLog::logCustom(
+                $recordedBy,
+                'fee_payment_confirmed',
+                "Fee payment #{$payment->id} confirmed for agent #{$agent->id}",
+                $payment,
+            );
+        });
+
+        // Notify agent
+        try {
+            app(NotificationService::class)->notify(
+                $payment->agent,
+                AgentNotification::TYPE_FEE_PAYMENT,
+                'Fee Payment Confirmed',
+                "Your payment of {$payment->amount} has been confirmed.",
+                FeePayment::class,
+                $payment->id,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FeeService: payment confirmation notification failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Void a payment.
+     */
+    public function voidPayment(FeePayment $payment, User $recordedBy): void
+    {
+        $payment->update([
+            'status' => FeePayment::STATUS_VOID,
+        ]);
+
+        ActivityLog::logCustom(
+            $recordedBy,
+            'fee_payment_voided',
+            "Fee payment #{$payment->id} voided for agent #{$payment->agent_id}",
+            $payment,
+        );
     }
 
     public function getFeeAmountFor(string $agentRole, string $feeType): float

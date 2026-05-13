@@ -16,7 +16,7 @@
     <!-- Filters -->
     <Card class="bg-white shadow-sm border border-gray-200">
       <CardContent class="pt-6">
-        <div class="grid gap-4 md:grid-cols-4">
+        <div class="grid gap-4 md:grid-cols-5">
           <FormField label="Search Agent">
             <Input v-model="filters.search" @input="applyFilters" type="text" placeholder="Name or ID" />
           </FormField>
@@ -49,6 +49,18 @@
                 { value: 'bank_transfer', label: 'Bank Transfer' },
                 { value: 'manual', label: 'Manual' },
                 { value: 'waived', label: 'Waived' },
+              ]"
+            />
+          </FormField>
+          <FormField label="Status">
+            <Select
+              v-model="filters.status"
+              @change="applyFilters"
+              :options="[
+                { value: '', label: 'All' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'confirmed', label: 'Confirmed' },
+                { value: 'void', label: 'Void' },
               ]"
             />
           </FormField>
@@ -92,12 +104,14 @@
                 <th class="px-4 py-3 text-right font-medium text-gray-700">Amount</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-700">Method</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-700">Reference</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-700">Status</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-700">Recorded By</th>
+                <th class="px-4 py-3 text-right font-medium text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
               <tr v-if="payments.length === 0">
-                <td colspan="8" class="px-4 py-8 text-center text-gray-500">No fee payments recorded.</td>
+                <td colspan="10" class="px-4 py-8 text-center text-gray-500">No fee payments recorded.</td>
               </tr>
               <tr v-for="p in payments" :key="p.id" class="hover:bg-stone-50">
                 <td class="px-4 py-3 whitespace-nowrap">{{ formatDate(p.paid_at || p.created_at) }}</td>
@@ -118,7 +132,15 @@
                   <Badge :variant="methodVariant(p.payment_method)">{{ p.payment_method }}</Badge>
                 </td>
                 <td class="px-4 py-3 text-xs text-gray-500 font-mono">{{ p.payment_reference || '—' }}</td>
+                <td class="px-4 py-3">
+                  <Badge :variant="statusVariant(p.status)">{{ p.status }}</Badge>
+                </td>
                 <td class="px-4 py-3">{{ p.recorded_by?.name || '—' }}</td>
+                <td class="px-4 py-3 text-right">
+                  <Link :href="`/admin/fee-payments/${p.id}`" class="text-gold hover:text-amber-700 font-medium">
+                    View
+                  </Link>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -257,6 +279,7 @@ const filters = reactive({
   fee_type: props.filters?.fee_type || '',
   role: props.filters?.role || '',
   payment_method: props.filters?.payment_method || '',
+  status: props.filters?.status || '',
 })
 
 let filterTimer = null
@@ -281,6 +304,15 @@ const methodVariant = (m) => {
     case 'stripe': return 'success'
     case 'bank_transfer': return 'default'
     case 'waived': return 'warning'
+    default: return 'secondary'
+  }
+}
+
+const statusVariant = (s) => {
+  switch (s) {
+    case 'confirmed': return 'success'
+    case 'pending': return 'warning'
+    case 'void': return 'danger'
     default: return 'secondary'
   }
 }

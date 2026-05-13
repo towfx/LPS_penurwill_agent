@@ -16,6 +16,10 @@ class FeePayment extends Model
     public const METHOD_BANK_TRANSFER = 'bank_transfer';
     public const METHOD_MANUAL = 'manual';
     public const METHOD_WAIVED = 'waived';
+    
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_VOID = 'void';
 
     protected $fillable = [
         'agent_id',
@@ -24,6 +28,7 @@ class FeePayment extends Model
         'amount',
         'payment_method',
         'payment_reference',
+        'status',
         'receipt_file',
         'paid_at',
         'recorded_by',
@@ -36,6 +41,7 @@ class FeePayment extends Model
             'paid_at' => 'datetime',
             'fee_type' => 'string',
             'payment_method' => 'string',
+            'status' => 'string',
         ];
     }
 

@@ -32,6 +32,9 @@ class FeePaymentController extends Controller
         if ($request->filled('payment_method')) {
             $query->where('payment_method', $request->payment_method);
         }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('agent', fn ($q) => $q->where('name', 'like', "%{$search}%")
@@ -62,6 +65,7 @@ class FeePaymentController extends Controller
                 'fee_type'       => $request->get('fee_type'),
                 'role'           => $request->get('role'),
                 'payment_method' => $request->get('payment_method'),
+                'status'         => $request->get('status'),
                 'search'         => $request->get('search'),
             ],
         ]);
@@ -95,5 +99,37 @@ class FeePaymentController extends Controller
         ActivityLog::logCreate($admin, $payment, $payment->toArray());
 
         return back()->with('success', "Fee payment recorded for agent #{$agent->id}.");
+    }
+
+    /**
+     * View fee payment details.
+     */
+    public function show(FeePayment $payment)
+    {
+        $payment->load(['agent', 'recordedBy']);
+
+        return Inertia::render('Admin/FeePaymentDetail', [
+            'payment' => $payment,
+        ]);
+    }
+
+    /**
+     * Confirm a pending fee payment.
+     */
+    public function confirm(FeePayment $payment, FeeService $feeService)
+    {
+        $feeService->confirmPayment($payment, Auth::user());
+
+        return back()->with('success', "Fee payment #{$payment->id} confirmed.");
+    }
+
+    /**
+     * Void a fee payment.
+     */
+    public function void(FeePayment $payment, FeeService $feeService)
+    {
+        $feeService->voidPayment($payment, Auth::user());
+
+        return back()->with('success', "Fee payment #{$payment->id} voided.");
     }
 }
