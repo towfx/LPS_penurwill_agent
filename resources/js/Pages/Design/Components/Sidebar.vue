@@ -72,6 +72,8 @@ import {
   Building2,
   Network,
   Receipt,
+  Briefcase,
+  Award,
 } from 'lucide-vue-next'
 import Badge from './Badge.vue'
 import { computed } from 'vue'
@@ -111,8 +113,10 @@ defineEmits(['toggle'])
 
 const defaultAdminMenus = [
   { icon: Home, label: 'Dashboard', href: '/admin/dashboard' },
+  { icon: Briefcase, label: 'Business Partner', href: '/admin/agents/list?type=business_partner' },
+  { icon: Award, label: 'Leader', href: '/admin/agents/list?type=agent_leader' },
   { icon: UsersIcon, label: 'Agents', href: '/admin/agents/list' },
-  { icon: Network, label: 'Hierarchy', href: '/admin/agents/list?role=business_partner' },
+  { icon: Network, label: 'Hierarchy', href: '/admin/agent/hierarchy' },
   { icon: DollarSign, label: 'Payouts', href: '/admin/payouts' },
   { icon: Receipt, label: 'Fee Payments', href: '/admin/fee-payments' },
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },

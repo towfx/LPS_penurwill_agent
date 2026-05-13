@@ -82,6 +82,7 @@ Route::middleware([
         Route::get('/agents/{id}/file/{field}', [AgentController::class, 'downloadFile'])->name('agents.file.download');
         Route::get('/agents/agents.xls', [AgentController::class, 'export'])->name('agents.export');
         Route::get('/agents/parents', [AgentController::class, 'parents'])->name('agents.parents');
+        Route::get('/agent/hierarchy', [AgentController::class, 'hierarchy'])->name('agents.hierarchy');
 
         // Sales — refund (commission reversal)
         Route::post('/sales/{sale}/refund', [App\Http\Controllers\Admin\SaleController::class, 'markAsRefunded'])
@@ -90,6 +91,9 @@ Route::middleware([
         // Fee payments
         Route::get('/fee-payments', [App\Http\Controllers\Admin\FeePaymentController::class, 'index'])->name('fee-payments.index');
         Route::post('/fee-payments', [App\Http\Controllers\Admin\FeePaymentController::class, 'store'])->name('fee-payments.store');
+        Route::get('/fee-payments/{payment}', [App\Http\Controllers\Admin\FeePaymentController::class, 'show'])->name('fee-payments.show');
+        Route::post('/fee-payments/{payment}/confirm', [App\Http\Controllers\Admin\FeePaymentController::class, 'confirm'])->name('fee-payments.confirm');
+        Route::post('/fee-payments/{payment}/void', [App\Http\Controllers\Admin\FeePaymentController::class, 'void'])->name('fee-payments.void');
 
         // Commissions
         Route::get('/commissions/list', [App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('commissions.list');
@@ -167,6 +171,15 @@ Route::middleware([
         // Suspension appeal + re-approval
         Route::post('/appeal-suspension', [App\Http\Controllers\Agent\AppealController::class, 'store'])->name('appeal-suspension');
         Route::post('/request-approval', [AgentController::class, 'requestApproval'])->name('request-approval');
+    });
+
+    // Partner routes (require partner role)
+    Route::middleware(['partner'])->prefix('partner')->name('partner.')->group(function () {
+        Route::get('/', function () {
+            return redirect()->route('partner.dashboard');
+        })->name('index');
+
+        Route::get('/dashboard', [\App\Http\Controllers\Partner\DashboardController::class, 'index'])->name('dashboard');
     });
 
 });
