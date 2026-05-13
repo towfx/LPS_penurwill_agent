@@ -23,6 +23,7 @@ class AgentController extends Controller
                 $q->where('individual_name', 'like', "%{$search}%")
                     ->orWhere('company_name', 'like', "%{$search}%")
                     ->orWhere('company_representative_name', 'like', "%{$search}%")
+                    ->orWhere('company_representative_id_number', 'like', "%{$search}%")
                     ->orWhere('individual_phone', 'like', "%{$search}%")
                     ->orWhere('individual_email', 'like', "%{$search}%")
                     ->orWhere('company_phone', 'like', "%{$search}%")
@@ -110,6 +111,7 @@ class AgentController extends Controller
             'individual_email' => $agent->individual_email,
             'individual_address' => $agent->individual_address,
             'company_representative_name' => $agent->company_representative_name,
+            'company_representative_id_number' => $agent->company_representative_id_number,
             'company_name' => $agent->company_name,
             'company_registration_number' => $agent->company_registration_number,
             'company_address' => $agent->company_address,

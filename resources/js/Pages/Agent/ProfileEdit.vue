@@ -34,6 +34,7 @@ const form = ref({
   individual_id_number: props.agent?.individual_id_number || '',
   individual_id_file: null,
   company_representative_name: props.agent?.company_representative_name || '',
+  company_representative_id_number: props.agent?.company_representative_id_number || '',
   company_name: props.agent?.company_name || '',
   company_registration_number: props.agent?.company_registration_number || '',
   company_address: props.agent?.company_address || '',
@@ -76,7 +77,7 @@ const canProceedToNext = computed(() => {
     if (form.value.profile_type === 'individual') {
       return form.value.individual_name && form.value.individual_phone && form.value.individual_address
     } else {
-      return form.value.company_representative_name && form.value.company_name &&
+      return form.value.company_representative_name && form.value.company_representative_id_number && form.value.company_name &&
              form.value.company_registration_number && form.value.company_address && form.value.company_phone
     }
   }
@@ -285,6 +286,9 @@ const saveProfile = async () => {
           </FormField>
           <FormField label="Representative" :error="errors.company_representative_name" required>
             <Input v-model="form.company_representative_name" type="text" :invalid="!!errors.company_representative_name" />
+          </FormField>
+          <FormField label="Representative ID Number" :error="errors.company_representative_id_number" required>
+            <Input v-model="form.company_representative_id_number" type="text" placeholder="IC / Passport number" :invalid="!!errors.company_representative_id_number" />
           </FormField>
           <FormField label="Registration Number" :error="errors.company_registration_number" required>
             <Input v-model="form.company_registration_number" type="text" :invalid="!!errors.company_registration_number" />

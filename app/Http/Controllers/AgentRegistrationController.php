@@ -68,6 +68,7 @@ class AgentRegistrationController extends Controller
             'individual_id_number' => 'required_if:profile_type,individual|string|max:255',
             'individual_id_file' => 'required_if:profile_type,individual|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'company_representative_name' => 'required_if:profile_type,company|string|max:255',
+            'company_representative_id_number' => 'required_if:profile_type,company|string|max:255',
             'company_name' => 'required_if:profile_type,company|string|max:255',
             'company_registration_number' => 'required_if:profile_type,company|string|max:255',
             'company_address' => 'required_if:profile_type,company|string',
@@ -118,6 +119,7 @@ class AgentRegistrationController extends Controller
             } else {
                 $agentData += [
                     'company_representative_name' => $request->company_representative_name,
+                    'company_representative_id_number' => $request->company_representative_id_number,
                     'company_name' => $request->company_name,
                     'company_registration_number' => $request->company_registration_number,
                     'company_address' => $request->company_address,
