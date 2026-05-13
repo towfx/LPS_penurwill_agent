@@ -35,6 +35,7 @@
         <div v-else-if="isCompany" class="space-y-3">
           <div><span class="font-medium text-gray-700">Company Name:</span> {{ agent.company_name }}</div>
           <div><span class="font-medium text-gray-700">Representative:</span> {{ agent.company_representative_name }}</div>
+          <div><span class="font-medium text-gray-700">Representative ID Number:</span> {{ agent.company_representative_id_number }}</div>
           <div><span class="font-medium text-gray-700">Registration Number:</span> {{ agent.company_registration_number }}</div>
           <div><span class="font-medium text-gray-700">Company Address:</span> {{ agent.company_address }}</div>
           <div><span class="font-medium text-gray-700">Company Phone:</span> {{ agent.company_phone }}</div>
@@ -112,6 +113,65 @@
             </div>
             <p class="text-xs text-gray-400 mt-1">To reject, use the Reject button above.</p>
           </div>
+        </div>
+      </div>
+
+      <!-- Fee Payment Information -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-forest-dark">Fee Payment Information</h3>
+          <Button
+            v-if="agent.latest_fee_payment"
+            variant="outline"
+            size="sm"
+            @click="router.visit(`/admin/fee-payments/${agent.latest_fee_payment.id}`)"
+            className="flex items-center gap-2"
+          >
+            <Eye class="w-4 h-4" />
+            View Detail
+          </Button>
+        </div>
+        
+        <div v-if="agent.latest_fee_payment" class="space-y-4">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <span class="font-medium text-gray-700">Fee Type:</span>
+              <span class="ml-2 capitalize">{{ agent.latest_fee_payment.fee_type }}</span>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Amount:</span>
+              <span class="ml-2">{{ agent.latest_fee_payment.amount }}</span>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Payment Method:</span>
+              <span class="ml-2 capitalize">{{ agent.latest_fee_payment.payment_method.replace('_', ' ') }}</span>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Paid At:</span>
+              <span class="ml-2">{{ agent.latest_fee_payment.paid_at || '—' }}</span>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Reference:</span>
+              <span class="ml-2 font-mono text-xs">{{ agent.latest_fee_payment.payment_reference || '—' }}</span>
+            </div>
+            <div>
+              <span class="font-medium text-gray-700">Fee Payment Status:</span>
+              <span :class="getFeeStatusPillClass(agent.fee_payment_status)" class="ml-2">
+                {{ agent.fee_payment_status || 'pending' }}
+              </span>
+            </div>
+          </div>
+          
+          <div v-if="agent.latest_fee_payment.receipt_file" class="mt-2">
+            <span class="font-medium text-gray-700">Receipt:</span>
+            <a :href="getFileUrl('receipt_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
+              View Receipt
+            </a>
+          </div>
+        </div>
+        <div v-else class="flex items-center gap-2 text-gray-500 italic">
+          <AlertTriangle class="w-4 h-4" />
+          <span>No payment received</span>
         </div>
       </div>
 
@@ -274,7 +334,7 @@ import Modal from '../../Components/Modal.vue'
 import FormField from '../Design/Components/FormField.vue'
 import Textarea from '../Design/Components/Textarea.vue'
 import Badge from '../Design/Components/Badge.vue'
-import { AlertTriangle } from 'lucide-vue-next'
+import { AlertTriangle, Eye } from 'lucide-vue-next'
 
 defineOptions({ layout: AdminLayout })
 

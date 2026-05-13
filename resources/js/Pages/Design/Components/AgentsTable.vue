@@ -2,9 +2,10 @@
   <Card>
     <CardHeader>
       <div class="flex items-center justify-between">
-        <CardTitle>Agents</CardTitle>
+        <CardTitle>{{ tableTitle }}</CardTitle>
         <div class="flex items-center space-x-2">
           <select
+            v-if="!hasTypeFilter"
             v-model="roleFilter"
             @change="resetAndFetch"
             class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent text-sm"
@@ -219,15 +220,23 @@ const props = defineProps({
 })
 
 // Reactive data
+const page = usePage()
 const agents = ref(props.initialAgents || [])
 const pagination = ref(props.initialPagination || null)
 const searchQuery = ref('')
-const roleFilter = ref(new URLSearchParams(window.location.search).get('role') || '')
+const urlParams = new URLSearchParams(window.location.search)
+const hasTypeFilter = computed(() => !!(urlParams.get('type') || urlParams.get('role')))
+const tableTitle = computed(() => {
+  const typeParam = urlParams.get('type') || urlParams.get('role')
+  if (typeParam === 'business_partner') return 'Business Partners'
+  if (typeParam === 'agent_leader') return 'Leaders'
+  if (typeParam === 'agent') return 'Agents'
+  return 'Agents'
+})
+const roleFilter = ref(urlParams.get('type') || urlParams.get('role') || '')
 const sortByField = ref('id')
 const sortOrder = ref('desc')
 const isLoading = ref(false)
-
-const page = usePage()
 const roleNames = computed(() => ({
   agent: page.props.systemSettings?.role_name_agent || 'Agent',
   agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',

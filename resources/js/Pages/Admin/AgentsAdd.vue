@@ -20,13 +20,45 @@
 
       <CardContent>
         <form @submit.prevent="submitForm" class="space-y-6">
-          <!-- Agent Type Selection -->
-          <FormField label="Agent Type" :error="errors.profile_type" required>
-            <div class="flex space-x-4">
-              <Radio v-model="form.profile_type" value="individual" name="profile_type" label="Individual" />
-              <Radio v-model="form.profile_type" value="company" name="profile_type" label="Company" />
+          <!-- Hierarchy -->
+          <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Hierarchy</h3>
+            <div class="grid gap-4 md:grid-cols-2">
+              <FormField label="Agent Role" :error="errors.agent_role" required>
+                <Select
+                  v-model="form.agent_role"
+                  :options="[
+                    { value: 'agent', label: roleNames.agent },
+                    { value: 'agent_leader', label: roleNames.leader },
+                    { value: 'business_partner', label: roleNames.business_partner },
+                  ]"
+                  :invalid="!!errors.agent_role"
+                />
+              </FormField>
+
+              <FormField label="Parent Agent" :error="errors.parent_agent_id">
+                <Select
+                  v-model="form.parent_agent_id"
+                  :options="parentOptions"
+                  placeholder="Select a parent agent..."
+                  :invalid="!!errors.parent_agent_id"
+                />
+                <p class="text-sm text-gray-500 mt-1">
+                  Filter shows eligible parent agents for {{ form.agent_role.replace('_', ' ') }}.
+                </p>
+              </FormField>
             </div>
-          </FormField>
+          </div>
+
+          <!-- Agent Type Selection -->
+          <div class="border-t pt-6">
+            <FormField label="Agent Type" :error="errors.profile_type" required>
+              <div class="flex space-x-4">
+                <Radio v-model="form.profile_type" value="individual" name="profile_type" label="Individual" />
+                <Radio v-model="form.profile_type" value="company" name="profile_type" label="Company" />
+              </div>
+            </FormField>
+          </div>
 
           <!-- Individual Fields -->
           <div v-if="isIndividual" class="space-y-4">
@@ -62,6 +94,10 @@
           <div v-if="isCompany" class="space-y-4">
             <FormField label="Company Representative Name" :error="errors.company_representative_name" required>
               <Input v-model="form.company_representative_name" type="text" placeholder="Enter representative name" :invalid="!!errors.company_representative_name" />
+            </FormField>
+
+            <FormField label="Company Representative ID Number" :error="errors.company_representative_id_number" required>
+              <Input v-model="form.company_representative_id_number" type="text" placeholder="Enter representative ID number" :invalid="!!errors.company_representative_id_number" />
             </FormField>
 
             <FormField label="Company Name" :error="errors.company_name" required>
@@ -143,43 +179,6 @@
             />
           </FormField>
 
-          <!-- Hierarchy -->
-          <div class="border-t pt-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Hierarchy</h3>
-            <div class="grid gap-4 md:grid-cols-2">
-              <FormField label="Agent Role" :error="errors.agent_role" required>
-                <Select
-                  v-model="form.agent_role"
-                  :options="[
-                    { value: 'agent', label: roleNames.agent },
-                    { value: 'agent_leader', label: roleNames.leader },
-                    { value: 'business_partner', label: roleNames.business_partner },
-                  ]"
-                  :invalid="!!errors.agent_role"
-                />
-              </FormField>
-
-              <FormField label="Parent Agent" :error="errors.parent_agent_id">
-                <Input
-                  v-model="parentSearchQuery"
-                  @input="searchParents"
-                  type="text"
-                  list="parent-options"
-                  placeholder="Search by name or ID..."
-                />
-                <datalist id="parent-options">
-                  <option
-                    v-for="p in parentOptions"
-                    :key="p.id"
-                    :value="`${p.name} (#${p.id} — ${p.agent_role})`"
-                  />
-                </datalist>
-                <p class="text-sm text-gray-500 mt-1">
-                  Filter shows agents with role ≥ {{ minParentRoleLabel }}.
-                </p>
-              </FormField>
-            </div>
-          </div>
 
           <!-- Membership lifecycle -->
           <div class="border-t pt-6">
@@ -407,6 +406,7 @@ const form = reactive({
   individual_id_number: '',
   individual_id_file: null,
   company_representative_name: '',
+  company_representative_id_number: '',
   company_name: '',
   company_registration_number: '',
   company_address: '',
@@ -450,49 +450,34 @@ const handleCompanyRepIdFileChange = (event) => {
   form.company_representative_id_file = event.target.files[0]
 }
 
-// Parent agent search (filtered to roles >= child role per validateHierarchyChange)
-const parentSearchQuery = ref('')
+// Parent agent search
 const parentOptions = ref([])
-let parentSearchTimer = null
 
-const minParentRoleLabel = computed(() => {
-  if (form.agent_role === 'business_partner') return roleNames.value.business_partner
-  if (form.agent_role === 'agent_leader') return roleNames.value.leader
-  return roleNames.value.agent
-})
-
-const searchParents = () => {
-  clearTimeout(parentSearchTimer)
-  parentSearchTimer = setTimeout(async () => {
-    try {
-      const params = new URLSearchParams({
-        search: parentSearchQuery.value,
-        child_role: form.agent_role,
-      })
-      const res = await fetch(`/admin/agents/parents?${params}`, {
-        headers: { Accept: 'application/json' },
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      parentOptions.value = data.parents || data.data || data || []
-    } catch (e) {
-      parentOptions.value = []
-    }
-  }, 250)
+const fetchParents = async () => {
+  try {
+    const params = new URLSearchParams({
+      child_role: form.agent_role,
+    })
+    const res = await fetch(`/admin/agents/parents?${params}`, {
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    const agents = data.parents || data.data || data || []
+    parentOptions.value = agents.map(p => ({
+      value: p.id,
+      label: `${p.name} (#${p.id} — ${p.agent_role.replace('_', ' ')})`
+    }))
+  } catch (e) {
+    parentOptions.value = []
+  }
 }
 
-watch(parentSearchQuery, (val) => {
-  // Extract id from "Name (#123 — role)" format if user picks from datalist
-  const match = String(val).match(/#(\d+)/)
-  if (match) {
-    form.parent_agent_id = parseInt(match[1], 10)
-  } else if (!val) {
-    form.parent_agent_id = null
-  }
-})
-
+// Fetch initial parents and on role change
+fetchParents()
 watch(() => form.agent_role, () => {
-  parentOptions.value = []
+  form.parent_agent_id = null
+  fetchParents()
 })
 
 const submitForm = async () => {

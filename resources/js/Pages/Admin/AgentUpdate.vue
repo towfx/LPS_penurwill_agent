@@ -62,6 +62,9 @@
             <FormField label="Representative" :error="errors.company_representative_name">
               <Input v-model="form.company_representative_name" type="text" :invalid="!!errors.company_representative_name" />
             </FormField>
+            <FormField label="Representative ID Number" :error="errors.company_representative_id_number">
+              <Input v-model="form.company_representative_id_number" type="text" :invalid="!!errors.company_representative_id_number" />
+            </FormField>
             <FormField label="Registration Number" :error="errors.company_registration_number">
               <Input v-model="form.company_registration_number" type="text" :invalid="!!errors.company_registration_number" />
             </FormField>
@@ -149,21 +152,15 @@
             </FormField>
 
             <FormField label="Parent Agent" :error="errors.parent_agent_id">
-              <Input
-                v-model="parentSearchQuery"
-                @input="searchParents"
-                type="text"
-                list="parent-options"
-                placeholder="Search by name or ID..."
+              <Select
+                v-model="form.parent_agent_id"
+                :options="parentOptions"
+                placeholder="Select a parent agent..."
+                :invalid="!!errors.parent_agent_id"
               />
-              <datalist id="parent-options">
-                <option
-                  v-for="p in parentOptions"
-                  :key="p.id"
-                  :value="`${p.name} (#${p.id} — ${p.agent_role})`"
-                />
-              </datalist>
-              <p class="text-sm text-gray-500 mt-1">Filter shows agents with role ≥ child role.</p>
+              <p class="text-sm text-gray-500 mt-1">
+                Filter shows eligible parent agents for {{ form.agent_role.replace('_', ' ') }}.
+              </p>
             </FormField>
 
             <FormField label="Registered At">
@@ -399,6 +396,7 @@ const form = ref({
   individual_id_number: props.agent?.individual_id_number || '',
   individual_id_file: null,
   company_representative_name: props.agent?.company_representative_name || '',
+  company_representative_id_number: props.agent?.company_representative_id_number || '',
   company_name: props.agent?.company_name || '',
   company_registration_number: props.agent?.company_registration_number || '',
   company_address: props.agent?.company_address || '',
@@ -431,42 +429,34 @@ const form = ref({
 })
 
 // Parent agent search
-const parentSearchQuery = ref(
-  props.agent?.parent_agent
-    ? `${props.agent.parent_agent.name || ''} (#${props.agent.parent_agent.id} — ${props.agent.parent_agent.agent_role})`
-    : ''
-)
 const parentOptions = ref([])
-let parentSearchTimer = null
 
-const searchParents = () => {
-  clearTimeout(parentSearchTimer)
-  parentSearchTimer = setTimeout(async () => {
-    try {
-      const params = new URLSearchParams({
-        search: parentSearchQuery.value,
-        child_role: form.value.agent_role,
-        exclude: props.id,
-      })
-      const res = await fetch(`/admin/agents/parents?${params}`, {
-        headers: { Accept: 'application/json' },
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      parentOptions.value = data.parents || data.data || data || []
-    } catch (e) {
-      parentOptions.value = []
-    }
-  }, 250)
+const fetchParents = async () => {
+  try {
+    const params = new URLSearchParams({
+      child_role: form.value.agent_role,
+      exclude: props.id,
+    })
+    const res = await fetch(`/admin/agents/parents?${params}`, {
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    const agents = data.parents || data.data || data || []
+    parentOptions.value = agents.map(p => ({
+      value: p.id,
+      label: `${p.name} (#${p.id} — ${p.agent_role.replace('_', ' ')})`
+    }))
+  } catch (e) {
+    parentOptions.value = []
+  }
 }
 
-watch(parentSearchQuery, (val) => {
-  const match = String(val).match(/#(\d+)/)
-  if (match) {
-    form.value.parent_agent_id = parseInt(match[1], 10)
-  } else if (!val) {
-    form.value.parent_agent_id = null
-  }
+// Fetch initial parents and on role change
+fetchParents()
+watch(() => form.value.agent_role, () => {
+  form.value.parent_agent_id = null
+  fetchParents()
 })
 
 watch(() => form.value.agent_role, () => {

@@ -32,6 +32,7 @@ class Agent extends Model
         'individual_id_number',
         'individual_id_file',
         'company_representative_name',
+        'company_representative_id_number',
         'company_representative_id_file',
         'company_name',
         'company_registration_number',

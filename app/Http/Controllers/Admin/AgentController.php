@@ -58,6 +58,7 @@ class AgentController extends Controller
             'individual_id_number' => 'required_if:profile_type,individual|nullable|string|max:255',
             'individual_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'company_representative_name' => 'required_if:profile_type,company|nullable|string|max:255',
+            'company_representative_id_number' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_name' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_registration_number' => 'required_if:profile_type,company|nullable|string|max:255',
             'company_address' => 'required_if:profile_type,company|nullable|string',
@@ -136,6 +137,7 @@ class AgentController extends Controller
                 $agentData['individual_id_number'] = $request->individual_id_number;
             } else {
                 $agentData['company_representative_name'] = $request->company_representative_name;
+                $agentData['company_representative_id_number'] = $request->company_representative_id_number;
                 $agentData['company_name'] = $request->company_name;
                 $agentData['company_registration_number'] = $request->company_registration_number;
                 $agentData['company_address'] = $request->company_address;
@@ -248,7 +250,9 @@ class AgentController extends Controller
      */
     public function show($id)
     {
-        $agent = Agent::with(['users', 'bankAccount', 'referralCode', 'parentAgent'])->findOrFail($id);
+        $agent = Agent::with(['users', 'bankAccount', 'referralCode', 'parentAgent', 'feePayments' => function($q) {
+            $q->latest();
+        }])->findOrFail($id);
 
         return Inertia::render('Admin/AgentView', [
             'agent' => [
@@ -260,6 +264,7 @@ class AgentController extends Controller
                 'individual_id_number' => $agent->individual_id_number,
                 'individual_id_file' => $agent->individual_id_file,
                 'company_representative_name' => $agent->company_representative_name,
+                'company_representative_id_number' => $agent->company_representative_id_number,
                 'company_name' => $agent->company_name,
                 'company_registration_number' => $agent->company_registration_number,
                 'company_address' => $agent->company_address,
@@ -283,6 +288,15 @@ class AgentController extends Controller
                 'user_email' => $agent->users->first()?->email,
                 'bank_account' => $agent->bankAccount,
                 'referral_code' => $agent->referralCode,
+                'latest_fee_payment' => $agent->feePayments->first() ? [
+                    'id' => $agent->feePayments->first()->id,
+                    'fee_type' => $agent->feePayments->first()->fee_type,
+                    'amount' => $agent->feePayments->first()->amount,
+                    'payment_method' => $agent->feePayments->first()->payment_method,
+                    'payment_reference' => $agent->feePayments->first()->payment_reference,
+                    'receipt_file' => $agent->feePayments->first()->receipt_file,
+                    'paid_at' => $agent->feePayments->first()->paid_at?->format('Y-m-d H:i:s'),
+                ] : null,
             ],
         ]);
     }
@@ -305,6 +319,7 @@ class AgentController extends Controller
                 'individual_id_number' => $agent->individual_id_number,
                 'individual_id_file' => $agent->individual_id_file,
                 'company_representative_name' => $agent->company_representative_name,
+                'company_representative_id_number' => $agent->company_representative_id_number,
                 'company_name' => $agent->company_name,
                 'company_registration_number' => $agent->company_registration_number,
                 'company_address' => $agent->company_address,
@@ -375,6 +390,7 @@ class AgentController extends Controller
             $rules['individual_id_file'] = 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240';
         } else {
             $rules['company_representative_name'] = 'required|string|max:255';
+            $rules['company_representative_id_number'] = 'required|string|max:255';
             $rules['company_name'] = 'required|string|max:255';
             $rules['company_registration_number'] = 'required|string|max:255';
             $rules['company_address'] = 'required|string';
@@ -439,6 +455,7 @@ class AgentController extends Controller
                 $agentData['individual_id_number'] = $request->individual_id_number;
                 // Clear company fields and delete old file if exists
                 $agentData['company_representative_name'] = null;
+                $agentData['company_representative_id_number'] = null;
                 $agentData['company_name'] = null;
                 $agentData['company_registration_number'] = null;
                 $agentData['company_address'] = null;
@@ -454,6 +471,7 @@ class AgentController extends Controller
                 $agentData['company_representative_id_file'] = null;
             } else {
                 $agentData['company_representative_name'] = $request->company_representative_name;
+                $agentData['company_representative_id_number'] = $request->company_representative_id_number;
                 $agentData['company_name'] = $request->company_name;
                 $agentData['company_registration_number'] = $request->company_registration_number;
                 $agentData['company_address'] = $request->company_address;
@@ -607,12 +625,18 @@ class AgentController extends Controller
     {
         $agent = Agent::findOrFail($id);
 
-        $allowedFields = ['individual_id_file', 'company_reg_file', 'company_representative_id_file'];
+        $allowedFields = ['individual_id_file', 'company_reg_file', 'company_representative_id_file', 'receipt_file'];
         if (! in_array($field, $allowedFields)) {
             abort(404);
         }
 
-        $filePath = $agent->$field;
+        // Special case for receipt_file which is on FeePayment model, not Agent model directly
+        if ($field === 'receipt_file') {
+            $latestPayment = $agent->feePayments()->whereNotNull('receipt_file')->latest()->first();
+            $filePath = $latestPayment?->receipt_file;
+        } else {
+            $filePath = $agent->$field;
+        }
         if (! $filePath || ! Storage::disk('local')->exists($filePath)) {
             abort(404);
         }
@@ -763,17 +787,41 @@ class AgentController extends Controller
     }
 
     /**
-     * JSON endpoint listing agents eligible to be a parent (Agent Leaders + Business Partners).
+     * JSON endpoint listing agents eligible to be a parent based on child_role.
      */
-    public function parents()
+    public function parents(Request $request)
     {
-        return response()->json(
-            Agent::query()
-                ->whereIn('agent_role', [Agent::ROLE_AGENT_LEADER, Agent::ROLE_BUSINESS_PARTNER])
-                ->orderBy('agent_role')
-                ->orderBy('id')
-                ->get(['id', 'agent_role', 'company_name', 'individual_name', 'profile_type'])
-        );
+        $query = Agent::query();
+
+        $childRole = $request->query('child_role');
+        if ($childRole === Agent::ROLE_BUSINESS_PARTNER) {
+            $query->where('id', 1);
+        } elseif ($childRole === Agent::ROLE_AGENT_LEADER) {
+            $query->where('agent_role', Agent::ROLE_BUSINESS_PARTNER);
+        } elseif ($childRole === Agent::ROLE_AGENT) {
+            $query->where('agent_role', Agent::ROLE_AGENT_LEADER);
+        } else {
+            $query->whereIn('agent_role', [Agent::ROLE_AGENT_LEADER, Agent::ROLE_BUSINESS_PARTNER]);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->query('search');
+            $query->where(function($q) use ($search) {
+                $q->where('individual_name', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%")
+                  ->orWhere('id', $search);
+            });
+        }
+
+        $agents = $query->orderBy('agent_role')
+            ->orderBy('id')
+            ->get(['id', 'agent_role', 'company_name', 'individual_name', 'profile_type']);
+
+        $agents->each(function ($agent) {
+            $agent->name = $agent->name;
+        });
+
+        return response()->json($agents);
     }
 
     /**
@@ -782,5 +830,27 @@ class AgentController extends Controller
     public function export()
     {
         return Excel::download(new AgentsExport, 'agents.xls');
+    }
+
+    /**
+     * Show agent hierarchy
+     */
+    public function hierarchy()
+    {
+        $allAgents = Agent::where('status', 'active')->get();
+
+        $data = $allAgents->map(function ($agent) {
+            return [
+                'id' => (string) $agent->id,
+                'parentId' => $agent->parent_agent_id ? (string) $agent->parent_agent_id : "",
+                'name' => $agent->name,
+                'title' => strtoupper(str_replace('_', ' ', $agent->agent_role ?? 'agent')),
+                'imageUrl' => $agent->profile_image ? \Illuminate\Support\Facades\Storage::url($agent->profile_image) : null,
+            ];
+        });
+
+        return Inertia::render('Admin/AgentHierarchy', [
+            'hierarchyData' => $data
+        ]);
     }
 }
