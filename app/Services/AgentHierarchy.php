@@ -84,17 +84,28 @@ class AgentHierarchy
         }
 
         if ($newParent === null) {
-            // Only business partners may live at the top level.
-            if (($child->agent_role ?? Agent::ROLE_AGENT) !== Agent::ROLE_BUSINESS_PARTNER) {
-                $errors[] = 'Only business partners can have no parent.';
+            // Root agent (ID 1) is allowed to have no parent.
+            if ($child->id !== 1 && ($child->agent_role ?? Agent::ROLE_AGENT) !== Agent::ROLE_BUSINESS_PARTNER) {
+                $errors[] = 'This agent role requires a parent.';
             }
             return $errors;
         }
 
-        $childRank = self::ROLE_RANK[$child->agent_role ?? Agent::ROLE_AGENT] ?? 0;
-        $parentRank = self::ROLE_RANK[$newParent->agent_role ?? Agent::ROLE_AGENT] ?? 0;
-        if ($parentRank <= $childRank) {
-            $errors[] = 'Parent role must outrank the child role.';
+        $childRole = $child->agent_role ?? Agent::ROLE_AGENT;
+        $parentRole = $newParent->agent_role ?? Agent::ROLE_AGENT;
+
+        if ($childRole === Agent::ROLE_BUSINESS_PARTNER) {
+            if ($newParent->id !== 1) {
+                $errors[] = 'Business Partners must be under Agent ID 1.';
+            }
+        } elseif ($childRole === Agent::ROLE_AGENT_LEADER) {
+            if ($parentRole !== Agent::ROLE_BUSINESS_PARTNER) {
+                $errors[] = 'Agent Leaders must be under a Business Partner.';
+            }
+        } elseif ($childRole === Agent::ROLE_AGENT) {
+            if ($parentRole !== Agent::ROLE_AGENT_LEADER) {
+                $errors[] = 'Agents must be under an Agent Leader.';
+            }
         }
 
         if ($this->wouldCreateCycle($child, $newParent)) {
