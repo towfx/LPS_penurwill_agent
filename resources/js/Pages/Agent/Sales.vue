@@ -1,20 +1,27 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Select from '../Design/Components/Select.vue'
 import Badge from '../Design/Components/Badge.vue'
+import Card from '../Design/Components/Card.vue'
+import CardContent from '../Design/Components/CardContent.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import { ShoppingCart, DollarSign, Wallet } from 'lucide-vue-next'
 
 defineOptions({ layout: AgentLayout })
 
 const props = defineProps({
-  sales: {
+  commissions: {
     type: Array,
     default: () => []
+  },
+  totals: {
+    type: Object,
+    default: () => ({ sales: 0, commission: 0, overrides: 0 })
   },
   filters: {
     type: Object,
@@ -38,23 +45,19 @@ const roleNames = computed(() => ({
 }))
 const roleLabel = (role) => roleNames.value[role] || role || '—'
 
-// Show source agent column only for leader / business partner viewing subordinate sales
-const showsSourceAgent = computed(() => {
+const showsOverrides = computed(() => {
   const role = props.agent?.agent_role
   return role === 'agent_leader' || role === 'business_partner'
 })
 
-// Date range state
 const dateRange = ref(
   props.filters.start_date && props.filters.end_date
     ? [new Date(props.filters.start_date), new Date(props.filters.end_date)]
     : null
 )
 
-// Status filter state
 const selectedStatus = ref(props.filters.status || 'pending')
 
-// Format date/time for display
 const formatDateTime = (dateString) => {
   if (!dateString) return '—'
   const date = new Date(dateString)
@@ -67,7 +70,6 @@ const formatDateTime = (dateString) => {
   })
 }
 
-// Get commission status badge variant
 const getStatusVariant = (status) => {
   switch (status?.toLowerCase()) {
     case 'pending': return 'warning'
@@ -77,40 +79,54 @@ const getStatusVariant = (status) => {
   }
 }
 
-// Update filters when date range changes
+const commRateDisplay = (c) => {
+  if (c.commission_calc_type === 'fixed') {
+    const fixed = c.commission_fixed_amount ?? c.commission_rate
+    return formatCurrency('RM', fixed)
+  }
+  const rate = c.commission_rate ?? 0
+  return `${Number(rate)}%`
+}
+
+const commissionTypeLabel = (type) => {
+  if (type === 'own_sales') return 'Own Sale'
+  if (type === 'override') return 'Override'
+  return type || '—'
+}
+
 const updateDateRange = (dates) => {
   dateRange.value = dates
   applyFilters()
 }
 
-// Update filters when status changes
 const updateStatus = () => {
   applyFilters()
 }
 
-// Apply filters and update URL
 const applyFilters = () => {
   const params = {}
-  
+
   if (dateRange.value && dateRange.value.length === 2) {
     params.start_date = dateRange.value[0].toISOString().split('T')[0]
     params.end_date = dateRange.value[1].toISOString().split('T')[0]
   }
-  
+
   if (selectedStatus.value && selectedStatus.value !== 'all') {
     params.status = selectedStatus.value
   } else if (selectedStatus.value === 'all') {
-    // Don't include status param for 'all'
+    // omit status param
   } else {
-    params.status = 'pending' // Default
+    params.status = 'pending'
   }
-  
+
   router.get('/agent/sales', params, {
     preserveState: true,
     preserveScroll: true,
-    only: ['sales', 'filters']
+    only: ['commissions', 'totals', 'filters']
   })
 }
+
+const colspan = computed(() => 7)
 </script>
 
 <template>
@@ -120,10 +136,63 @@ const applyFilters = () => {
       :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Sales' }]"
     />
 
+    <!-- Summary Cards -->
+    <div
+      class="grid grid-cols-1 gap-4 mb-6"
+      :class="showsOverrides ? 'md:grid-cols-3' : 'md:grid-cols-2'"
+    >
+      <Card class="hover:shadow-md transition-shadow">
+        <CardContent class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-stone-600">Total Sales</p>
+              <p class="text-2xl font-bold text-forest-dark mt-1">
+                {{ formatCurrency('RM', totals.sales) }}
+              </p>
+            </div>
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-cream">
+              <ShoppingCart :size="24" class="text-gold" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card class="hover:shadow-md transition-shadow">
+        <CardContent class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-stone-600">Total Commission</p>
+              <p class="text-2xl font-bold text-forest-dark mt-1">
+                {{ formatCurrency('RM', totals.commission) }}
+              </p>
+            </div>
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-cream">
+              <DollarSign :size="24" class="text-gold" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card v-if="showsOverrides" class="hover:shadow-md transition-shadow">
+        <CardContent class="p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-stone-600">Total Overrides</p>
+              <p class="text-2xl font-bold text-forest-dark mt-1">
+                {{ formatCurrency('RM', totals.overrides) }}
+              </p>
+            </div>
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-cream">
+              <Wallet :size="24" class="text-gold" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Date Range Picker -->
         <div>
           <label class="block text-sm font-medium text-stone-700 mb-2">
             Date Range
@@ -138,7 +207,6 @@ const applyFilters = () => {
           />
         </div>
 
-        <!-- Commission Status Filter -->
         <div>
           <label class="block text-sm font-medium text-stone-700 mb-2">
             Commission Status
@@ -157,11 +225,11 @@ const applyFilters = () => {
       </div>
     </div>
 
-    <!-- Sales Table -->
+    <!-- Commissions Table -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
       <div class="px-6 py-4 border-b border-stone-200">
         <h2 class="text-lg font-semibold text-forest-dark">
-          Sales List
+          Sales &amp; Commissions
         </h2>
       </div>
 
@@ -170,69 +238,71 @@ const applyFilters = () => {
           <thead class="bg-cream">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Date/Time
+                Invoice / Date Time
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
                 Description
               </th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
+                Sale Amount
+              </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Invoice Number
-              </th>
-              <th
-                v-if="showsSourceAgent"
-                class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider"
-              >
-                Source Agent
+                Source
               </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Amount
+                Comm Rate
               </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission
+                Comm Amount
               </th>
               <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Commission Status
+                Status
               </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
-            <tr v-if="sales.length === 0" class="hover:bg-stone-50">
-              <td :colspan="showsSourceAgent ? 7 : 6" class="px-6 py-4 text-center text-stone-500">
-                No sales found matching the selected filters.
+            <tr v-if="commissions.length === 0">
+              <td :colspan="colspan" class="px-6 py-4 text-center text-stone-500">
+                No commissions found matching the selected filters.
               </td>
             </tr>
             <tr
-              v-for="sale in sales"
-              :key="sale.id"
+              v-for="c in commissions"
+              :key="c.id"
               class="hover:bg-stone-50"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                {{ formatDateTime(sale.sale_date) }}
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <div class="font-medium text-stone-900">{{ c.invoice_number || '—' }}</div>
+                <div class="text-xs text-stone-500">{{ formatDateTime(c.sale_date) }}</div>
               </td>
               <td class="px-6 py-4 text-sm text-stone-900">
-                {{ sale.description || '—' }}
+                {{ c.description || '—' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
+                {{ formatCurrency('RM', c.sale_amount ?? 0) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                {{ sale.invoice_number || '—' }}
-              </td>
-              <td v-if="showsSourceAgent" class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                <span v-if="sale.source_agent">
-                  {{ sale.source_agent.name || sale.source_agent.individual_name || sale.source_agent.company_name }}
-                  <span class="text-xs text-stone-500">({{ roleLabel(sale.source_agent.agent_role) }})</span>
+                <span v-if="c.source_agent">
+                  {{ c.source_agent.name || '—' }}
+                  <span class="text-xs text-stone-500">({{ roleLabel(c.source_agent.agent_role) }})</span>
                 </span>
                 <span v-else class="text-stone-400">—</span>
+                <div class="mt-1">
+                  <Badge :variant="c.commission_type === 'override' ? 'secondary' : 'outline'">
+                    {{ commissionTypeLabel(c.commission_type) }}
+                  </Badge>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ formatCurrency('RM', sale.amount) }}
+                {{ commRateDisplay(c) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ formatCurrency('RM', sale.commission?.amount ?? 0) }}
+                {{ formatCurrency('RM', c.commission_amount ?? 0) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
-                <Badge v-if="sale.commission" :variant="getStatusVariant(sale.commission.status)">
-                  {{ sale.commission.status.charAt(0).toUpperCase() + sale.commission.status.slice(1) }}
+                <Badge :variant="getStatusVariant(c.status)">
+                  {{ c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : '—' }}
                 </Badge>
-                <span v-else class="text-stone-400">—</span>
               </td>
             </tr>
           </tbody>

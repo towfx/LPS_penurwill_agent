@@ -6,8 +6,10 @@ use App\Models\Agent;
 use App\Models\BankAccount;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\TrackingService;
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -53,6 +55,9 @@ class TestDataSeeder extends Seeder
         foreach (self::AGENTS as $key => $spec) {
             $parentAgent = isset($spec['parent']) ? $created[$spec['parent']] : null;
 
+            if (! $parentAgent && $spec['role'] === Agent::ROLE_BUSINESS_PARTNER) {
+                $parentAgent = Agent::find(1);
+            }
             $agent = $this->makeAgent($key, $spec, $parentAgent);
             $created[$key] = $agent;
 
@@ -77,16 +82,19 @@ class TestDataSeeder extends Seeder
 
             for ($i = 1; $i <= self::SALES_PER_AGENT; $i++) {
                 try {
-                    Sale::trackSale($agent->referralCode->code, [
-                        'ip_address'     => $this->faker->ipv4,
-                        'user_agent'     => $this->faker->userAgent,
-                        'buyer_email'    => 'buyer' . $this->faker->numberBetween(1000, 9999) . '@test.com',
-                        'amount'         => $this->faker->randomFloat(2, 200, 500),
-                        'sale_date'      => $this->faker->dateTimeBetween('-3 months', 'now'),
-                        'description'    => 'Package ' . $this->faker->randomElement(['Basic', 'Premium', 'Standard']),
+                    $request = new Request();
+                    $request->server->set('REMOTE_ADDR', $this->faker->ipv4);
+                    $request->headers->set('User-Agent', $this->faker->userAgent);
+
+                    app(TrackingService::class)->trackSale([
+                        'referral_code'  => $agent->referralCode->code,
+                        'customer_name'  => $this->faker->name,
+                        'customer_email' => 'buyer' . $this->faker->numberBetween(1000, 9999) . '@test.com',
+                        'sale_amount'    => $this->faker->randomFloat(2, 200, 500),
+                        'sale_date'      => $this->faker->dateTimeBetween('-3 months', 'now')->format('Y-m-d'),
+                        'product_name'   => 'Package ' . $this->faker->randomElement(['Basic', 'Premium', 'Standard']),
                         'invoice_number' => 'INV-' . strtoupper($key) . '-' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                        'is_recurring'   => false,
-                    ]);
+                    ], $request);
                 } catch (\Exception $e) {
                     $this->command->error("  Sale {$i} for {$key} failed: " . $e->getMessage());
                 }
@@ -136,6 +144,15 @@ class TestDataSeeder extends Seeder
         ]);
 
         $user->agents()->attach($agent->id);
+
+        // Assign Spatie role based on agent_role
+        if ($agent->agent_role === Agent::ROLE_AGENT_LEADER) {
+            $user->assignRole('agent_leader');
+        } elseif ($agent->agent_role === Agent::ROLE_BUSINESS_PARTNER) {
+            $user->assignRole('business_partner');
+        } else {
+            $user->assignRole('agent');
+        }
         $agent->createReferralCode();
 
         BankAccount::create([

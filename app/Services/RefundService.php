@@ -6,6 +6,8 @@ use App\Exceptions\ReversalWindowExpiredException;
 use App\Models\ActivityLog;
 use App\Models\AgentNotification;
 use App\Models\Commission;
+use App\Models\Payout;
+use App\Models\PayoutItem;
 use App\Models\Sale;
 use App\Models\SystemSetting;
 use App\Models\User;
@@ -44,6 +46,7 @@ class RefundService
 
         $reversals = DB::transaction(function () use ($sale, $admin) {
             $reversals = collect();
+            $affectedPayoutIds = [];
             $commissions = Commission::where('sale_id', $sale->id)
                 ->where('is_reversal', false)
                 ->get();
@@ -72,6 +75,23 @@ class RefundService
 
                 $reversal = Commission::create($payload);
 
+                // Mirror any PayoutItems linked to the original commission as
+                // negative PayoutItems against the reversal commission so payout
+                // totals stay accurate.
+                $originalItems = PayoutItem::where('commission_id', $original->id)
+                    ->whereHas('payout', fn ($q) => $q->where('status', '!=', 'paid'))
+                    ->get();
+                foreach ($originalItems as $item) {
+                    PayoutItem::create([
+                        'payout_id' => $item->payout_id,
+                        'commission_id' => $reversal->id,
+                        'commission_type' => $item->commission_type,
+                        'commission_category' => $item->commission_category,
+                        'amount' => -1 * (float) $item->amount,
+                    ]);
+                    $affectedPayoutIds[$item->payout_id] = true;
+                }
+
                 // Cancel the original so it cannot be paid out.
                 if (\Schema::hasColumn('commissions', 'status')) {
                     $original->update(['status' => Commission::STATUS_CANCELLED]);
@@ -85,6 +105,27 @@ class RefundService
                 );
 
                 $reversals->push($reversal);
+            }
+
+            if (\Schema::hasColumn('sales', 'status')) {
+                $sale->update(['status' => Sale::STATUS_CANCELLED]);
+            }
+
+            foreach (array_keys($affectedPayoutIds) as $payoutId) {
+                $payout = Payout::find($payoutId);
+                if (! $payout) {
+                    continue;
+                }
+                $before = ['amount' => (float) $payout->amount];
+                $newAmount = (float) $payout->payoutItems()->sum('amount');
+                $payout->update(['amount' => $newAmount]);
+
+                ActivityLog::logCustom(
+                    $admin,
+                    'payout_recalculated',
+                    "Payout #{$payout->id} amount recalculated from {$before['amount']} to {$newAmount} after sale #{$sale->id} reversal",
+                    $payout,
+                );
             }
 
             return $reversals;

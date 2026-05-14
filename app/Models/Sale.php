@@ -10,6 +10,10 @@ class Sale extends Model
 {
     use HasFactory;
 
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -26,6 +30,7 @@ class Sale extends Model
         'description',
         'invoice_number',
         'is_recurring',
+        'status',
     ];
 
     /**
