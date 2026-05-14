@@ -67,7 +67,7 @@ class FortifyServiceProvider extends ServiceProvider
                     if ($user && $user->hasRole('partner')) {
                         return redirect('/partner/dashboard');
                     }
-                    if ($user && $user->hasRole('agent')) {
+                    if ($user && ($user->hasRole('agent') || $user->hasRole('agent_leader') || $user->hasRole('business_partner'))) {
                         return redirect('/agent/dashboard');
                     }
 

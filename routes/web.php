@@ -45,8 +45,8 @@ Route::middleware([
             return redirect()->route('admin.dashboard');
         }
 
-        // QNA-12: business_partner agents share the agent dashboard.
-        if ($user->hasRole('agent')) {
+        // QNA-12: business_partner and agent_leader agents share the agent dashboard.
+        if ($user->hasRole('agent') || $user->hasRole('agent_leader') || $user->hasRole('business_partner')) {
             return redirect()->route('agent.dashboard');
         }
 
@@ -162,6 +162,9 @@ Route::middleware([
 
         // Referral stats
         Route::get('/referral', [App\Http\Controllers\Agent\ReferralController::class, 'index'])->name('referral');
+
+        // Downline hierarchy (business_partner / agent_leader)
+        Route::get('/hierarchy', [App\Http\Controllers\Agent\HierarchyController::class, 'index'])->name('hierarchy');
 
         // Inbox / notifications
         Route::get('/inbox', [App\Http\Controllers\Agent\NotificationController::class, 'index'])->name('inbox');

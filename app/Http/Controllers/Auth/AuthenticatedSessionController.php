@@ -29,7 +29,7 @@ class AuthenticatedSessionController extends FortifyAuthenticatedSessionControll
         if ($user->hasRole('partner')) {
             return redirect('/partner/dashboard');
         }
-        if ($user->hasRole('agent')) {
+        if ($user->hasRole('agent') || $user->hasRole('agent_leader') || $user->hasRole('business_partner')) {
             return redirect('/agent/dashboard');
         }
 

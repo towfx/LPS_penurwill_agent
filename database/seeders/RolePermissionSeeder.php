@@ -51,16 +51,22 @@ class RolePermissionSeeder extends Seeder
         $adminRole = Role::create(['name' => 'admin']);
         $partnerRole = Role::create(['name' => 'partner']);
         $agentRole = Role::create(['name' => 'agent']);
+        $agentLeaderRole = Role::create(['name' => 'agent_leader']);
+        $businessPartnerRole = Role::create(['name' => 'business_partner']);
 
         // Admin gets all permissions
         $adminRole->givePermissionTo(Permission::all());
 
-        // Agent gets limited permissions
-        $agentRole->givePermissionTo([
+        // Agent and Agent Leader get limited permissions
+        $agentPermissions = [
             'view own profile',
             'edit own profile',
             'view assigned tasks',
             'update task status',
-        ]);
+        ];
+
+        $agentRole->givePermissionTo($agentPermissions);
+        $agentLeaderRole->givePermissionTo($agentPermissions);
+        $businessPartnerRole->givePermissionTo($agentPermissions);
     }
 }

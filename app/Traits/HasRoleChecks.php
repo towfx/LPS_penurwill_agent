@@ -21,6 +21,22 @@ trait HasRoleChecks
     }
 
     /**
+     * Check if the user has agent_leader role
+     */
+    public function isAgentLeader(): bool
+    {
+        return $this->hasRole('agent_leader');
+    }
+
+    /**
+     * Check if the user has business_partner role
+     */
+    public function isBusinessPartner(): bool
+    {
+        return $this->hasRole('business_partner');
+    }
+
+    /**
      * Get the appropriate dashboard route based on user role
      */
     public function getDashboardRoute(): string
@@ -29,7 +45,7 @@ trait HasRoleChecks
             return 'admin.dashboard';
         }
 
-        if ($this->isAgent()) {
+        if ($this->isAgent() || $this->isAgentLeader() || $this->isBusinessPartner()) {
             return 'agent.dashboard';
         }
 
@@ -45,7 +61,7 @@ trait HasRoleChecks
             return '/admin/dashboard';
         }
 
-        if ($this->isAgent()) {
+        if ($this->isAgent() || $this->isAgentLeader() || $this->isBusinessPartner()) {
             return '/agent/dashboard';
         }
 

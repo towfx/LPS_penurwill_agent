@@ -240,7 +240,8 @@ class AgentRegistrationController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            $user->assignRole('agent');
+            $user->assignRole($agentRole === Agent::ROLE_BUSINESS_PARTNER ? 'business_partner' : 'agent');
+
             ActivityLog::logCreate($user, $user, $user->toArray());
 
             $uplineAgent = $this->resolveUpline($draft['referral_code'] ?? null);

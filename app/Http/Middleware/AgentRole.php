@@ -20,8 +20,9 @@ class AgentRole
             return redirect()->route('login');
         }
 
-        if (!Auth::user()->hasRole('agent')) {
-            abort(403, 'Access denied. Agent role required.');
+        $user = Auth::user();
+        if (!$user->hasRole('agent') && !$user->hasRole('agent_leader') && !$user->hasRole('business_partner')) {
+            abort(403, 'Access denied. Agent, Agent Leader or Business Partner role required.');
         }
 
         return $next($request);

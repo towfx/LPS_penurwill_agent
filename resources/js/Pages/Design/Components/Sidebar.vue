@@ -93,6 +93,12 @@ const isAgent = computed(() => {
 const isPartner = computed(() => {
   return userRoles.value.includes('partner')
 })
+const isBusinessPartner = computed(() => {
+  return userRoles.value.includes('business_partner')
+})
+const isAgentLeader = computed(() => {
+  return userRoles.value.includes('agent_leader')
+})
 
 const props = defineProps({
   isOpen: {
@@ -122,12 +128,18 @@ const defaultAdminMenus = [
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
 ]
 
-const defaultAgentMenus = [
-  { icon: BarChart3, label: 'Dashboard', href: '/agent/dashboard' },
-  { icon: User, label: 'Agent Profile', href: '/agent/profile' },
-  { icon: ShoppingCart, label: 'Sales & Commissions', href: '/agent/sales' },
-  { icon: DollarSign, label: 'Payout', href: '/agent/payouts' },
-]
+const defaultAgentMenus = computed(() => {
+  const items = [
+    { icon: BarChart3, label: 'Dashboard', href: '/agent/dashboard' },
+    { icon: User, label: 'Agent Profile', href: '/agent/profile' },
+    { icon: ShoppingCart, label: 'Sales & Commissions', href: '/agent/sales' },
+    { icon: DollarSign, label: 'Payout', href: '/agent/payouts' },
+  ]
+  if (isBusinessPartner.value || isAgentLeader.value) {
+    items.push({ icon: Network, label: 'Hierarchy', href: '/agent/hierarchy' })
+  }
+  return items
+})
 
 const defaultPartnerMenus = [
   { icon: BarChart3, label: 'Dashboard', href: '/partner/dashboard' },
@@ -146,11 +158,11 @@ const menuItems = computed(() => {
   if (isPartner.value) {
     return defaultPartnerMenus
   }
-  if (isAgent.value) {
-    return defaultAgentMenus
+  if (isAgent.value || isBusinessPartner.value || isAgentLeader.value) {
+    return defaultAgentMenus.value
   }
 
   // Fallback for users without specific roles
-  return defaultAgentMenus
+  return defaultAgentMenus.value
 })
 </script>
