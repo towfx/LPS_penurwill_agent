@@ -28,6 +28,8 @@ class AgentNotification extends Model
     public const TYPE_NEW_TEAM_MEMBER = 'new_team_member';
     public const TYPE_APPEAL_RECEIVED = 'appeal_received';
     public const TYPE_APPROVAL_REQUESTED = 'approval_requested';
+    public const TYPE_RENEWAL_REMINDER = 'renewal_reminder';
+    public const TYPE_EXPIRY_ALERT = 'expiry_alert';
 
     protected $fillable = [
         'agent_id',

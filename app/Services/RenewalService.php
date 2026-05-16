@@ -19,10 +19,13 @@ class RenewalService
 {
     /**
      * Send renewal reminders to agents whose renewal_due_at is today.
+     * In-app notification is primary; email is secondary and skipped if agent opted out.
      */
     public function sendRenewalReminders(): int
     {
+        $notificationService = app(NotificationService::class);
         $sent = 0;
+
         Agent::query()
             ->whereDate('renewal_due_at', now()->toDateString())
             ->where('fee_payment_status', '!=', Agent::FEE_STATUS_PAID)
@@ -31,19 +34,36 @@ class RenewalService
                   ->whereNotNull('expires_at');
             })
             ->cursor()
-            ->each(function (Agent $agent) use (&$sent) {
+            ->each(function (Agent $agent) use ($notificationService, &$sent) {
+                $notificationService->notifyInboxOnly(
+                    $agent,
+                    AgentNotification::TYPE_RENEWAL_REMINDER,
+                    'Renewal Reminder',
+                    "Your membership renewal is due. Please renew to keep your account active.",
+                    Agent::class,
+                    $agent->id,
+                );
+
+                if ($agent->email_notifications_enabled === false) {
+                    return;
+                }
+
                 $email = $this->resolveEmail($agent);
-                if (! $email) return;
+                if (! $email) {
+                    return;
+                }
+
                 try {
-                    Mail::to($email)->send(new AgentRenewalReminderNotification($agent));
+                    Mail::to($email)->queue(new AgentRenewalReminderNotification($agent));
                     $sent++;
                 } catch (\Throwable $e) {
-                    Log::warning('Renewal reminder failed', [
+                    Log::warning('Renewal reminder email failed', [
                         'agent_id' => $agent->id,
                         'error' => $e->getMessage(),
                     ]);
                 }
             });
+
         return $sent;
     }
 
@@ -101,27 +121,47 @@ class RenewalService
 
     /**
      * Send a final alert to agents whose expires_at = today.
+     * In-app notification is primary; email is secondary and skipped if agent opted out.
      */
     public function sendExpiryAlerts(): int
     {
+        $notificationService = app(NotificationService::class);
         $sent = 0;
+
         Agent::query()
             ->whereDate('expires_at', now()->toDateString())
             ->where('fee_payment_status', '!=', Agent::FEE_STATUS_PAID)
             ->cursor()
-            ->each(function (Agent $agent) use (&$sent) {
+            ->each(function (Agent $agent) use ($notificationService, &$sent) {
+                $notificationService->notifyInboxOnly(
+                    $agent,
+                    AgentNotification::TYPE_EXPIRY_ALERT,
+                    'Membership Expiring Today',
+                    "Your membership expires today. Renew now to avoid losing access.",
+                    Agent::class,
+                    $agent->id,
+                );
+
+                if ($agent->email_notifications_enabled === false) {
+                    return;
+                }
+
                 $email = $this->resolveEmail($agent);
-                if (! $email) return;
+                if (! $email) {
+                    return;
+                }
+
                 try {
-                    Mail::to($email)->send(new AgentExpiryAlertNotification($agent));
+                    Mail::to($email)->queue(new AgentExpiryAlertNotification($agent));
                     $sent++;
                 } catch (\Throwable $e) {
-                    Log::warning('Expiry alert failed', [
+                    Log::warning('Expiry alert email failed', [
                         'agent_id' => $agent->id,
                         'error' => $e->getMessage(),
                     ]);
                 }
             });
+
         return $sent;
     }
 
