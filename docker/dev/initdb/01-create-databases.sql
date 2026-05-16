@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS `penurwill_web`;
+GRANT ALL PRIVILEGES ON `penurwill_web`.* TO 'mysql'@'%';
+FLUSH PRIVILEGES;
