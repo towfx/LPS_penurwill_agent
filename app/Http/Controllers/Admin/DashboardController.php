@@ -14,9 +14,7 @@ use App\Models\Agent;
 use App\Models\ActivityLog;
 use App\Models\SystemSetting;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Schema;
 use Carbon\CarbonPeriod;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -68,6 +66,22 @@ class DashboardController extends Controller
         $salesLastMonth = Sale::whereBetween('sale_date', [$startOfLastMonth, $endOfLastMonth])->count();
         $conversionRateLastMonth = $referralsLastMonth > 0 ? ($salesLastMonth / $referralsLastMonth) * 100 : null;
         $conversionChange = ($conversionRateLastMonth && $conversionRate) ? ($conversionRate - $conversionRateLastMonth) : null;
+
+        // Renewals
+        $today = $now->copy()->startOfDay();
+        $renewalsDue = Agent::whereNotNull('renewal_due_at')
+            ->whereDate('renewal_due_at', '<=', $today)
+            ->where(function ($q) use ($today) {
+                $q->whereNull('expires_at')->orWhereDate('expires_at', '>=', $today);
+            })
+            ->where('status', '!=', 'expired')
+            ->count();
+        $expiredAgents = Agent::where(function ($q) use ($today) {
+            $q->where('status', 'expired')
+              ->orWhere(function ($q2) use ($today) {
+                  $q2->whereNotNull('expires_at')->whereDate('expires_at', '<', $today);
+              });
+        })->count();
 
         // 2. Monthly Revenue Line Chart (Last 12 months)
         $monthlyRevenue = [];
@@ -144,34 +158,6 @@ class DashboardController extends Controller
         $totalReferrals = Referral::count();
         $totalSales = Sale::count();
 
-        // 9. Scheduler health
-        $schedulerAlerts = [];
-        $failedJobsCount = 0;
-        try {
-            if (Schema::hasTable('scheduler_logs')) {
-                $jobTypes = ['process_renewals'];
-                foreach ($jobTypes as $jobType) {
-                    $latest = DB::table('scheduler_logs')
-                        ->where('job_type', $jobType)
-                        ->orderByDesc('ran_at')
-                        ->first();
-                    if (! $latest) {
-                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'never_ran', 'last_ran' => null];
-                    } elseif (Carbon::parse($latest->ran_at)->diffInHours(now()) > 24) {
-                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'stale', 'last_ran' => $latest->ran_at];
-                    } elseif ($latest->status === 'failed') {
-                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'failed', 'last_ran' => $latest->ran_at, 'error' => $latest->error_message];
-                    } else {
-                        $schedulerAlerts[] = ['job' => $jobType, 'state' => 'ok', 'last_ran' => $latest->ran_at];
-                    }
-                }
-            }
-            if (Schema::hasTable('failed_jobs')) {
-                $failedJobsCount = DB::table('failed_jobs')->count();
-            }
-        } catch (\Throwable $e) {
-            // Non-critical
-        }
 
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
@@ -183,6 +169,8 @@ class DashboardController extends Controller
                 'commissionsChange' => $commissionsChange,
                 'conversionRate' => $conversionRate,
                 'conversionChange' => $conversionChange,
+                'renewalsDue' => $renewalsDue,
+                'expiredAgents' => $expiredAgents,
             ],
             'monthlyRevenue' => $monthlyRevenue,
             'topAgents' => $topAgents,
@@ -202,8 +190,6 @@ class DashboardController extends Controller
                 'totalReferrals' => $totalReferrals,
                 'totalSales' => $totalSales,
             ],
-            'schedulerAlerts' => $schedulerAlerts,
-            'failedJobsCount' => $failedJobsCount,
         ]);
     }
 }

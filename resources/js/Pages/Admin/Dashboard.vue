@@ -7,7 +7,7 @@
     />
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
       <StatsCard
         title="Total Revenue This Month"
         :value="formatCurrency('RM', stats.revenueThisMonth)"
@@ -35,6 +35,13 @@
         :change="trendText(stats.conversionChange, true)"
         icon="Target"
         :trend="trendType(stats.conversionChange)"
+      />
+      <StatsCard
+        title="Renewals Due"
+        :value="String(stats.renewalsDue ?? 0)"
+        :change="`${stats.expiredAgents ?? 0} expired`"
+        icon="Clock"
+        :trend="(stats.renewalsDue || stats.expiredAgents) ? 'down' : 'neutral'"
       />
     </div>
 
@@ -184,64 +191,6 @@
       </div>
     </div>
 
-    <!-- Scheduler Health -->
-    <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-forest-dark flex items-center gap-2">
-          <Clock class="inline text-accent-blue" size="20" /> Scheduler Health
-        </h2>
-        <div v-if="failedJobsCount > 0" class="flex items-center gap-2">
-          <span class="text-sm text-accent-red font-medium">{{ failedJobsCount }} failed job(s)</span>
-        </div>
-      </div>
-
-      <!-- Stale/missing warning banner -->
-      <div
-        v-if="schedulerHasWarning"
-        class="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 flex items-start gap-3"
-      >
-        <AlertTriangle class="w-5 h-5 text-yellow-700 mt-0.5 flex-shrink-0" />
-        <div>
-          <p class="text-sm font-semibold text-yellow-900">Scheduler may not be running</p>
-          <p class="text-xs text-yellow-800 mt-0.5">One or more jobs are stale or have never run. Check your server cron configuration.</p>
-        </div>
-      </div>
-
-      <!-- Jobs table -->
-      <div v-if="schedulerAlerts.length" class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-cream">
-            <tr>
-              <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wide">Job</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wide">Status</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wide">Last Run</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-stone-500 uppercase tracking-wide">Error</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-stone-100">
-            <tr v-for="job in schedulerAlerts" :key="job.job" class="hover:bg-stone-50">
-              <td class="px-4 py-2 font-mono text-xs">{{ job.job }}</td>
-              <td class="px-4 py-2">
-                <Badge :variant="schedulerBadgeVariant(job.state)" class="text-xs">
-                  {{ schedulerLabel(job.state) }}
-                </Badge>
-              </td>
-              <td class="px-4 py-2 text-stone-600 text-xs">{{ formatRelative(job.last_ran) }}</td>
-              <td class="px-4 py-2 text-accent-red text-xs max-w-xs truncate">{{ job.error || '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p v-else class="text-sm text-stone-500">No scheduler jobs configured.</p>
-
-      <!-- Failed jobs card -->
-      <div v-if="failedJobsCount > 0" class="mt-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <XCircle class="w-5 h-5 text-accent-red" />
-          <span class="text-sm font-medium text-red-900">{{ failedJobsCount }} failed queue job(s) pending review</span>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -255,7 +204,7 @@ import BarChart from '../Design/Components/BarChart.vue'
 import PieChart from '../Design/Components/PieChart.vue'
 import ActivityTimeline from '../Design/Components/ActivityTimeline.vue'
 import { formatCurrency } from '../../lib/utils.js'
-import { TrendingUp, Users, DollarSign, Target, Settings, Activity, AlertTriangle, Clock, CheckCircle, XCircle } from 'lucide-vue-next'
+import { TrendingUp, Users, DollarSign, Target, Settings, Activity, AlertTriangle } from 'lucide-vue-next'
 import { router } from '@inertiajs/vue3'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Button from '../Design/Components/Button.vue'
@@ -288,32 +237,6 @@ const referralsLabels = computed(() => Object.keys(referralsByDay.value))
 const referralsData = computed(() => Object.values(referralsByDay.value))
 const salesData = computed(() => Object.values(salesByDay.value))
 
-const schedulerAlerts = computed(() => page.props.schedulerAlerts || [])
-const failedJobsCount = computed(() => page.props.failedJobsCount ?? 0)
-
-const schedulerHasWarning = computed(() =>
-  schedulerAlerts.value.some(a => a.state !== 'ok')
-)
-
-function schedulerBadgeVariant(state) {
-  if (state === 'ok') return 'success'
-  if (state === 'failed') return 'destructive'
-  return 'warning'
-}
-
-function schedulerLabel(state) {
-  const map = { ok: 'OK', stale: 'STALE', failed: 'FAILED', never_ran: 'NEVER RAN' }
-  return map[state] || state
-}
-
-function formatRelative(dt) {
-  if (!dt) return 'never'
-  const diff = Date.now() - new Date(dt).getTime()
-  const h = Math.floor(diff / 3600000)
-  if (h < 1) return 'just now'
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
-}
 
 const commissionsUrl = computed(() => {
   const now = new Date()

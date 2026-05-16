@@ -96,7 +96,10 @@ const agentContext = computed(() => page.props.agentContext || {})
 const agentStatus = computed(() => agentContext.value.agent_status || agent.value?.status)
 const feePaymentStatus = computed(() => agentContext.value.fee_payment_status || agent.value?.fee_payment_status)
 
-const salesLabels = computed(() => Object.keys(salesByDay.value).map(day => day.toString()))
+const salesLabels = computed(() => Object.keys(salesByDay.value).map(day => {
+  const date = new Date(day)
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
+}))
 const salesData = computed(() => Object.values(salesByDay.value))
 const referralsLabels = computed(() => Object.keys(referralsByDay.value))
 const referralsData = computed(() => Object.values(referralsByDay.value))

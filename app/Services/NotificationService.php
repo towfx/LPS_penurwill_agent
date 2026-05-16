@@ -165,7 +165,7 @@ class NotificationService
             }
 
             \Illuminate\Support\Facades\Mail::to($user->email)
-                ->queue(new \App\Mail\InboxNotificationEmail($notification));
+                ->send(new \App\Mail\InboxNotificationEmail($notification));
         } catch (\Throwable $e) {
             Log::warning('NotificationService email dispatch failed', [
                 'notification_id' => $notification->id,

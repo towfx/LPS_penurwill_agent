@@ -54,7 +54,7 @@ class RenewalService
                 }
 
                 try {
-                    Mail::to($email)->queue(new AgentRenewalReminderNotification($agent));
+                    Mail::to($email)->send(new AgentRenewalReminderNotification($agent));
                     $sent++;
                 } catch (\Throwable $e) {
                     Log::warning('Renewal reminder email failed', [
@@ -152,7 +152,7 @@ class RenewalService
                 }
 
                 try {
-                    Mail::to($email)->queue(new AgentExpiryAlertNotification($agent));
+                    Mail::to($email)->send(new AgentExpiryAlertNotification($agent));
                     $sent++;
                 } catch (\Throwable $e) {
                     Log::warning('Expiry alert email failed', [

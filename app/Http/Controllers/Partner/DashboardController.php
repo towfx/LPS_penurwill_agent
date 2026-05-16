@@ -100,15 +100,23 @@ class DashboardController extends Controller
         $conversionRateLastMonth = $referralsLastMonth > 0 ? ($conversionsLastMonth / $referralsLastMonth) * 100 : null;
         $conversionChange = ($conversionRateLastMonth && $conversionRate) ? ($conversionRate - $conversionRateLastMonth) : null;
 
-        // 2. Monthly sales line chart (current month, by day)
-        $daysInMonth = $now->daysInMonth;
-        $salesByDay = array_fill(1, $daysInMonth, 0);
+        // 2. Sales line chart (last 30 days, by day)
+        $start30 = $now->copy()->subDays(29)->startOfDay();
+        $end30 = $now->copy()->endOfDay();
+        $salesByDay = [];
+        $period30 = CarbonPeriod::create($start30, $end30);
+        foreach ($period30 as $date) {
+            $day = $date->format('Y-m-d');
+            $salesByDay[$day] = 0;
+        }
         $sales = Sale::where('agent_id', $agentId)
-            ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+            ->whereBetween('sale_date', [$start30, $end30])
             ->get(['sale_date', 'amount']);
         foreach ($sales as $sale) {
-            $day = Carbon::parse($sale->sale_date)->day;
-            $salesByDay[$day] += $sale->amount;
+            $day = Carbon::parse($sale->sale_date)->format('Y-m-d');
+            if (isset($salesByDay[$day])) {
+                $salesByDay[$day] += $sale->amount;
+            }
         }
 
         // 3. 90-day referrals bar chart + conversion line
