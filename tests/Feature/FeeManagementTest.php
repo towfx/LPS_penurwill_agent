@@ -25,8 +25,6 @@ class FeeManagementTest extends TestCase
             'renewal_fee_agent' => 100.00,
             'renewal_fee_leader' => 100.00,
             'renewal_fee_business_partner' => 1000.00,
-            'renewal_fee_agent_enabled' => true,
-            'renewal_fee_leader_enabled' => true,
             'membership_duration_days' => 365,
             'renewal_reminder_days_before' => 30,
         ]);
@@ -112,20 +110,5 @@ class FeeManagementTest extends TestCase
 
         $bpFee = $service->getFeeAmountFor('business_partner', 'entry');
         $this->assertEquals(3000.00, $bpFee);
-    }
-
-    public function test_is_renewal_enabled_returns_setting(): void
-    {
-        $service = new FeeService();
-
-        $this->assertTrue($service->isRenewalEnabled('agent'));
-        $this->assertTrue($service->isRenewalEnabled('agent_leader'));
-        $this->assertTrue($service->isRenewalEnabled('business_partner'));
-
-        // Disable renewal for agent
-        SystemSetting::first()->update(['renewal_fee_agent_enabled' => false]);
-
-        $this->assertFalse($service->isRenewalEnabled('agent'));
-        $this->assertTrue($service->isRenewalEnabled('agent_leader'));
     }
 }

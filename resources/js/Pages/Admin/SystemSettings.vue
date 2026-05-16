@@ -74,7 +74,6 @@
                 <th class="px-4 py-2 text-left font-medium text-gray-700">Role</th>
                 <th class="px-4 py-2 text-right font-medium text-gray-700">Entry Fee</th>
                 <th class="px-4 py-2 text-right font-medium text-gray-700">Renewal Fee</th>
-                <th class="px-4 py-2 text-left font-medium text-gray-700">Renewal Enabled</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -82,12 +81,6 @@
                 <td class="px-4 py-2">{{ row.label }}</td>
                 <td class="px-4 py-2 text-right">{{ formatCurrency('RM', settings[row.entryKey] ?? 0) }}</td>
                 <td class="px-4 py-2 text-right">{{ formatCurrency('RM', settings[row.renewalKey] ?? 0) }}</td>
-                <td class="px-4 py-2">
-                  <Badge v-if="row.enabledKey === null" variant="default">Always</Badge>
-                  <Badge v-else :variant="settings[row.enabledKey] ? 'success' : 'secondary'">
-                    {{ settings[row.enabledKey] ? 'Yes' : 'No' }}
-                  </Badge>
-                </td>
               </tr>
             </tbody>
           </table>
@@ -209,8 +202,8 @@ const commissionRows = computed(() => [
 ])
 
 const feeRows = computed(() => [
-  { role: 'business_partner', label: roleNames.value.business_partner, entryKey: 'entry_fee_business_partner', renewalKey: 'renewal_fee_business_partner', enabledKey: null },
-  { role: 'leader', label: roleNames.value.leader, entryKey: 'entry_fee_leader', renewalKey: 'renewal_fee_leader', enabledKey: 'renewal_fee_leader_enabled' },
-  { role: 'agent', label: roleNames.value.agent, entryKey: 'entry_fee_agent', renewalKey: 'renewal_fee_agent', enabledKey: 'renewal_fee_agent_enabled' },
+  { role: 'business_partner', label: roleNames.value.business_partner, entryKey: 'entry_fee_business_partner', renewalKey: 'renewal_fee_business_partner' },
+  { role: 'leader', label: roleNames.value.leader, entryKey: 'entry_fee_leader', renewalKey: 'renewal_fee_leader' },
+  { role: 'agent', label: roleNames.value.agent, entryKey: 'entry_fee_agent', renewalKey: 'renewal_fee_agent' },
 ])
 </script>

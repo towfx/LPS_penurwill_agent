@@ -26,8 +26,6 @@ class RenewalLifecycleTest extends TestCase
             'renewal_fee_agent' => 100.00,
             'renewal_fee_leader' => 100.00,
             'renewal_fee_business_partner' => 1000.00,
-            'renewal_fee_agent_enabled' => true,
-            'renewal_fee_leader_enabled' => true,
             'membership_duration_days' => 365,
             'renewal_reminder_days_before' => 30,
         ]);

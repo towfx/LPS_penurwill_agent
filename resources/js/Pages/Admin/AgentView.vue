@@ -18,38 +18,162 @@
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-xl font-semibold text-forest-dark mb-4">{{ isIndividual ? 'Individual Agent' : 'Company Agent' }}</h2>
 
-        <div v-if="isIndividual" class="space-y-3">
-          <div><span class="font-medium text-gray-700">Name:</span> {{ agent.individual_name }}</div>
-          <div><span class="font-medium text-gray-700">Phone:</span> {{ agent.individual_phone }}</div>
-          <div><span class="font-medium text-gray-700">Address:</span> {{ agent.individual_address }}</div>
-          <div v-if="agent.individual_id_number">
-            <span class="font-medium text-gray-700">NRIC/Passport Number:</span> {{ agent.individual_id_number }}
-          </div>
-          <div v-if="agent.individual_id_file">
-            <span class="font-medium text-gray-700">Copy of IC/Passport:</span>
-            <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
-              View File
-            </a>
+        <div v-if="isIndividual" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <User class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Name</div>
+                <div class="text-gray-900">{{ agent.individual_name }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-green rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Phone class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Phone</div>
+                <div class="text-gray-900">{{ agent.individual_phone }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-start md:col-span-2">
+              <div class="w-6 h-6 bg-accent-orange rounded-full flex items-center justify-center mr-3 flex-shrink-0 mt-1">
+                <MapPin class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Address</div>
+                <div class="text-gray-900">{{ agent.individual_address }}</div>
+              </div>
+            </div>
+
+            <div v-if="agent.individual_id_number" class="flex items-center">
+              <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <FileText class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">NRIC/Passport Number</div>
+                <div class="text-gray-900">{{ agent.individual_id_number }}</div>
+              </div>
+            </div>
+
+            <div v-if="agent.individual_id_file" class="flex items-center md:col-span-2">
+              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <ImageIcon v-if="isImage(agent.individual_id_file)" class="w-3.5 h-3.5 text-white" />
+                <FileText v-else class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Copy of IC/Passport</div>
+                <div v-if="isImage(agent.individual_id_file)" class="mt-2 mb-1">
+                  <img :src="getFileUrl('individual_id_file')" class="w-32 h-auto max-h-32 object-cover rounded border shadow-sm" />
+                </div>
+                <a :href="getFileUrl('individual_id_file')" target="_blank" class="text-gold hover:text-amber-700 font-medium flex items-center gap-1">
+                  <ExternalLink class="w-3 h-3" />
+                  View {{ isImage(agent.individual_id_file) ? 'Full Image' : 'File' }}
+                </a>
+              </div>
+            </div>
           </div>
         </div>
-        <div v-else-if="isCompany" class="space-y-3">
-          <div><span class="font-medium text-gray-700">Company Name:</span> {{ agent.company_name }}</div>
-          <div><span class="font-medium text-gray-700">Representative:</span> {{ agent.company_representative_name }}</div>
-          <div><span class="font-medium text-gray-700">Representative ID Number:</span> {{ agent.company_representative_id_number }}</div>
-          <div><span class="font-medium text-gray-700">Registration Number:</span> {{ agent.company_registration_number }}</div>
-          <div><span class="font-medium text-gray-700">Company Address:</span> {{ agent.company_address }}</div>
-          <div><span class="font-medium text-gray-700">Company Phone:</span> {{ agent.company_phone }}</div>
-          <div v-if="agent.company_reg_file">
-            <span class="font-medium text-gray-700">Business Registration Certificate:</span>
-            <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
-              View File
-            </a>
-          </div>
-          <div v-if="agent.company_representative_id_file">
-            <span class="font-medium text-gray-700">Company Representative ID:</span>
-            <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
-              View File
-            </a>
+
+        <div v-else-if="isCompany" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Building class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Company Name</div>
+                <div class="text-gray-900">{{ agent.company_name }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-green rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <User class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Representative</div>
+                <div class="text-gray-900">{{ agent.company_representative_name }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <FileText class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Representative ID Number</div>
+                <div class="text-gray-900">{{ agent.company_representative_id_number }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Hash class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Registration Number</div>
+                <div class="text-gray-900">{{ agent.company_registration_number }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-start md:col-span-2">
+              <div class="w-6 h-6 bg-accent-orange rounded-full flex items-center justify-center mr-3 flex-shrink-0 mt-1">
+                <MapPin class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Company Address</div>
+                <div class="text-gray-900">{{ agent.company_address }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-green rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Phone class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Company Phone</div>
+                <div class="text-gray-900">{{ agent.company_phone }}</div>
+              </div>
+            </div>
+
+            <div v-if="agent.company_reg_file" class="flex items-center">
+              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <ImageIcon v-if="isImage(agent.company_reg_file)" class="w-3.5 h-3.5 text-white" />
+                <FileText v-else class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Business Registration Certificate</div>
+                <div v-if="isImage(agent.company_reg_file)" class="mt-2 mb-1">
+                  <img :src="getFileUrl('company_reg_file')" class="w-32 h-auto max-h-32 object-cover rounded border shadow-sm" />
+                </div>
+                <a :href="getFileUrl('company_reg_file')" target="_blank" class="text-gold hover:text-amber-700 font-medium flex items-center gap-1">
+                  <ExternalLink class="w-3 h-3" />
+                  View {{ isImage(agent.company_reg_file) ? 'Full Image' : 'File' }}
+                </a>
+              </div>
+            </div>
+
+            <div v-if="agent.company_representative_id_file" class="flex items-center">
+              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <ImageIcon v-if="isImage(agent.company_representative_id_file)" class="w-3.5 h-3.5 text-white" />
+                <FileText v-else class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Company Representative ID</div>
+                <div v-if="isImage(agent.company_representative_id_file)" class="mt-2 mb-1">
+                  <img :src="getFileUrl('company_representative_id_file')" class="w-32 h-auto max-h-32 object-cover rounded border shadow-sm" />
+                </div>
+                <a :href="getFileUrl('company_representative_id_file')" target="_blank" class="text-gold hover:text-amber-700 font-medium flex items-center gap-1">
+                  <ExternalLink class="w-3 h-3" />
+                  View {{ isImage(agent.company_representative_id_file) ? 'Full Image' : 'File' }}
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -61,14 +185,37 @@
         </div>
 
         <div class="mt-6 space-y-2">
-          <div>
-            <span class="font-medium text-gray-700">Status:</span>
-            <span :class="getStatusPillClass(agent.status)" class="ml-2">
-              {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
-            </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Mail class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">User Email</div>
+                <div class="text-gray-900">{{ agent.user_email }}</div>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Calendar class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Created</div>
+                <div class="text-gray-900">{{ agent.created_at }}</div>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <ShieldCheck class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Status</div>
+                <span :class="getStatusPillClass(agent.status)">
+                  {{ agent.status.charAt(0).toUpperCase() + agent.status.slice(1) }}
+                </span>
+              </div>
+            </div>
           </div>
-          <div><span class="font-medium text-gray-700">User Email:</span> {{ agent.user_email }}</div>
-          <div><span class="font-medium text-gray-700">Created:</span> {{ agent.created_at }}</div>
 
           <!-- Suspension / Rejection reasons -->
           <div v-if="agent.status === 'suspended' && agent.suspension_reason" class="mt-3 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3">
@@ -134,39 +281,86 @@
         
         <div v-if="agent.latest_fee_payment" class="space-y-4">
           <div class="grid gap-4 md:grid-cols-2">
-            <div>
-              <span class="font-medium text-gray-700">Fee Type:</span>
-              <span class="ml-2 capitalize">{{ agent.latest_fee_payment.fee_type }}</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <FileText class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Fee Type</div>
+                <div class="text-gray-900 capitalize">{{ agent.latest_fee_payment.fee_type }}</div>
+              </div>
             </div>
-            <div>
-              <span class="font-medium text-gray-700">Amount:</span>
-              <span class="ml-2">{{ agent.latest_fee_payment.amount }}</span>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-green rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Award class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Amount</div>
+                <div class="text-gray-900 font-semibold">{{ agent.latest_fee_payment.amount }}</div>
+              </div>
             </div>
-            <div>
-              <span class="font-medium text-gray-700">Payment Method:</span>
-              <span class="ml-2 capitalize">{{ agent.latest_fee_payment.payment_method.replace('_', ' ') }}</span>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <CreditCard class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Payment Method</div>
+                <div class="text-gray-900 capitalize">{{ agent.latest_fee_payment.payment_method.replace('_', ' ') }}</div>
+              </div>
             </div>
-            <div>
-              <span class="font-medium text-gray-700">Paid At:</span>
-              <span class="ml-2">{{ agent.latest_fee_payment.paid_at || '—' }}</span>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Calendar class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Paid At</div>
+                <div class="text-gray-900">{{ agent.latest_fee_payment.paid_at || '—' }}</div>
+              </div>
             </div>
-            <div>
-              <span class="font-medium text-gray-700">Reference:</span>
-              <span class="ml-2 font-mono text-xs">{{ agent.latest_fee_payment.payment_reference || '—' }}</span>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <Hash class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Reference</div>
+                <div class="text-gray-900 font-mono text-xs">{{ agent.latest_fee_payment.payment_reference || '—' }}</div>
+              </div>
             </div>
-            <div>
-              <span class="font-medium text-gray-700">Fee Payment Status:</span>
-              <span :class="getFeeStatusPillClass(agent.fee_payment_status)" class="ml-2">
-                {{ agent.fee_payment_status || 'pending' }}
-              </span>
+
+            <div class="flex items-center">
+              <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <ShieldCheck class="w-3.5 h-3.5 text-white" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-500">Fee Status</div>
+                <span :class="getFeeStatusPillClass(agent.fee_payment_status)">
+                  {{ agent.fee_payment_status || 'pending' }}
+                </span>
+              </div>
             </div>
           </div>
+          </div>
           
-          <div v-if="agent.latest_fee_payment.receipt_file" class="mt-2">
-            <span class="font-medium text-gray-700">Receipt:</span>
-            <a :href="getFileUrl('receipt_file')" target="_blank" class="text-gold hover:text-amber-700 ml-2">
-              View Receipt
-            </a>
+          <div v-if="agent.latest_fee_payment.receipt_file" class="mt-4 flex items-center">
+            <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <ImageIcon v-if="isImage(agent.latest_fee_payment.receipt_file)" class="w-3.5 h-3.5 text-white" />
+              <FileText v-else class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Receipt</div>
+              <div v-if="isImage(agent.latest_fee_payment.receipt_file)" class="mt-2 mb-1">
+                <img :src="getFileUrl('receipt_file')" class="w-32 h-auto max-h-32 object-cover rounded border shadow-sm" />
+              </div>
+              <a :href="getFileUrl('receipt_file')" target="_blank" class="text-gold hover:text-amber-700 font-medium flex items-center gap-1">
+                <ExternalLink class="w-3 h-3" />
+                View {{ isImage(agent.latest_fee_payment.receipt_file) ? 'Full Receipt Image' : 'Receipt' }}
+              </a>
+            </div>
           </div>
         </div>
         <div v-else class="flex items-center gap-2 text-gray-500 italic">
@@ -178,38 +372,72 @@
       <!-- Hierarchy & Membership -->
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-forest-dark mb-4">Hierarchy &amp; Membership</h3>
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <span class="font-medium text-gray-700">Role:</span>
-            <span class="ml-2">{{ roleLabel(agent.agent_role) }}</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <UserCheck class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Role</div>
+              <div class="text-gray-900">{{ roleLabel(agent.agent_role) }}</div>
+            </div>
           </div>
-          <div>
-            <span class="font-medium text-gray-700">Parent Agent:</span>
-            <span v-if="agent.parent_agent" class="ml-2">
-              <a :href="`/admin/agents/${agent.parent_agent.id}/view`" class="text-gold hover:text-amber-700">
-                {{ agent.parent_agent.name || `#${agent.parent_agent.id}` }}
-                ({{ roleLabel(agent.parent_agent.agent_role) }})
-              </a>
-            </span>
-            <span v-else class="ml-2 text-gray-500">— top level —</span>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-orange rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Building class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Parent Agent</div>
+              <div v-if="agent.parent_agent" class="text-gray-900">
+                <a :href="`/admin/agents/${agent.parent_agent.id}/view`" class="text-gold hover:text-amber-700 font-medium">
+                  {{ agent.parent_agent.name || `#${agent.parent_agent.id}` }}
+                </a>
+              </div>
+              <div v-else class="text-gray-500">— top level —</div>
+            </div>
           </div>
-          <div>
-            <span class="font-medium text-gray-700">Registered At:</span>
-            <span class="ml-2">{{ agent.registered_at || '—' }}</span>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Calendar class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Registered At</div>
+              <div class="text-gray-900">{{ agent.registered_at || '—' }}</div>
+            </div>
           </div>
-          <div>
-            <span class="font-medium text-gray-700">Expires At:</span>
-            <span class="ml-2">{{ agent.expires_at || '—' }}</span>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Calendar class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Expires At</div>
+              <div class="text-gray-900">{{ agent.expires_at || '—' }}</div>
+            </div>
           </div>
-          <div>
-            <span class="font-medium text-gray-700">Renewal Due:</span>
-            <span class="ml-2">{{ agent.renewal_due_at || '—' }}</span>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-orange rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Calendar class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Renewal Due</div>
+              <div class="text-gray-900">{{ agent.renewal_due_at || '—' }}</div>
+            </div>
           </div>
-          <div>
-            <span class="font-medium text-gray-700">Fee Status:</span>
-            <span :class="getFeeStatusPillClass(agent.fee_payment_status)" class="ml-2">
-              {{ agent.fee_payment_status || 'pending' }}
-            </span>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <ShieldCheck class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Fee Status</div>
+              <span :class="getFeeStatusPillClass(agent.fee_payment_status)">
+                {{ agent.fee_payment_status || 'pending' }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -246,12 +474,56 @@
       <!-- Bank Account Information -->
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-forest-dark mb-4">Bank Account Information</h3>
-        <div v-if="agent.bank_account" class="space-y-3">
-          <div><span class="font-medium text-gray-700">Account Name:</span> {{ agent.bank_account.account_name }}</div>
-          <div><span class="font-medium text-gray-700">Account Number:</span> {{ agent.bank_account.account_number }}</div>
-          <div><span class="font-medium text-gray-700">Bank Name:</span> {{ agent.bank_account.bank_name }}</div>
-          <div><span class="font-medium text-gray-700">IBAN:</span> {{ agent.bank_account.iban }}</div>
-          <div><span class="font-medium text-gray-700">SWIFT Code:</span> {{ agent.bank_account.swift_code }}</div>
+        <div v-if="agent.bank_account" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <User class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Account Name</div>
+              <div class="text-gray-900">{{ agent.bank_account.account_name }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-green rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <FileText class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Account Number</div>
+              <div class="text-gray-900 font-mono text-sm">{{ agent.bank_account.account_number }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-orange rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Building class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Bank Name</div>
+              <div class="text-gray-900">{{ agent.bank_account.bank_name }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Hash class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">IBAN</div>
+              <div class="text-gray-900 font-mono text-xs">{{ agent.bank_account.iban }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-red rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <ShieldCheck class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">SWIFT Code</div>
+              <div class="text-gray-900 font-mono text-sm">{{ agent.bank_account.swift_code }}</div>
+            </div>
+          </div>
         </div>
         <div v-else class="text-gray-500">No bank account information available.</div>
       </div>
@@ -259,10 +531,36 @@
       <!-- Referral Code Information -->
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-forest-dark mb-4">Referral Code Information</h3>
-        <div v-if="agent.referral_code" class="space-y-3">
-          <div><span class="font-medium text-gray-700">Referral Code:</span> <span class="font-mono bg-gray-100 px-2 py-1 rounded">{{ agent.referral_code.code }}</span></div>
-          <div><span class="font-medium text-gray-700">Commission Rate:</span> {{ agent.referral_code.commission_rate }}%</div>
-          <div><span class="font-medium text-gray-700">Used Count:</span> {{ agent.referral_code.used_count }}</div>
+        <div v-if="agent.referral_code" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-blue rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Hash class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Referral Code</div>
+              <div class="text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded inline-block">{{ agent.referral_code.code }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-green rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <Award class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Commission Rate</div>
+              <div class="text-gray-900">{{ agent.referral_code.commission_rate }}%</div>
+            </div>
+          </div>
+
+          <div class="flex items-center">
+            <div class="w-6 h-6 bg-accent-gray rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+              <ShieldCheck class="w-3.5 h-3.5 text-white" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-500">Used Count</div>
+              <div class="text-gray-900">{{ agent.referral_code.used_count }}</div>
+            </div>
+          </div>
         </div>
         <div v-else class="text-gray-500">No referral code information available.</div>
       </div>
@@ -334,7 +632,7 @@ import Modal from '../../Components/Modal.vue'
 import FormField from '../Design/Components/FormField.vue'
 import Textarea from '../Design/Components/Textarea.vue'
 import Badge from '../Design/Components/Badge.vue'
-import { AlertTriangle, Eye } from 'lucide-vue-next'
+import { AlertTriangle, Eye, User, Phone, Mail, MapPin, FileText, Building, CreditCard, Calendar, ShieldCheck, UserCheck, Image as ImageIcon, ExternalLink, Hash, Award } from 'lucide-vue-next'
 
 defineOptions({ layout: AdminLayout })
 
@@ -429,6 +727,12 @@ const getFileUrl = (field) => {
     ? new Date(props.agent.updated_at).getTime() 
     : Date.now()
   return `/admin/agents/${props.agent.id}/file/${field}?t=${timestamp}`
+}
+
+const isImage = (path) => {
+  if (!path) return false
+  const ext = path.split('.').pop().toLowerCase()
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
 }
 
 const showApproveDialog = () => {

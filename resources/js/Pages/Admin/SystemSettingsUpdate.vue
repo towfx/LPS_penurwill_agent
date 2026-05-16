@@ -123,16 +123,7 @@
               </FormField>
             </div>
 
-            <div v-if="row.enabledKey" class="md:col-span-3 flex items-center pb-2">
-              <label class="inline-flex items-center cursor-pointer">
-                <input
-                  v-model="form[row.enabledKey]"
-                  type="checkbox"
-                  class="h-4 w-4 text-accent-green rounded focus:ring-accent-green"
-                />
-                <span class="ml-2 text-sm text-gray-700">Renewal enabled</span>
-              </label>
-            </div>
+            <div class="md:col-span-3"></div>
           </div>
         </CardContent>
       </Card>
@@ -343,9 +334,9 @@ const commissionRows = computed(() => [
 ])
 
 const feeRows = [
-  { role: 'business_partner', label: 'Business Partner', entryKey: 'entry_fee_business_partner', renewalKey: 'renewal_fee_business_partner', enabledKey: null },
-  { role: 'leader', label: 'Leader', entryKey: 'entry_fee_leader', renewalKey: 'renewal_fee_leader', enabledKey: 'renewal_fee_leader_enabled' },
-  { role: 'agent', label: 'Agent', entryKey: 'entry_fee_agent', renewalKey: 'renewal_fee_agent', enabledKey: 'renewal_fee_agent_enabled' },
+  { role: 'business_partner', label: 'Business Partner', entryKey: 'entry_fee_business_partner', renewalKey: 'renewal_fee_business_partner' },
+  { role: 'leader', label: 'Leader', entryKey: 'entry_fee_leader', renewalKey: 'renewal_fee_leader' },
+  { role: 'agent', label: 'Agent', entryKey: 'entry_fee_agent', renewalKey: 'renewal_fee_agent' },
 ]
 
 const isSubmitting = ref(false)
@@ -383,10 +374,8 @@ const form = reactive({
   renewal_fee_business_partner: num(props.settings.renewal_fee_business_partner),
   entry_fee_leader: num(props.settings.entry_fee_leader),
   renewal_fee_leader: num(props.settings.renewal_fee_leader),
-  renewal_fee_leader_enabled: !!props.settings.renewal_fee_leader_enabled,
   entry_fee_agent: num(props.settings.entry_fee_agent),
   renewal_fee_agent: num(props.settings.renewal_fee_agent),
-  renewal_fee_agent_enabled: !!props.settings.renewal_fee_agent_enabled,
 
   // Role names
   role_name_agent: props.settings.role_name_agent || 'Agent',

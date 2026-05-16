@@ -61,8 +61,6 @@ class SystemSettingController extends Controller
             $rules["entry_fee_{$role}"] = 'sometimes|numeric|min:0';
             $rules["renewal_fee_{$role}"] = 'sometimes|numeric|min:0';
         }
-        $rules['renewal_fee_leader_enabled'] = 'sometimes|boolean';
-        $rules['renewal_fee_agent_enabled'] = 'sometimes|boolean';
 
         $validated = $request->validate($rules);
 

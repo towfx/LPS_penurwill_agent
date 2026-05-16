@@ -29,8 +29,6 @@ class SystemSetting extends Model
             'email_verification_max_retry' => 'integer',
             'renewal_reminder_days_before' => 'integer',
             'membership_duration_days' => 'integer',
-            'renewal_fee_leader_enabled' => 'boolean',
-            'renewal_fee_agent_enabled' => 'boolean',
             'commission_fixed_amount' => 'decimal:2',
             'partner_commission_fixed_amount' => 'decimal:2',
             'min_payout_amount' => 'decimal:2',

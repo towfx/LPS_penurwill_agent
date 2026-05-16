@@ -278,19 +278,6 @@ class FeeService
         return (float) ($settings->{$column} ?? 0);
     }
 
-    public function isRenewalEnabled(string $agentRole): bool
-    {
-        $settings = SystemSetting::first();
-        if (! $settings) {
-            return true;
-        }
-        return match ($agentRole) {
-            Agent::ROLE_AGENT_LEADER => (bool) ($settings->renewal_fee_leader_enabled ?? true),
-            Agent::ROLE_AGENT => (bool) ($settings->renewal_fee_agent_enabled ?? true),
-            default => true,
-        };
-    }
-
     protected function getMembershipDurationDays(): int
     {
         return (int) (SystemSetting::first()?->membership_duration_days ?? 365);
