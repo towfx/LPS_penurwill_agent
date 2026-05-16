@@ -245,9 +245,9 @@ const saveProfile = async () => {
     <form @submit.prevent="saveProfile" class="space-y-6">
       <!-- Agent Information -->
       <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-forest-dark mb-4">Agent Information</h3>
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">{{ roleNames.agent }} Information</h3>
 
-        <FormField label="Agent Type" class="mb-4">
+        <FormField :label="`${roleNames.agent} Type`" class="mb-4">
           <div class="flex space-x-4">
             <Radio v-model="form.profile_type" value="individual" name="profile_type" label="Individual" />
             <Radio v-model="form.profile_type" value="company" name="profile_type" label="Company" />

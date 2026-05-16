@@ -12,6 +12,9 @@ import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { ShoppingCart, DollarSign, Wallet } from 'lucide-vue-next'
 import Pagination from '../Design/Components/Pagination.vue'
+import { useRoleNames } from '../../composables/useRoleNames.js'
+
+const { roleNames, roleLabel } = useRoleNames()
 
 defineOptions({ layout: AgentLayout })
 
@@ -40,12 +43,7 @@ const props = defineProps({
 })
 
 const page = usePage()
-const roleNames = computed(() => ({
-  agent: page.props.systemSettings?.role_name_agent || 'Agent',
-  agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',
-  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
-}))
-const roleLabel = (role) => roleNames.value[role] || role || '—'
+// roleNames from composable used instead of local definition
 
 const showsOverrides = computed(() => {
   const role = props.agent?.agent_role

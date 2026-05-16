@@ -364,7 +364,7 @@ docker-compose -f docker-compose.prod.yml up -d
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **LPS_penurwill_agent** (4711 symbols, 8767 relationships, 243 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **LPS_penurwill_agent** (4707 symbols, 8789 relationships, 245 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

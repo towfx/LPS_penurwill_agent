@@ -90,6 +90,9 @@ import {
 import Button from './Button.vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
+import { useRoleNames } from '../../../composables/useRoleNames.js'
+
+const { roleNames, roleLabel } = useRoleNames()
 
 defineEmits(['toggle'])
 
@@ -113,7 +116,10 @@ const getDashboardLink = computed(() => {
 
 const getDashboardText = computed(() => {
   if (isAdmin.value) return 'Admin Dashboard'
-  if (isAgent.value) return 'Agent Dashboard'
+  if (isAgent.value) {
+    const role = userRoles.value.find(r => ['agent', 'agent_leader', 'business_partner'].includes(r))
+    return `${roleLabel(role)} Dashboard`
+  }
   return 'Dashboard'
 })
 

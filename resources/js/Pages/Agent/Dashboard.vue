@@ -11,6 +11,9 @@ import Button from '../Design/Components/Button.vue'
 import { formatCurrency } from '../../lib/utils.js'
 import { TrendingUp, Users, DollarSign, Target, AlertTriangle, Link as LinkIcon } from 'lucide-vue-next'
 import { Link } from '@inertiajs/vue3'
+import { useRoleNames } from '../../composables/useRoleNames.js'
+
+const { roleNames, roleLabel } = useRoleNames()
 
 defineOptions({ layout: AgentLayout })
 
@@ -23,11 +26,7 @@ const conversionRateByDay = computed(() => page.props.conversionRateByDay)
 const recentSales = computed(() => page.props.recentSales)
 const performance = computed(() => page.props.performance)
 
-const roleNames = computed(() => ({
-  agent: page.props.systemSettings?.role_name_agent || 'Agent',
-  leader: page.props.systemSettings?.role_name_leader || 'Leader',
-  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
-}))
+// roleNames from composable used instead of local definition
 
 const commissionBreakdown = computed(() => {
   const b = page.props.commissionBreakdown || {}
@@ -126,7 +125,7 @@ function getStatusVariant(status) {
 <template>
   <div>
     <PageHeader
-      title="Agent Dashboard"
+      :title="`${roleNames.agent} Dashboard`"
       description="Your performance overview, sales, referrals, and more."
       :breadcrumbs="[{ label: 'Dashboard' }]"
     >
@@ -248,7 +247,7 @@ function getStatusVariant(status) {
         icon="TrendingUp"
       />
       <StatsCard
-        :title="`Override (${roleNames.leader})`"
+        :title="`Override (${roleNames.agent_leader})`"
         :value="formatCurrency('RM', commissionBreakdown.override_leader)"
         icon="TrendingUp"
       />

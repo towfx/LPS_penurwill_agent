@@ -2,12 +2,12 @@
   <div>
     <PageHeader
       :title="pageTitle"
-      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Agents' }, { label: pageTitle }]"
+      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: roleNamesPlural.agent }, { label: pageTitle }]"
     >
       <template #actions>
         <Button @click="addAgent">
           <Plus size="16" class="mr-2" />
-          Add Agent
+          Add {{ roleNames.agent }}
         </Button>
       </template>
     </PageHeader>
@@ -29,7 +29,7 @@ import { useRoleNames } from '../../composables/useRoleNames.js'
 defineOptions({ layout: AdminLayout })
 
 const page = usePage()
-const { roleNamesPlural } = useRoleNames()
+const { roleNames, roleNamesPlural } = useRoleNames()
 
 const pageTitle = computed(() => {
   const params = new URLSearchParams(page.url.split('?')[1] || '')

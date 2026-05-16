@@ -9,12 +9,12 @@
                     <div class="space-y-6">
             <h1 class="text-6xl lg:text-8xl font-bold text-forest-dark leading-tight">
               Pen'urwill
-              <span class="text-gold">Agent</span>
+              <span class="text-gold">{{ roleNames.agent }}</span>
               System
             </h1>
 
             <p class="text-lg text-gray-500 leading-relaxed max-w-lg mb-8">
-              Join our network of successful agents and start earning commissions today.
+              Join our network of successful {{ roleNamesPlural.agent.toLowerCase() }} and start earning commissions today.
               Track your performance, manage your business, and grow your income with our comprehensive platform.
             </p>
           </div>
@@ -29,8 +29,8 @@
                   </div>
                 </div>
                 <div>
-                  <h3 class="text-xl font-semibold text-forest-dark mb-1">Register as Agent</h3>
-                  <p class="text-forest-light text-sm leading-relaxed">Join our network and start your journey as a successful agent</p>
+                  <h3 class="text-xl font-semibold text-forest-dark mb-1">Register as {{ roleNames.agent }}</h3>
+                  <p class="text-forest-light text-sm leading-relaxed">Join our network and start your journey as a successful {{ roleNames.agent.toLowerCase() }}</p>
                 </div>
               </div>
             </Card>
@@ -72,7 +72,7 @@
                 </div>
                 <div>
                   <h3 class="text-xl font-semibold text-forest-dark mb-1">Build Your Network</h3>
-                  <p class="text-forest-light text-sm leading-relaxed">Connect with other agents and expand your business network</p>
+                  <p class="text-forest-light text-sm leading-relaxed">Connect with other {{ roleNamesPlural.agent.toLowerCase() }} and expand your business network</p>
                 </div>
               </div>
             </Card>
@@ -170,6 +170,9 @@ import {
   Users,
   ArrowRight
 } from 'lucide-vue-next'
+import { useRoleNames } from '../composables/useRoleNames.js'
+
+const { roleNames, roleNamesPlural } = useRoleNames()
 
 // Components
 import Card from './Design/Components/Card.vue'

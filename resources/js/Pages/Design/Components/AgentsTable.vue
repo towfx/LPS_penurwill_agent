@@ -19,7 +19,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search agents..."
+              :placeholder="`Search ${roleNamesPlural.agent.toLowerCase()}...`"
               class="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent"
               @input="handleSearch"
             />
@@ -200,6 +200,9 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-vue-next'
+import { useRoleNames } from '../../../composables/useRoleNames.js'
+
+const { roleNames, roleNamesPlural, roleLabel } = useRoleNames()
 import Card from './Card.vue'
 import CardHeader from './CardHeader.vue'
 import CardContent from './CardContent.vue'
@@ -228,25 +231,17 @@ const urlParams = new URLSearchParams(window.location.search)
 const hasTypeFilter = computed(() => !!(urlParams.get('type') || urlParams.get('role')))
 const tableTitle = computed(() => {
   const typeParam = urlParams.get('type') || urlParams.get('role')
-  if (typeParam === 'business_partner') return `${roleNames.value.business_partner}s`
-  if (typeParam === 'agent_leader') return `${roleNames.value.agent_leader}s`
-  if (typeParam === 'agent') return `${roleNames.value.agent}s`
-  return `${roleNames.value.agent}s`
+  if (typeParam === 'business_partner') return roleNamesPlural.value.business_partner
+  if (typeParam === 'agent_leader') return roleNamesPlural.value.agent_leader
+  if (typeParam === 'agent') return roleNamesPlural.value.agent
+  return roleNamesPlural.value.agent
 })
 const roleFilter = ref(urlParams.get('type') || urlParams.get('role') || '')
 const sortByField = ref('id')
 const sortOrder = ref('desc')
 const isLoading = ref(false)
-const roleNames = computed(() => ({
-  agent: page.props.systemSettings?.role_name_agent || 'Agent',
-  agent_leader: page.props.systemSettings?.role_name_leader || 'Leader',
-  business_partner: page.props.systemSettings?.role_name_business_partner || 'Business Partner',
-}))
-
-const roleLabel = (role) => {
-  if (!role) return '—'
-  return roleNames.value[role] || role
-}
+// roleNames from composable used instead of local definition
+// roleLabel from composable used instead of local definition
 
 const getRoleVariant = (role) => {
   switch (role) {

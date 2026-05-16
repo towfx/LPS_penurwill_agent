@@ -11,7 +11,7 @@
 
         <!-- Header -->
         <div class="text-center mb-8">
-          <h1 class="text-3xl lg:text-4xl font-bold text-forest-dark mb-4">Register as Agent</h1>
+          <h1 class="text-3xl lg:text-4xl font-bold text-forest-dark mb-4">Register as {{ roleNames.agent }}</h1>
           <p class="text-lg text-stone-600">Complete your registration to join our network</p>
         </div>
 
@@ -38,7 +38,7 @@
           <div v-if="currentStep === 0" class="space-y-6">
             <div class="text-center mb-6">
               <h2 class="text-2xl font-bold text-forest-dark mb-2">Referral ID</h2>
-              <p class="text-stone-600">Do you have a Referral ID from an existing agent?</p>
+              <p class="text-stone-600">Do you have a Referral ID from an existing {{ roleNames.agent.toLowerCase() }}?</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -124,13 +124,13 @@
                     </div>
                   </div>
                   <h3 class="text-lg font-bold text-forest-dark mb-1">{{ roleNames.agent }} / {{ roleNames.agent_leader }}</h3>
-                  <p class="text-sm text-stone-500 mb-4">Start as an agent, earn commissions on your sales</p>
+                  <p class="text-sm text-stone-500 mb-4">Start as an {{ roleNames.agent.toLowerCase() }}, earn commissions on your sales</p>
                   <div class="text-2xl font-bold text-gold">{{ formatCurrency('RM', entryFeeAgent) }}</div>
                   <div class="text-xs text-stone-400 mt-1">One-time registration fee</div>
                   <ul class="mt-4 space-y-1 text-sm text-stone-600">
                     <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Individual or company profile</li>
                     <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Earn own-sales commissions</li>
-                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Eligible for role upgrade to Leader</li>
+                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Eligible for role upgrade to {{ roleNames.agent_leader }}</li>
                   </ul>
                 </div>
               </label>
@@ -151,7 +151,7 @@
                     </div>
                   </div>
                   <h3 class="text-lg font-bold text-forest-dark mb-1">{{ roleNames.business_partner }}</h3>
-                  <p class="text-sm text-stone-500 mb-4">Build and manage a team of agents</p>
+                  <p class="text-sm text-stone-500 mb-4">Build and manage a team of {{ roleNamesPlural.agent.toLowerCase() }}</p>
                   <div class="text-2xl font-bold text-gold">{{ formatCurrency('RM', entryFeeBusinessPartner) }}</div>
                   <div class="text-xs text-stone-400 mt-1">One-time registration fee</div>
                   <ul class="mt-4 space-y-1 text-sm text-stone-600">
@@ -562,7 +562,7 @@
     <DialogModal :show="showInvalidEmailDialog" @close="handleDialogClose" :closeable="false">
       <template #title>Invalid Email Address</template>
       <template #content>
-        <p>The email address provided is not in a valid format. Please use a valid email address to register as an agent.</p>
+        <p>The email address provided is not in a valid format. Please use a valid email address to register as an {{ roleNames.agent.toLowerCase() }}.</p>
       </template>
       <template #footer>
         <Button @click="handleDialogClose">OK</Button>
