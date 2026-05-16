@@ -62,4 +62,12 @@ class Sale extends Model
     {
         return $this->hasOne(Commission::class);
     }
+
+    /**
+     * Get the commissions for this sale.
+     */
+    public function commissions()
+    {
+        return $this->hasMany(Commission::class);
+    }
 }

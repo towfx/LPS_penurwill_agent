@@ -49,43 +49,58 @@ class SaleController extends Controller
             }
         };
 
-        $listQuery = Commission::with(['sale.agent', 'earningAgent'])
-            ->where('is_reversal', false);
-        $applyDateFilter($listQuery);
-        $applyStatusFilter($listQuery);
-        $applyAgentFilter($listQuery);
+        $query = Sale::with(['agent', 'commissions.earningAgent'])
+            ->whereHas('commissions', function ($q) {
+                $q->where('is_reversal', false);
+            });
 
-        $commissions = $listQuery
-            ->orderByDesc(
-                Sale::select('sale_date')->whereColumn('sales.id', 'commissions.sale_id')
-            )
-            ->get();
+        if ($startDate && $endDate) {
+            $query->whereBetween('sale_date', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay(),
+            ]);
+        }
 
-        $data = $commissions->map(function (Commission $c) {
+        if ($agentId) {
+            $query->where('agent_id', $agentId);
+        }
+
+        if ($status && $status !== 'all') {
+            $query->whereHas('commissions', function ($q) use ($status) {
+                $q->where('status', $status);
+            });
+        }
+
+        $sales = $query->orderByDesc('sale_date')->get();
+
+        $data = $sales->map(function (Sale $s) {
             return [
-                'id' => $c->id,
-                'sale_id' => $c->sale_id,
-                'sale_date' => $c->sale?->sale_date?->toIso8601String(),
-                'invoice_number' => $c->sale?->invoice_number,
-                'description' => $c->sale?->description,
-                'sale_amount' => $c->sale?->amount,
-                'commission_amount' => $c->amount,
-                'commission_rate' => $c->commission_rate,
-                'commission_calc_type' => $c->commission_calc_type,
-                'commission_fixed_amount' => $c->commission_fixed_amount,
-                'commission_type' => $c->commission_type,
-                'commission_category' => $c->commission_category,
-                'status' => $c->status,
-                'source_agent' => $c->sale?->agent ? [
-                    'id' => $c->sale->agent->id,
-                    'name' => $c->sale->agent->name,
-                    'agent_role' => $c->sale->agent->agent_role,
+                'id' => $s->id,
+                'invoice_number' => $s->invoice_number,
+                'sale_date' => $s->sale_date?->toIso8601String(),
+                'description' => $s->description,
+                'sale_amount' => $s->amount,
+                'source_agent' => $s->agent ? [
+                    'id' => $s->agent->id,
+                    'name' => $s->agent->name,
+                    'agent_role' => $s->agent->agent_role,
                 ] : null,
-                'earning_agent' => $c->earningAgent ? [
-                    'id' => $c->earningAgent->id,
-                    'name' => $c->earningAgent->name,
-                    'agent_role' => $c->earningAgent->agent_role,
-                ] : null,
+                'commissions' => $s->commissions->filter(fn($c) => !$c->is_reversal)->map(function ($c) {
+                    return [
+                        'id' => $c->id,
+                        'earning_agent' => $c->earningAgent ? [
+                            'id' => $c->earningAgent->id,
+                            'name' => $c->earningAgent->name,
+                            'agent_role' => $c->earningAgent->agent_role,
+                        ] : null,
+                        'commission_type' => $c->commission_type,
+                        'commission_amount' => $c->amount,
+                        'commission_rate' => $c->commission_rate,
+                        'commission_calc_type' => $c->commission_calc_type,
+                        'commission_fixed_amount' => $c->commission_fixed_amount,
+                        'status' => $c->status,
+                    ];
+                })->values(),
             ];
         });
 
@@ -117,7 +132,7 @@ class SaleController extends Controller
             ->values();
 
         return Inertia::render('Admin/Sales', [
-            'commissions' => $data,
+            'sales' => $data,
             'totals' => [
                 'sales' => (float) $totalSales,
                 'commission' => (float) $totalCommission,
