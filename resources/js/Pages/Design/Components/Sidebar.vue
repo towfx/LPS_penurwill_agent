@@ -72,6 +72,7 @@ import {
   Building2,
   Network,
   Receipt,
+  AlertCircle,
   Briefcase,
   Award,
 } from 'lucide-vue-next'
@@ -129,6 +130,7 @@ const defaultAdminMenus = computed(() => [
   { icon: ShoppingCart, label: 'Sales', href: '/admin/sales' },
   { icon: DollarSign, label: 'Payouts', href: '/admin/payouts' },
   { icon: Receipt, label: 'Fee Payments', href: '/admin/fee-payments' },
+  { icon: AlertCircle, label: 'Pending Renewals', href: '/admin/fee-payments-pending' },
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
 ])
 

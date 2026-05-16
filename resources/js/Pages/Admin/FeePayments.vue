@@ -6,6 +6,12 @@
       :breadcrumbs="[{ label: 'Dashboard', href: '/admin/dashboard' }, { label: 'Fee Payments' }]"
     >
       <template #actions>
+        <Link href="/admin/fee-payments-pending">
+          <Button variant="outline">
+            <Clock class="w-4 h-4 mr-2" />
+            View Pending Renewals
+          </Button>
+        </Link>
         <Button @click="showAddModal = true">
           <Plus class="w-4 h-4 mr-2" />
           Record Fee Payment
@@ -236,7 +242,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
-import { Plus } from 'lucide-vue-next'
+import { Plus, Clock } from 'lucide-vue-next'
 import Card from '../Design/Components/Card.vue'
 import CardContent from '../Design/Components/CardContent.vue'
 import Badge from '../Design/Components/Badge.vue'

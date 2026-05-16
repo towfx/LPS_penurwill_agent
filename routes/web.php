@@ -90,6 +90,7 @@ Route::middleware([
             ->name('sales.refund');
 
         // Fee payments
+        Route::get('/fee-payments-pending', [App\Http\Controllers\Admin\FeePaymentController::class, 'pending'])->name('fee-payments.pending');
         Route::get('/fee-payments', [App\Http\Controllers\Admin\FeePaymentController::class, 'index'])->name('fee-payments.index');
         Route::post('/fee-payments', [App\Http\Controllers\Admin\FeePaymentController::class, 'store'])->name('fee-payments.store');
         Route::get('/fee-payments/{payment}', [App\Http\Controllers\Admin\FeePaymentController::class, 'show'])->name('fee-payments.show');

@@ -72,6 +72,102 @@ class FeePaymentController extends Controller
     }
 
     /**
+     * Agents pending fee renewal — unpaid agents bucketed by urgency.
+     */
+    public function pending(Request $request)
+    {
+        $today = now()->toDateString();
+
+        $query = Agent::query()
+            ->where(function ($q) {
+                $q->where('is_default', false)->orWhereNull('is_default');
+            })
+            ->where('fee_payment_status', '!=', Agent::FEE_STATUS_PAID)
+            ->with(['users:id,email,name']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('id', $search)
+                    ->orWhere('individual_name', 'like', "%{$search}%")
+                    ->orWhere('company_name', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('agent_role')) {
+            $query->where('agent_role', $request->agent_role);
+        }
+        $summary = [
+            'expired' => (clone $query)->whereNotNull('expires_at')
+                ->whereDate('expires_at', '<', $today)->count(),
+            'alert' => (clone $query)->whereDate('expires_at', '=', $today)->count(),
+            'due' => (clone $query)->whereDate('renewal_due_at', '<=', $today)
+                ->whereDate('expires_at', '>', $today)->count(),
+            'upcoming' => (clone $query)->whereDate('renewal_due_at', '>', $today)->count(),
+        ];
+
+        if ($request->filled('bucket')) {
+            $bucket = $request->bucket;
+            $query->where(function ($q) use ($bucket, $today) {
+                if ($bucket === 'expired') {
+                    $q->whereNotNull('expires_at')->whereDate('expires_at', '<', $today);
+                } elseif ($bucket === 'alert') {
+                    $q->whereDate('expires_at', '=', $today);
+                } elseif ($bucket === 'due') {
+                    $q->whereDate('renewal_due_at', '<=', $today)
+                        ->whereDate('expires_at', '>', $today);
+                } elseif ($bucket === 'upcoming') {
+                    $q->whereDate('renewal_due_at', '>', $today);
+                }
+            });
+        }
+
+        $paginated = $query->orderByRaw('expires_at IS NULL, expires_at ASC')
+            ->paginate(50)
+            ->withQueryString();
+
+        $agents = collect($paginated->items())->map(function (Agent $a) use ($today) {
+            $bucket = 'upcoming';
+            if ($a->expires_at && $a->expires_at->toDateString() < $today) {
+                $bucket = 'expired';
+            } elseif ($a->expires_at && $a->expires_at->toDateString() === $today) {
+                $bucket = 'alert';
+            } elseif ($a->renewal_due_at && $a->renewal_due_at->toDateString() <= $today) {
+                $bucket = 'due';
+            }
+
+            return [
+                'id' => $a->id,
+                'name' => $a->name,
+                'agent_role' => $a->agent_role,
+                'status' => $a->status,
+                'fee_payment_status' => $a->fee_payment_status,
+                'registered_at' => optional($a->registered_at)->toDateString(),
+                'renewal_due_at' => optional($a->renewal_due_at)->toDateString(),
+                'expires_at' => optional($a->expires_at)->toDateString(),
+                'email' => $a->company_email_address ?? $a->individual_email ?? optional($a->users->first())->email,
+                'bucket' => $bucket,
+            ];
+        })->values();
+
+        return Inertia::render('Admin/FeePaymentsPending', [
+            'agents' => $agents,
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'from'         => $paginated->firstItem() ?? 0,
+                'to'           => $paginated->lastItem() ?? 0,
+                'total'        => $paginated->total(),
+            ],
+            'summary' => $summary,
+            'filters' => [
+                'search'     => $request->get('search'),
+                'agent_role' => $request->get('agent_role'),
+                'bucket'     => $request->get('bucket'),
+            ],
+        ]);
+    }
+
+    /**
      * Manually record a fee payment via FeeService.
      */
     public function store(Request $request, FeeService $feeService)
