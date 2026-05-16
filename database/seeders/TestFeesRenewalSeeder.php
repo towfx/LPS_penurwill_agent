@@ -71,15 +71,28 @@ class TestFeesRenewalSeeder extends Seeder
     }
 
     /**
-     * Deterministic 20-slot cycle: 5x A, 10x B, 2x C, 3x D (~25/50/10/15%).
+     * First 3 agents: due today (A_reminder).
+     * Next 3 agents: past due / expiry alert (C_alert).
+     * Next 3 agents: already expired (D_expired).
+     * Remaining: deterministic 20-slot cycle for B_pending / D_expired.
      */
     private function bucketFor(int $index): string
     {
-        $slot = $index % 20;
+        if ($index < 3) {
+            return 'A_reminder';
+        }
+
+        if ($index < 6) {
+            return 'C_alert';
+        }
+
+        if ($index < 9) {
+            return 'D_expired';
+        }
+
+        $slot = ($index - 9) % 20;
         return match (true) {
-            $slot < 5  => 'A_reminder',
-            $slot < 15 => 'B_pending',
-            $slot < 17 => 'C_alert',
+            $slot < 16 => 'B_pending',
             default    => 'D_expired',
         };
     }
