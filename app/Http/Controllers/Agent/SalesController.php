@@ -30,13 +30,21 @@ class SalesController extends Controller
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
         $status = $request->get('status', 'pending');
+        $agentLevel = $request->get('agent_level', 'all');
 
-        $earnerIds = collect([$agent->id]);
+        $descendants = collect();
         if (in_array($agent->agent_role, [Agent::ROLE_AGENT_LEADER, Agent::ROLE_BUSINESS_PARTNER], true)) {
-            $earnerIds = $earnerIds
-                ->merge($hierarchy->getAllDescendants($agent)->pluck('id'))
-                ->unique()
-                ->values();
+            $descendants = $hierarchy->getAllDescendants($agent);
+        }
+
+        if ($agentLevel === 'own') {
+            $earnerIds = collect([$agent->id]);
+        } elseif ($agentLevel === 'leader') {
+            $earnerIds = $descendants->where('agent_role', Agent::ROLE_AGENT_LEADER)->pluck('id');
+        } elseif ($agentLevel === 'agent' || $agentLevel === 'agent_under') {
+            $earnerIds = $descendants->where('agent_role', Agent::ROLE_AGENT)->pluck('id');
+        } else {
+            $earnerIds = collect([$agent->id])->merge($descendants->pluck('id'))->unique()->values();
         }
 
         $applyDateFilter = function ($q) use ($startDate, $endDate) {
@@ -139,6 +147,7 @@ class SalesController extends Controller
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'status' => $status,
+                'agent_level' => $agentLevel,
             ],
             'agent' => $agent,
         ]);

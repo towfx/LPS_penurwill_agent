@@ -28,7 +28,8 @@ const props = defineProps({
     default: () => ({
       start_date: null,
       end_date: null,
-      status: 'pending'
+      status: 'pending',
+      agent_level: 'all'
     })
   },
   agent: {
@@ -50,6 +51,26 @@ const showsOverrides = computed(() => {
   return role === 'agent_leader' || role === 'business_partner'
 })
 
+const agentLevelOptions = computed(() => {
+  const role = props.agent?.agent_role
+  if (role === 'business_partner') {
+    return [
+      { value: 'all', label: 'All Agents' },
+      { value: 'own', label: 'Own Sales' },
+      { value: 'leader', label: roleNames.value.agent_leader },
+      { value: 'agent', label: roleNames.value.agent },
+    ]
+  }
+  if (role === 'agent_leader') {
+    return [
+      { value: 'all', label: 'All' },
+      { value: 'own', label: 'Own Sales' },
+      { value: 'agent_under', label: 'Agent Under' },
+    ]
+  }
+  return []
+})
+
 const dateRange = ref(
   props.filters.start_date && props.filters.end_date
     ? [new Date(props.filters.start_date), new Date(props.filters.end_date)]
@@ -57,6 +78,7 @@ const dateRange = ref(
 )
 
 const selectedStatus = ref(props.filters.status || 'pending')
+const selectedAgentLevel = ref(props.filters.agent_level || 'all')
 
 const formatDateTime = (dateString) => {
   if (!dateString) return '—'
@@ -117,6 +139,10 @@ const applyFilters = () => {
     // omit status param
   } else {
     params.status = 'pending'
+  }
+
+  if (selectedAgentLevel.value && selectedAgentLevel.value !== 'all') {
+    params.agent_level = selectedAgentLevel.value
   }
 
   router.get('/agent/sales', params, {
@@ -192,7 +218,7 @@ const colspan = computed(() => 6)
 
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4" :class="showsOverrides ? 'md:grid-cols-3' : 'md:grid-cols-2'">
         <div>
           <label class="block text-sm font-medium text-stone-700 mb-2">
             Date Range
@@ -204,6 +230,17 @@ const colspan = computed(() => 6)
             placeholder="Select date range"
             @update:model-value="updateDateRange"
             class="w-full"
+          />
+        </div>
+
+        <div v-if="showsOverrides">
+          <label class="block text-sm font-medium text-stone-700 mb-2">
+            Agent Level
+          </label>
+          <Select
+            v-model="selectedAgentLevel"
+            :options="agentLevelOptions"
+            @update:modelValue="updateStatus"
           />
         </div>
 
