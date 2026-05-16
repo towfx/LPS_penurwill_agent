@@ -61,11 +61,23 @@ class SystemSettingsSeeder extends Seeder
             ];
         }
 
-        // Calc-type fields
+        // Calc-type fields (legacy global columns)
         if (Schema::hasColumn('system_settings', 'commission_calc_type')) {
             $defaults += [
                 'commission_calc_type' => 'percentage',
                 'partner_commission_calc_type' => 'percentage',
+            ];
+        }
+
+        // Per-rate-key calc_type columns
+        if (Schema::hasColumn('system_settings', 'agent_own_sales_calc_type')) {
+            $defaults += [
+                'agent_own_sales_calc_type' => 'percentage',
+                'agent_leader_own_sales_calc_type' => 'percentage',
+                'agent_leader_override_agent_calc_type' => 'percentage',
+                'business_partner_own_sales_calc_type' => 'percentage',
+                'business_partner_override_agent_calc_type' => 'percentage',
+                'business_partner_override_agent_leader_calc_type' => 'percentage',
             ];
         }
 

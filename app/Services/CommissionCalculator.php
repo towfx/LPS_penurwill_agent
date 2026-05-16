@@ -85,7 +85,7 @@ class CommissionCalculator
         return [
             'percentage' => (float) ($settings->{"{$key}_percentage"} ?? 0),
             'fixed_amount' => (float) ($settings->{"{$key}_fixed_amount"} ?? 0),
-            'calc_type' => self::CALC_PERCENTAGE,
+            'calc_type' => $settings->{"{$key}_calc_type"} ?? self::CALC_PERCENTAGE,
             'source' => self::SOURCE_SYSTEM_DEFAULT,
         ];
     }

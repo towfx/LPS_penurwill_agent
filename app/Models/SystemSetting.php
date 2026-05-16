@@ -39,6 +39,7 @@ class SystemSetting extends Model
         foreach (self::RATE_KEYS as $key) {
             $casts["{$key}_percentage"] = 'decimal:2';
             $casts["{$key}_fixed_amount"] = 'decimal:2';
+            $casts["{$key}_calc_type"] = 'string';
         }
 
         foreach (['business_partner', 'leader', 'agent'] as $role) {

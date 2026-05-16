@@ -55,6 +55,7 @@ class SystemSettingController extends Controller
         foreach ($rateKeys as $key) {
             $rules["{$key}_percentage"] = 'sometimes|numeric|min:0|max:100';
             $rules["{$key}_fixed_amount"] = 'sometimes|numeric|min:0';
+            $rules["{$key}_calc_type"] = 'sometimes|in:percentage,fixed';
         }
         foreach (['business_partner', 'leader', 'agent'] as $role) {
             $rules["entry_fee_{$role}"] = 'sometimes|numeric|min:0';
