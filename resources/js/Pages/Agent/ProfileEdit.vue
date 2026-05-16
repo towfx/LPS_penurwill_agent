@@ -52,6 +52,7 @@ const form = ref({
   bank_name: props.agent?.bank_account?.bank_name || '',
   iban: props.agent?.bank_account?.iban || '',
   swift_code: props.agent?.bank_account?.swift_code || '',
+  email_notifications_enabled: props.agent?.email_notifications_enabled ?? true,
 })
 
 const isIndividual = computed(() => form.value.profile_type === 'individual')
@@ -365,6 +366,22 @@ const saveProfile = async () => {
             <Input v-model="form.swift_code" type="text" :invalid="!!errors.swift_code" />
           </FormField>
         </div>
+      </div>
+
+      <!-- Notification Preferences -->
+      <div class="bg-white rounded-lg border border-stone-200 p-6">
+        <h3 class="text-lg font-semibold text-forest-dark mb-4">Notification Preferences</h3>
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            v-model="form.email_notifications_enabled"
+            class="mt-1 h-4 w-4 rounded border-stone-300 text-forest-dark focus:ring-forest-dark"
+          />
+          <span class="text-sm text-stone-700">
+            <span class="font-medium">Receive email notifications</span><br />
+            <span class="text-stone-500">When disabled, you will still see notifications in your inbox but will not receive emails.</span>
+          </span>
+        </label>
       </div>
 
       <!-- Form Actions -->

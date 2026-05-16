@@ -67,6 +67,7 @@ class AgentProfileController extends Controller
             'company_reg_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'company_representative_id_file' => 'nullable|file|mimes:pdf,jpeg,jpg,png|max:10240',
             'about' => 'nullable|string|max:1000',
+            'email_notifications_enabled' => 'nullable|boolean',
             // Bank account fields
             'bank_account_name' => 'nullable|string|max:255',
             'bank_account_number' => 'nullable|string|max:255',

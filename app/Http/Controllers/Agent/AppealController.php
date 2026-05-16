@@ -32,8 +32,8 @@ class AppealController extends Controller
             'Your suspension appeal has been submitted and is under review.',
         );
 
-        // Notify admin inbox
-        $notificationService->notifyAdmin(
+        // Inbox row for admin (rich SuspensionAppealNotification email below — avoid duplicate generic email)
+        $notificationService->notifyAdminInboxOnly(
             AgentNotification::TYPE_APPEAL_RECEIVED,
             "Suspension Appeal — {$agent->name}",
             "Agent #{$agent->id} ({$agent->name}) has appealed their suspension: {$request->message}",

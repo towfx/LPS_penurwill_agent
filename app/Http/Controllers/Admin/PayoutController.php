@@ -204,19 +204,35 @@ class PayoutController extends Controller
             ActivityLog::logUpdate($user, $payout, $before, $payout->toArray());
         }
 
-        // Send CommissionPaidNotification per commission earner
+        // Send CommissionPaidNotification per commission earner + create inbox row
         try {
             $payout->load('payoutItems.commission.earningAgent.users');
+            $notificationService = app(NotificationService::class);
+            $notifiedEarnerIds = [];
             foreach ($payout->payoutItems as $item) {
                 $commission = $item->commission;
                 if (! $commission) {
                     continue;
                 }
                 $earner = $commission->earningAgent;
-                $earnerEmail = $earner?->users?->first()?->email;
+                if (! $earner) {
+                    continue;
+                }
+                $earnerEmail = $earner->users?->first()?->email;
                 if ($earnerEmail) {
                     \Illuminate\Support\Facades\Mail::to($earnerEmail)
                         ->send(new \App\Mail\CommissionPaidNotification($commission));
+                }
+                if (! in_array($earner->id, $notifiedEarnerIds, true)) {
+                    $notifiedEarnerIds[] = $earner->id;
+                    $notificationService->notifyInboxOnly(
+                        $earner,
+                        AgentNotification::TYPE_COMMISSION_EARNED,
+                        'Commission Paid',
+                        "Your commission of {$commission->amount} has been paid out (payout #{$payout->id}).",
+                        Commission::class,
+                        $commission->id,
+                    );
                 }
             }
         } catch (\Exception $e) {
@@ -254,6 +270,15 @@ class PayoutController extends Controller
                     'agent_id' => $agent->id,
                 ]);
             }
+
+            app(NotificationService::class)->notifyInboxOnly(
+                $agent,
+                AgentNotification::TYPE_PAYOUT_PAID,
+                'Payout Paid',
+                "Your payout #{$payout->id} of {$payout->total_amount} has been marked as paid.",
+                Payout::class,
+                $payout->id,
+            );
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send payout paid notification email', [
                 'payout_id' => $payout->id,

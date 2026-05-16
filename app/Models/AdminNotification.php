@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class AgentNotification extends Model
+class AdminNotification extends Model
 {
     use HasFactory;
 
@@ -30,7 +30,7 @@ class AgentNotification extends Model
     public const TYPE_APPROVAL_REQUESTED = 'approval_requested';
 
     protected $fillable = [
-        'agent_id',
+        'user_id',
         'type',
         'subject',
         'body',
@@ -48,9 +48,9 @@ class AgentNotification extends Model
         ];
     }
 
-    public function agent()
+    public function user()
     {
-        return $this->belongsTo(Agent::class);
+        return $this->belongsTo(User::class);
     }
 
     public function scopeUnread($query)
@@ -68,9 +68,9 @@ class AgentNotification extends Model
         return $query->where('status', self::STATUS_ARCHIVED);
     }
 
-    public function scopeForAgent($query, int $agentId)
+    public function scopeForUser($query, int $userId)
     {
-        return $query->where('agent_id', $agentId);
+        return $query->where('user_id', $userId);
     }
 
     public function markRead(): void

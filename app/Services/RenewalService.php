@@ -6,6 +6,7 @@ use App\Mail\AgentExpiryAlertNotification;
 use App\Mail\AgentRenewalReminderNotification;
 use App\Models\ActivityLog;
 use App\Models\Agent;
+use App\Models\AgentNotification;
 use App\Support\SystemUser;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -73,6 +74,25 @@ class RenewalService
                     "Scheduler marked agent #{$agent->id} as expired (expires_at: {$agent->expires_at})",
                     $agent,
                 );
+            }
+        }
+
+        $notificationService = app(NotificationService::class);
+        foreach ($agents as $agent) {
+            try {
+                $notificationService->notify(
+                    $agent,
+                    AgentNotification::TYPE_AGENT_EXPIRED,
+                    'Membership Expired',
+                    "Your membership expired on {$agent->expires_at}. Renew to restore your account.",
+                    Agent::class,
+                    $agent->id,
+                );
+            } catch (\Throwable $e) {
+                Log::warning('RenewalService: expiry notification failed', [
+                    'agent_id' => $agent->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 

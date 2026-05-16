@@ -86,7 +86,7 @@ class FeeService
      */
     public function applyRenewalFee(Agent $agent, User $recordedBy, string $method = FeePayment::METHOD_MANUAL, ?string $reference = null): FeePayment
     {
-        return DB::transaction(function () use ($agent, $recordedBy, $method, $reference) {
+        $payment = DB::transaction(function () use ($agent, $recordedBy, $method, $reference) {
             $role = $agent->agent_role ?? Agent::ROLE_AGENT;
             $amount = $this->getFeeAmountFor($role, FeePayment::TYPE_RENEWAL);
             $duration = $this->getMembershipDurationDays();
@@ -127,6 +127,25 @@ class FeeService
 
             return $payment;
         });
+
+        // Notify agent (after transaction commits)
+        try {
+            app(NotificationService::class)->notify(
+                $agent,
+                AgentNotification::TYPE_FEE_PAYMENT,
+                'Renewal Fee Recorded',
+                "Your renewal fee of {$payment->amount} has been recorded. Membership now valid until {$agent->expires_at}.",
+                FeePayment::class,
+                $payment->id,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FeeService: renewal fee notification failed', [
+                'agent_id' => $agent->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $payment;
     }
 
     /**
@@ -218,6 +237,25 @@ class FeeService
             "Fee payment #{$payment->id} voided for agent #{$payment->agent_id}",
             $payment,
         );
+
+        // Notify agent
+        try {
+            if ($payment->agent) {
+                app(NotificationService::class)->notify(
+                    $payment->agent,
+                    AgentNotification::TYPE_FEE_PAYMENT,
+                    'Fee Payment Voided',
+                    "Your fee payment #{$payment->id} of {$payment->amount} has been voided.",
+                    FeePayment::class,
+                    $payment->id,
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FeeService: void notification failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function getFeeAmountFor(string $agentRole, string $feeType): float

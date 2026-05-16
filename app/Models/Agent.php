@@ -59,6 +59,7 @@ class Agent extends Model
         'first_login_at',
         'suspension_reason',
         'rejection_reason',
+        'email_notifications_enabled',
     ];
 
     /**
@@ -76,6 +77,7 @@ class Agent extends Model
             'renewal_due_at' => 'date',
             'tc_accepted_at' => 'datetime',
             'first_login_at' => 'datetime',
+            'email_notifications_enabled' => 'boolean',
         ];
     }
 

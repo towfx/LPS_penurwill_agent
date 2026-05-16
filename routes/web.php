@@ -142,6 +142,11 @@ Route::middleware([
 
         // Payout cancel
         Route::post('/payout/{id}/cancel', [App\Http\Controllers\Admin\PayoutController::class, 'cancel'])->name('payout.cancel');
+
+        // Inbox / notifications
+        Route::get('/inbox', [App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('inbox');
+        Route::post('/inbox/{id}/read', [App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('inbox.read');
+        Route::post('/inbox/read-all', [App\Http\Controllers\Admin\NotificationController::class, 'markAllRead'])->name('inbox.read-all');
     });
 
     // Agent routes (require agent role)
@@ -168,6 +173,7 @@ Route::middleware([
         // Payment completion (post-registration)
         Route::get('/payment/complete', [App\Http\Controllers\AgentRegistrationController::class, 'completePayment'])->name('payment.complete');
         Route::post('/payment/complete', [App\Http\Controllers\AgentRegistrationController::class, 'submitPayment'])->name('payment.complete.submit');
+        Route::post('/payment/initiate-stripe', [App\Http\Controllers\AgentRegistrationController::class, 'initiateAgentStripe'])->name('payment.initiate-stripe');
 
         // Referral stats
         Route::get('/referral', [App\Http\Controllers\Agent\ReferralController::class, 'index'])->name('referral');

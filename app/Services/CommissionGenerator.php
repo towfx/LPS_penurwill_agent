@@ -4,12 +4,14 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\Agent;
+use App\Models\AgentNotification;
 use App\Models\Commission;
 use App\Models\Sale;
 use App\Models\SystemSetting;
 use App\Support\SystemUser;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -135,6 +137,24 @@ class CommissionGenerator
         $systemUser = SystemUser::resolve();
         if ($systemUser) {
             ActivityLog::logCreate($systemUser, $commission, $commission->toArray());
+        }
+
+        try {
+            $kindLabel = $commissionType === 'own_sales' ? 'own sale' : "{$kind} override";
+            app(NotificationService::class)->notify(
+                $earningAgent,
+                AgentNotification::TYPE_COMMISSION_EARNED,
+                'New Commission Earned',
+                "You earned {$amount} from a {$kindLabel} on sale #{$sale->id} (sale amount: {$sale->amount}).",
+                Commission::class,
+                $commission->id,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('CommissionGenerator: notify failed', [
+                'commission_id' => $commission->id,
+                'agent_id' => $earningAgent->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $commission;

@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Log;
 class NotificationService
 {
     /**
-     * Create a notification for an agent.
+     * Create a notification for an agent and dispatch a generic InboxNotificationEmail.
+     * Email dispatch is skipped if the agent has opted out via email_notifications_enabled.
      */
     public function notify(
         Agent $agent,
@@ -24,29 +25,22 @@ class NotificationService
         ?string $relatedModel = null,
         ?int $relatedId = null
     ): ?AgentNotification {
-        try {
-            $notification = AgentNotification::create([
-                'agent_id' => $agent->id,
-                'type' => $type,
-                'subject' => $subject,
-                'body' => $body,
-                'status' => AgentNotification::STATUS_UNREAD,
-                'related_model' => $relatedModel,
-                'related_id' => $relatedId,
-            ]);
+        return $this->createNotification($agent, $type, $subject, $body, $relatedModel, $relatedId, true);
+    }
 
-            $this->dispatchEmail($notification, $agent);
-
-            return $notification;
-        } catch (\Throwable $e) {
-            Log::warning('NotificationService::notify failed', [
-                'agent_id' => $agent->id,
-                'type' => $type,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
+    /**
+     * Create an in-app notification WITHOUT dispatching the generic InboxNotificationEmail.
+     * Use this when a richer Mailable is already being sent for the same event.
+     */
+    public function notifyInboxOnly(
+        Agent $agent,
+        string $type,
+        string $subject,
+        string $body,
+        ?string $relatedModel = null,
+        ?int $relatedId = null
+    ): ?AgentNotification {
+        return $this->createNotification($agent, $type, $subject, $body, $relatedModel, $relatedId, false);
     }
 
     /**
@@ -65,6 +59,24 @@ class NotificationService
         }
 
         return $this->notify($admin, $type, $subject, $body, $relatedModel, $relatedId);
+    }
+
+    /**
+     * Send an admin notification without the generic InboxNotificationEmail.
+     */
+    public function notifyAdminInboxOnly(
+        string $type,
+        string $subject,
+        string $body,
+        ?string $relatedModel = null,
+        ?int $relatedId = null
+    ): ?AgentNotification {
+        $admin = Agent::find(1);
+        if (! $admin) {
+            return null;
+        }
+
+        return $this->notifyInboxOnly($admin, $type, $subject, $body, $relatedModel, $relatedId);
     }
 
     /**
@@ -100,8 +112,52 @@ class NotificationService
         }
     }
 
+    protected function createNotification(
+        Agent $agent,
+        string $type,
+        string $subject,
+        string $body,
+        ?string $relatedModel,
+        ?int $relatedId,
+        bool $sendEmail
+    ): ?AgentNotification {
+        try {
+            $notification = AgentNotification::create([
+                'agent_id' => $agent->id,
+                'type' => $type,
+                'subject' => $subject,
+                'body' => $body,
+                'status' => AgentNotification::STATUS_UNREAD,
+                'related_model' => $relatedModel,
+                'related_id' => $relatedId,
+            ]);
+
+            if ($sendEmail) {
+                $this->dispatchEmail($notification, $agent);
+            }
+
+            return $notification;
+        } catch (\Throwable $e) {
+            Log::warning('NotificationService::createNotification failed', [
+                'agent_id' => $agent->id,
+                'type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     protected function dispatchEmail(AgentNotification $notification, Agent $agent): void
     {
+        if ($agent->email_notifications_enabled === false) {
+            Log::debug('NotificationService email skipped — agent opted out', [
+                'notification_id' => $notification->id,
+                'agent_id' => $agent->id,
+            ]);
+            return;
+        }
+
         try {
             $user = $agent->users()->first();
             if (! $user) {

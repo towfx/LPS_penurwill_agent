@@ -238,6 +238,22 @@ class AgentController extends Controller
                 ]);
             }
 
+            try {
+                app(NotificationService::class)->notifyInboxOnly(
+                    $agent,
+                    AgentNotification::TYPE_AGENT_CREATED,
+                    'Account Created',
+                    'An administrator has created an account for you. Check your email for login credentials.',
+                    Agent::class,
+                    $agent->id,
+                );
+            } catch (\Throwable $e) {
+                Log::warning('AgentController: account created inbox notification failed', [
+                    'agent_id' => $agent->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             return redirect()->route('admin.agents.list')->with('success', 'Agent created successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
