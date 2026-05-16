@@ -15,7 +15,7 @@ import { ShoppingCart, DollarSign, Wallet } from 'lucide-vue-next'
 defineOptions({ layout: AgentLayout })
 
 const props = defineProps({
-  commissions: {
+  sales: {
     type: Array,
     default: () => []
   },
@@ -122,11 +122,11 @@ const applyFilters = () => {
   router.get('/agent/sales', params, {
     preserveState: true,
     preserveScroll: true,
-    only: ['commissions', 'totals', 'filters']
+    only: ['sales', 'totals', 'filters']
   })
 }
 
-const colspan = computed(() => 7)
+const colspan = computed(() => 6)
 </script>
 
 <template>
@@ -237,74 +237,97 @@ const colspan = computed(() => 7)
         <table class="w-full">
           <thead class="bg-cream">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Invoice / Date Time
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Description
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Sale Amount
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Source
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Comm Rate
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Comm Amount
-              </th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">
-                Status
-              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Sale Details</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Source</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Earner</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">Comm Rate</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">Comm Amount</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
-            <tr v-if="commissions.length === 0">
+            <tr v-if="sales.length === 0">
               <td :colspan="colspan" class="px-6 py-4 text-center text-stone-500">
-                No commissions found matching the selected filters.
+                No sales found matching the selected filters.
               </td>
             </tr>
-            <tr
-              v-for="c in commissions"
-              :key="c.id"
-              class="hover:bg-stone-50"
-            >
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div class="font-medium text-stone-900">{{ c.invoice_number || '—' }}</div>
-                <div class="text-xs text-stone-500">{{ formatDateTime(c.sale_date) }}</div>
-              </td>
-              <td class="px-6 py-4 text-sm text-stone-900">
-                {{ c.description || '—' }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ formatCurrency('RM', c.sale_amount ?? 0) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                <span v-if="c.source_agent">
-                  {{ c.source_agent.name || '—' }}
-                  <span class="text-xs text-stone-500">({{ roleLabel(c.source_agent.agent_role) }})</span>
-                </span>
-                <span v-else class="text-stone-400">—</span>
-                <div class="mt-1">
-                  <Badge :variant="c.commission_type === 'override' ? 'secondary' : 'outline'">
-                    {{ commissionTypeLabel(c.commission_type) }}
+            <template v-for="sale in sales" :key="sale.id">
+              <tr class="hover:bg-stone-50 border-t border-stone-200">
+                <td :rowspan="sale.commissions.length || 1" class="px-6 py-4 text-sm align-top">
+                  <div class="font-bold text-stone-900">{{ sale.invoice_number || '—' }}</div>
+                  <div class="text-xs text-stone-500 mb-1">{{ formatDateTime(sale.sale_date) }}</div>
+                  <div class="text-stone-600 italic mb-1">{{ sale.description || '—' }}</div>
+                  <div class="text-forest-dark font-bold">
+                    {{ formatCurrency('RM', sale.sale_amount ?? 0) }}
+                  </div>
+                </td>
+                <td :rowspan="sale.commissions.length || 1" class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 align-top">
+                  <span v-if="sale.source_agent">
+                    {{ sale.source_agent.name || '—' }}
+                    <div class="text-xs text-stone-500">{{ roleLabel(sale.source_agent.agent_role) }}</div>
+                  </span>
+                  <span v-else class="text-stone-400">—</span>
+                </td>
+                
+                <!-- First commission -->
+                <template v-if="sale.commissions.length > 0">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
+                    <span v-if="sale.commissions[0].earning_agent">
+                      <div class="font-medium">
+                        {{ sale.commissions[0].earning_agent.id === agent.id ? 'Me' : sale.commissions[0].earning_agent.name }}
+                      </div>
+                      <div class="text-xs text-stone-500">{{ roleLabel(sale.commissions[0].earning_agent.agent_role) }}</div>
+                    </span>
+                    <div class="mt-1">
+                      <Badge :variant="sale.commissions[0].commission_type === 'override' ? 'secondary' : 'outline'" class="text-[10px] px-1.5 py-0">
+                        {{ commissionTypeLabel(sale.commissions[0].commission_type) }}
+                      </Badge>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
+                    {{ commRateDisplay(sale.commissions[0]) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right font-medium">
+                    {{ formatCurrency('RM', sale.commissions[0].commission_amount ?? 0) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <Badge :variant="getStatusVariant(sale.commissions[0].status)">
+                      {{ sale.commissions[0].status ? sale.commissions[0].status.charAt(0).toUpperCase() + sale.commissions[0].status.slice(1) : '—' }}
+                    </Badge>
+                  </td>
+                </template>
+                <template v-else>
+                  <td colspan="4" class="px-6 py-4 text-center text-stone-400 text-xs">No commissions</td>
+                </template>
+              </tr>
+              <!-- Remaining commissions (for leaders/BPs) -->
+              <tr v-for="c in sale.commissions.slice(1)" :key="c.id" class="hover:bg-stone-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 border-l border-stone-100">
+                  <span v-if="c.earning_agent">
+                    <div class="font-medium">
+                      {{ c.earning_agent.id === agent.id ? 'Me' : c.earning_agent.name }}
+                    </div>
+                    <div class="text-xs text-stone-500">{{ roleLabel(c.earning_agent.agent_role) }}</div>
+                  </span>
+                  <div class="mt-1">
+                    <Badge :variant="c.commission_type === 'override' ? 'secondary' : 'outline'" class="text-[10px] px-1.5 py-0">
+                      {{ commissionTypeLabel(c.commission_type) }}
+                    </Badge>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
+                  {{ commRateDisplay(c) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right font-medium">
+                  {{ formatCurrency('RM', c.commission_amount ?? 0) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <Badge :variant="getStatusVariant(c.status)">
+                    {{ c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : '—' }}
                   </Badge>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ commRateDisplay(c) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-900 text-right">
-                {{ formatCurrency('RM', c.commission_amount ?? 0) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-center">
-                <Badge :variant="getStatusVariant(c.status)">
-                  {{ c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : '—' }}
-                </Badge>
-              </td>
-            </tr>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>

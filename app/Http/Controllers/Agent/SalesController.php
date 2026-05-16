@@ -56,39 +56,63 @@ class SalesController extends Controller
             }
         };
 
-        // List query — exclude reversal rows from the table view.
-        $listQuery = Commission::with(['sale.agent'])
-            ->whereIn('earning_agent_id', $earnerIds)
-            ->where('is_reversal', false);
-        $applyDateFilter($listQuery);
-        $applyStatusFilter($listQuery);
+        $query = Sale::with(['agent', 'commissions' => function ($q) use ($earnerIds) {
+                $q->whereIn('earning_agent_id', $earnerIds)
+                  ->where('is_reversal', false)
+                  ->with('earningAgent');
+            }]);
 
-        $commissions = $listQuery
-            ->orderByDesc(
-                Sale::select('sale_date')->whereColumn('sales.id', 'commissions.sale_id')
-            )
-            ->get();
+        $query->whereHas('commissions', function ($q) use ($earnerIds) {
+            $q->whereIn('earning_agent_id', $earnerIds)
+              ->where('is_reversal', false);
+        });
 
-        $data = $commissions->map(function (Commission $c) {
+        if ($startDate && $endDate) {
+            $query->whereBetween('sale_date', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay(),
+            ]);
+        }
+
+        if ($status && $status !== 'all') {
+            $query->whereHas('commissions', function ($q) use ($status, $earnerIds) {
+                $q->where('status', $status)
+                  ->whereIn('earning_agent_id', $earnerIds);
+            });
+        }
+
+        $sales = $query->orderByDesc('sale_date')->get();
+
+        $data = $sales->map(function (Sale $s) use ($earnerIds) {
             return [
-                'id' => $c->id,
-                'sale_id' => $c->sale_id,
-                'sale_date' => $c->sale?->sale_date?->toIso8601String(),
-                'invoice_number' => $c->sale?->invoice_number,
-                'description' => $c->sale?->description,
-                'sale_amount' => $c->sale?->amount,
-                'commission_amount' => $c->amount,
-                'commission_rate' => $c->commission_rate,
-                'commission_calc_type' => $c->commission_calc_type,
-                'commission_fixed_amount' => $c->commission_fixed_amount,
-                'commission_type' => $c->commission_type,
-                'commission_category' => $c->commission_category,
-                'status' => $c->status,
-                'source_agent' => $c->sale?->agent ? [
-                    'id' => $c->sale->agent->id,
-                    'name' => $c->sale->agent->name,
-                    'agent_role' => $c->sale->agent->agent_role,
+                'id' => $s->id,
+                'invoice_number' => $s->invoice_number,
+                'sale_date' => $s->sale_date?->toIso8601String(),
+                'description' => $s->description,
+                'sale_amount' => $s->amount,
+                'source_agent' => $s->agent ? [
+                    'id' => $s->agent->id,
+                    'name' => $s->agent->name,
+                    'agent_role' => $s->agent->agent_role,
                 ] : null,
+                'commissions' => $s->commissions->filter(function ($c) use ($earnerIds) {
+                    return ! $c->is_reversal && $earnerIds->contains($c->earning_agent_id);
+                })->map(function ($c) {
+                    return [
+                        'id' => $c->id,
+                        'earning_agent' => $c->earningAgent ? [
+                            'id' => $c->earningAgent->id,
+                            'name' => $c->earningAgent->name,
+                            'agent_role' => $c->earningAgent->agent_role,
+                        ] : null,
+                        'commission_type' => $c->commission_type,
+                        'commission_amount' => $c->amount,
+                        'commission_rate' => $c->commission_rate,
+                        'commission_calc_type' => $c->commission_calc_type,
+                        'commission_fixed_amount' => $c->commission_fixed_amount,
+                        'status' => $c->status,
+                    ];
+                })->values(),
             ];
         });
 
@@ -105,7 +129,7 @@ class SalesController extends Controller
         $totalSales = Sale::whereIn('id', $saleIds)->sum('amount');
 
         return Inertia::render('Agent/Sales', [
-            'commissions' => $data,
+            'sales' => $data,
             'totals' => [
                 'sales' => (float) $totalSales,
                 'commission' => (float) $totalCommission,
