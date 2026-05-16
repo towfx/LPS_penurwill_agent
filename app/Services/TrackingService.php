@@ -84,6 +84,9 @@ class TrackingService
                 'user_agent' => $request->userAgent(),
             ]);
 
+            // Update used count
+            $referralCode->increment('used_count');
+
             // Log activity (using system user for API tracking)
             $systemUser = SystemUser::resolve();
             if ($systemUser) {
@@ -268,6 +271,9 @@ class TrackingService
             ]);
 
             $commissions = $generator->generateForSale($sale);
+
+            // Update used count
+            $referralCode->increment('used_count');
 
             $systemUser = SystemUser::resolve();
             if ($systemUser) {
