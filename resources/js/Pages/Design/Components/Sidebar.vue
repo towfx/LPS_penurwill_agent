@@ -78,6 +78,9 @@ import {
 import Badge from './Badge.vue'
 import { computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
+import { useRoleNames } from '../../../composables/useRoleNames.js'
+
+const { roleNames, roleNamesPlural } = useRoleNames()
 
 // Role detection
 const page = usePage()
@@ -117,21 +120,22 @@ const props = defineProps({
 
 defineEmits(['toggle'])
 
-const defaultAdminMenus = [
+const defaultAdminMenus = computed(() => [
   { icon: Home, label: 'Dashboard', href: '/admin/dashboard' },
-  { icon: Briefcase, label: 'Business Partner', href: '/admin/agents/list?type=business_partner' },
-  { icon: Award, label: 'Leader', href: '/admin/agents/list?type=agent_leader' },
-  { icon: UsersIcon, label: 'Agents', href: '/admin/agents/list' },
+  { icon: Briefcase, label: roleNames.value.business_partner, href: '/admin/agents/list?type=business_partner' },
+  { icon: Award, label: roleNames.value.agent_leader, href: '/admin/agents/list?type=agent_leader' },
+  { icon: UsersIcon, label: roleNamesPlural.value.agent, href: '/admin/agents/list' },
   { icon: Network, label: 'Hierarchy', href: '/admin/agent/hierarchy' },
+  { icon: ShoppingCart, label: 'Sales', href: '/admin/sales' },
   { icon: DollarSign, label: 'Payouts', href: '/admin/payouts' },
   { icon: Receipt, label: 'Fee Payments', href: '/admin/fee-payments' },
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
-]
+])
 
 const defaultAgentMenus = computed(() => {
   const items = [
     { icon: BarChart3, label: 'Dashboard', href: '/agent/dashboard' },
-    { icon: User, label: 'Agent Profile', href: '/agent/profile' },
+    { icon: User, label: `${roleNames.value.agent} Profile`, href: '/agent/profile' },
     { icon: ShoppingCart, label: 'Sales & Commissions', href: '/agent/sales' },
     { icon: DollarSign, label: 'Payout', href: '/agent/payouts' },
   ]
@@ -153,7 +157,7 @@ const menuItems = computed(() => {
 
   // Use role-based menu detection
   if (isAdmin.value) {
-    return defaultAdminMenus
+    return defaultAdminMenus.value
   }
   if (isPartner.value) {
     return defaultPartnerMenus
