@@ -102,7 +102,7 @@ const userEmail = computed(() => user.value.email || '')
 
 // Role checks
 const isAdmin = computed(() => userRoles.value.includes('admin'))
-const isAgent = computed(() => userRoles.value.includes('agent'))
+const isAgent = computed(() => userRoles.value.includes('agent') || userRoles.value.includes('agent_leader') || userRoles.value.includes('business_partner'))
 
 // Navigation based on role
 const getDashboardLink = computed(() => {

@@ -8,6 +8,7 @@ use App\Models\Commission;
 use App\Models\Payout;
 use App\Models\Referral;
 use App\Models\Sale;
+use App\Services\AgentHierarchy;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -25,6 +26,16 @@ class DashboardController extends Controller
             abort(403, 'Not an agent');
         }
         $agentId = $agent->id;
+        $agentRole = $agent->agent_role;
+
+        // Determine scoped agent IDs for data visibility
+        $hierarchy = app(AgentHierarchy::class);
+        $scopedAgentIds = [$agentId];
+        if ($agentRole === Agent::ROLE_AGENT_LEADER) {
+            $scopedAgentIds = array_merge($scopedAgentIds, $agent->subordinates()->pluck('id')->toArray());
+        } elseif ($agentRole === Agent::ROLE_BUSINESS_PARTNER) {
+            $scopedAgentIds = array_merge($scopedAgentIds, $agent->descendants()->pluck('id')->toArray());
+        }
 
         // 1. Stats Cards
         $now = Carbon::now();
@@ -37,16 +48,16 @@ class DashboardController extends Controller
         $startPrev90 = $now->copy()->subDays(179)->startOfDay();
         $endPrev90 = $now->copy()->subDays(90)->endOfDay();
 
-        // Total sales this month
-        $salesThisMonth = Sale::where('agent_id', $agentId)
+        // Total sales this month (scoped)
+        $salesThisMonth = Sale::whereIn('agent_id', $scopedAgentIds)
             ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
             ->sum('amount');
-        $salesLastMonth = Sale::where('agent_id', $agentId)
+        $salesLastMonth = Sale::whereIn('agent_id', $scopedAgentIds)
             ->whereBetween('sale_date', [$startOfLastMonth, $endOfLastMonth])
             ->sum('amount');
         $salesChange = $salesLastMonth > 0 ? (($salesThisMonth - $salesLastMonth) / $salesLastMonth) * 100 : null;
 
-        // Total commissions earned this month (own_sales + overrides)
+        // Total commissions earned this month (own_sales + overrides) - PERSONAL EARNINGS
         $commThisMonth = Commission::where('earning_agent_id', $agentId)
             ->whereHas('sale', function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
@@ -58,60 +69,74 @@ class DashboardController extends Controller
             })
             ->sum('amount');
 
-        // Commission breakdown by type (own_sales vs override) for this month
-        $commByType = Commission::query()
+        // Commission breakdown by type and source role for this month
+        $commRecords = Commission::query()
             ->where('earning_agent_id', $agentId)
             ->whereHas('sale', function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
             })
-            ->selectRaw('commission_type, SUM(amount) as total')
-            ->groupBy('commission_type')
-            ->pluck('total', 'commission_type');
-        $ownSalesTotal = (float) ($commByType[Commission::TYPE_OWN_SALES] ?? 0);
-        $overrideTotal = (float) ($commByType[Commission::TYPE_OVERRIDE] ?? 0);
+            ->with(['sale.agent'])
+            ->get();
+
+        $ownSalesTotal = 0;
+        $overrideAgentTotal = 0;
+        $overrideLeaderTotal = 0;
+
+        foreach ($commRecords as $comm) {
+            if ($comm->commission_type === Commission::TYPE_OWN_SALES) {
+                $ownSalesTotal += (float) $comm->amount;
+            } else {
+                $sellerRole = $comm->sale->agent->agent_role ?? Agent::ROLE_AGENT;
+                if ($sellerRole === Agent::ROLE_AGENT) {
+                    $overrideAgentTotal += (float) $comm->amount;
+                } elseif ($sellerRole === Agent::ROLE_AGENT_LEADER) {
+                    $overrideLeaderTotal += (float) $comm->amount;
+                }
+            }
+        }
 
         // Subordinate count (relevant for leaders / business partners)
         $subordinateCount = $agent->subordinates()->count();
         $commChange = $commLastMonth > 0 ? (($commThisMonth - $commLastMonth) / $commLastMonth) * 100 : null;
 
-        // Active referrals (90 days)
-        $referrals90 = Referral::where('referrer_id', $agentId)
+        // Active referrals (90 days, scoped)
+        $referrals90 = Referral::whereIn('referrer_id', $scopedAgentIds)
             ->whereBetween('created_at', [$start90, $end90])
             ->count();
-        $referralsPrev90 = Referral::where('referrer_id', $agentId)
+        $referralsPrev90 = Referral::whereIn('referrer_id', $scopedAgentIds)
             ->whereBetween('created_at', [$startPrev90, $endPrev90])
             ->count();
         $refChange = $referralsPrev90 > 0 ? (($referrals90 - $referralsPrev90) / $referralsPrev90) * 100 : null;
 
-        // Conversion rate (sales/referrals, this month)
-        $referralsThisMonth = Referral::where('referrer_id', $agentId)
+        // Conversion rate (sales/referrals, this month, scoped)
+        $referralsThisMonth = Referral::whereIn('referrer_id', $scopedAgentIds)
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->count();
-        $conversionsThisMonth = Sale::where('agent_id', $agentId)
+        $conversionsThisMonth = Sale::whereIn('agent_id', $scopedAgentIds)
             ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
             ->count();
         $conversionRate = $referralsThisMonth > 0 ? ($conversionsThisMonth / $referralsThisMonth) * 100 : null;
-        $referralsLastMonth = Referral::where('referrer_id', $agentId)
+        $referralsLastMonth = Referral::whereIn('referrer_id', $scopedAgentIds)
             ->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth])
             ->count();
-        $conversionsLastMonth = Sale::where('agent_id', $agentId)
+        $conversionsLastMonth = Sale::whereIn('agent_id', $scopedAgentIds)
             ->whereBetween('sale_date', [$startOfLastMonth, $endOfLastMonth])
             ->count();
         $conversionRateLastMonth = $referralsLastMonth > 0 ? ($conversionsLastMonth / $referralsLastMonth) * 100 : null;
         $conversionChange = ($conversionRateLastMonth && $conversionRate) ? ($conversionRate - $conversionRateLastMonth) : null;
 
-        // 2. Monthly sales line chart (current month, by day)
+        // 2. Monthly sales line chart (current month, by day, scoped)
         $daysInMonth = $now->daysInMonth;
         $salesByDay = array_fill(1, $daysInMonth, 0);
-        $sales = Sale::where('agent_id', $agentId)
+        $sales = Sale::whereIn('agent_id', $scopedAgentIds)
             ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
             ->get(['sale_date', 'amount']);
         foreach ($sales as $sale) {
             $day = Carbon::parse($sale->sale_date)->day;
-            $salesByDay[$day] += $sale->amount;
+            $salesByDay[$day] += (float) $sale->amount;
         }
 
-        // 3. 90-day referrals bar chart + conversion line
+        // 3. 90-day referrals bar chart + conversion line (scoped)
         $period = CarbonPeriod::create($start90, $end90);
         $referralsByDay = [];
         $conversionsByDay = [];
@@ -120,7 +145,7 @@ class DashboardController extends Controller
             $referralsByDay[$day] = 0;
             $conversionsByDay[$day] = 0;
         }
-        $referrals = Referral::where('referrer_id', $agentId)
+        $referrals = Referral::whereIn('referrer_id', $scopedAgentIds)
             ->whereBetween('created_at', [$start90, $end90])
             ->get(['created_at']);
         foreach ($referrals as $ref) {
@@ -129,7 +154,7 @@ class DashboardController extends Controller
                 $referralsByDay[$day]++;
             }
         }
-        $sales90 = Sale::where('agent_id', $agentId)
+        $sales90 = Sale::whereIn('agent_id', $scopedAgentIds)
             ->whereBetween('sale_date', [$start90, $end90])
             ->get(['sale_date']);
         foreach ($sales90 as $sale) {
@@ -144,17 +169,17 @@ class DashboardController extends Controller
             $conversionRateByDay[$day] = $refCount > 0 ? ($conversionsByDay[$day] / $refCount) * 100 : 0;
         }
 
-        // 4. Recent sales table (last 10)
-        $recentSales = Sale::where('agent_id', $agentId)
+        // 4. Recent sales table (last 10, scoped)
+        $recentSales = Sale::whereIn('agent_id', $scopedAgentIds)
             ->orderByDesc('sale_date')
             ->take(10)
-            ->with('commission')
+            ->with(['commission', 'agent'])
             ->get();
 
-        // 5. Performance summary
-        $avgSaleValue = Sale::where('agent_id', $agentId)
+        // 5. Performance summary (scoped)
+        $avgSaleValue = Sale::whereIn('agent_id', $scopedAgentIds)
             ->avg('amount');
-        $bestDay = Sale::where('agent_id', $agentId)
+        $bestDay = Sale::whereIn('agent_id', $scopedAgentIds)
             ->selectRaw('DAYNAME(sale_date) as day, SUM(amount) as total')
             ->groupBy('day')
             ->orderByDesc('total')
@@ -182,12 +207,17 @@ class DashboardController extends Controller
                 'commThisMonth' => $commThisMonth,
                 'commChange' => $commChange,
                 'commOwnSalesThisMonth' => $ownSalesTotal,
-                'commOverrideThisMonth' => $overrideTotal,
+                'commOverrideThisMonth' => $overrideAgentTotal + $overrideLeaderTotal,
                 'referrals90' => $referrals90,
                 'refChange' => $refChange,
                 'conversionRate' => $conversionRate,
                 'conversionChange' => $conversionChange,
                 'subordinateCount' => $subordinateCount,
+            ],
+            'commissionBreakdown' => [
+                'own_sales' => $ownSalesTotal,
+                'override_agent' => $overrideAgentTotal,
+                'override_leader' => $overrideLeaderTotal,
             ],
             'salesByDay' => $salesByDay,
             'referralsByDay' => $referralsByDay,

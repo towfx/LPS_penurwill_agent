@@ -89,9 +89,8 @@ class SalesController extends Controller
             });
         }
 
-        $sales = $query->orderByDesc('sale_date')->get();
-
-        $data = $sales->map(function (Sale $s) use ($earnerIds) {
+        $sales = $query->orderByDesc('sale_date')->paginate(10);
+        $sales->through(function (Sale $s) use ($earnerIds) {
             return [
                 'id' => $s->id,
                 'invoice_number' => $s->invoice_number,
@@ -137,7 +136,7 @@ class SalesController extends Controller
         $totalSales = Sale::whereIn('id', $saleIds)->sum('amount');
 
         return Inertia::render('Agent/Sales', [
-            'sales' => $data,
+            'sales' => $sales,
             'totals' => [
                 'sales' => (float) $totalSales,
                 'commission' => (float) $totalCommission,

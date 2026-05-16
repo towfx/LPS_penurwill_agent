@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Agent;
 use App\Models\BankAccount;
+use App\Models\Referral;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\TrackingService;
@@ -71,8 +72,8 @@ class TestDataSeeder extends Seeder
             ));
         }
 
-        $this->command->newLine();
-        $this->command->info('Generating ' . self::SALES_PER_AGENT . ' sales per agent...');
+        $months = 6;
+        $this->command->info("Generating 10-40 sales per agent per month for the last $months months...");
 
         foreach ($created as $key => $agent) {
             if (! $agent->referralCode) {
@@ -80,27 +81,58 @@ class TestDataSeeder extends Seeder
                 continue;
             }
 
-            for ($i = 1; $i <= self::SALES_PER_AGENT; $i++) {
-                try {
-                    $request = new Request();
-                    $request->server->set('REMOTE_ADDR', $this->faker->ipv4);
-                    $request->headers->set('User-Agent', $this->faker->userAgent);
+            for ($m = 0; $m < $months; $m++) {
+                $monthDate = now()->subMonths($m);
+                $startOfMonth = $monthDate->copy()->startOfMonth();
+                $endOfMonth = $monthDate->copy()->endOfMonth();
 
-                    app(TrackingService::class)->trackSale([
-                        'referral_code'  => $agent->referralCode->code,
-                        'customer_name'  => $this->faker->name,
-                        'customer_email' => 'buyer' . $this->faker->numberBetween(1000, 9999) . '@test.com',
-                        'sale_amount'    => $this->faker->randomFloat(2, 200, 500),
-                        'sale_date'      => $this->faker->dateTimeBetween('-3 months', 'now')->format('Y-m-d'),
-                        'product_name'   => 'Package ' . $this->faker->randomElement(['Basic', 'Premium', 'Standard']),
-                        'invoice_number' => 'INV-' . strtoupper($key) . '-' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                    ], $request);
-                } catch (\Exception $e) {
-                    $this->command->error("  Sale {$i} for {$key} failed: " . $e->getMessage());
+                // If it's the current month, don't go beyond today
+                if ($m === 0) {
+                    $endOfMonth = now();
+                }
+
+                $salesCount = $this->faker->numberBetween(10, 40);
+
+                // Also create some non-converting referrals (to simulate conversion rate < 100%)
+                // Let's say conversion rate is 20-50%
+                $referralCount = (int) ($salesCount / $this->faker->randomFloat(2, 0.2, 0.5));
+
+                for ($r = 0; $r < $referralCount; $r++) {
+                    $refDate = $this->faker->dateTimeBetween($startOfMonth, $endOfMonth);
+                    Referral::create([
+                        'referrer_id' => $agent->id,
+                        'referred_email' => $this->faker->unique()->safeEmail,
+                        'referred_name' => $this->faker->name,
+                        'status' => 'pending',
+                        'created_at' => $refDate,
+                        'updated_at' => $refDate,
+                    ]);
+                }
+
+                for ($i = 1; $i <= $salesCount; $i++) {
+                    try {
+                        $request = new Request();
+                        $request->server->set('REMOTE_ADDR', $this->faker->ipv4);
+                        $request->headers->set('User-Agent', $this->faker->userAgent);
+
+                        $saleDate = $this->faker->dateTimeBetween($startOfMonth, $endOfMonth);
+
+                        app(TrackingService::class)->trackSale([
+                            'referral_code'  => $agent->referralCode->code,
+                            'customer_name'  => $this->faker->name,
+                            'customer_email' => 'buyer' . $this->faker->numberBetween(1000, 9999) . '@test.com',
+                            'sale_amount'    => $this->faker->randomFloat(2, 200, 500),
+                            'sale_date'      => $saleDate->format('Y-m-d'),
+                            'product_name'   => 'Package ' . $this->faker->randomElement(['Basic', 'Premium', 'Standard']),
+                            'invoice_number' => 'INV-' . strtoupper($key) . '-' . $monthDate->format('Ym') . '-' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        ], $request);
+                    } catch (\Exception $e) {
+                        // Skip errors (e.g. duplicate emails or validation issues)
+                    }
                 }
             }
 
-            $this->command->info("  {$key}: " . self::SALES_PER_AGENT . ' sales created');
+            $this->command->info("  {$key}: Sales and referrals created for last $months months");
         }
 
         $this->command->newLine();

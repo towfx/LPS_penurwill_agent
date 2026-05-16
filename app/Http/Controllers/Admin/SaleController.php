@@ -71,9 +71,8 @@ class SaleController extends Controller
             });
         }
 
-        $sales = $query->orderByDesc('sale_date')->get();
-
-        $data = $sales->map(function (Sale $s) {
+        $sales = $query->orderByDesc('sale_date')->paginate(10);
+        $sales->through(function (Sale $s) {
             return [
                 'id' => $s->id,
                 'invoice_number' => $s->invoice_number,
@@ -132,7 +131,7 @@ class SaleController extends Controller
             ->values();
 
         return Inertia::render('Admin/Sales', [
-            'sales' => $data,
+            'sales' => $sales,
             'totals' => [
                 'sales' => (float) $totalSales,
                 'commission' => (float) $totalCommission,

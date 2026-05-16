@@ -11,11 +11,12 @@ import { formatCurrency } from '../../lib/utils.js'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { ShoppingCart, DollarSign, Wallet } from 'lucide-vue-next'
+import Pagination from '../Design/Components/Pagination.vue'
 
 defineOptions({ layout: AdminLayout })
 
 const props = defineProps({
-  sales: { type: Array, default: () => [] },
+  sales: { type: Object, default: () => ({ data: [] }) },
   totals: {
     type: Object,
     default: () => ({ sales: 0, commission: 0, overrides: 0 })
@@ -77,8 +78,8 @@ const commissionTypeLabel = (type) => {
   return type || '—'
 }
 
-const applyFilters = () => {
-  const params = {}
+const applyFilters = (extraParams = {}) => {
+  const params = { ...extraParams }
   if (dateRange.value && dateRange.value.length === 2) {
     params.start_date = dateRange.value[0].toISOString().split('T')[0]
     params.end_date = dateRange.value[1].toISOString().split('T')[0]
@@ -94,6 +95,10 @@ const applyFilters = () => {
     preserveScroll: true,
     only: ['sales', 'totals', 'filters']
   })
+}
+
+const handlePageChange = (page) => {
+  applyFilters({ page })
 }
 
 const updateDateRange = (dates) => {
@@ -219,12 +224,12 @@ const colspan = computed(() => 6)
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-stone-200">
-            <tr v-if="sales.length === 0">
+            <tr v-if="sales.data.length === 0">
               <td :colspan="colspan" class="px-6 py-4 text-center text-stone-500">
                 No sales found matching the selected filters.
               </td>
             </tr>
-            <template v-for="sale in sales" :key="sale.id">
+            <template v-for="sale in sales.data" :key="sale.id">
               <tr class="hover:bg-stone-50 border-t border-stone-200">
                 <td :rowspan="sale.commissions.length || 1" class="px-6 py-4 text-sm align-top">
                   <div class="font-bold text-stone-900">{{ sale.invoice_number || '—' }}</div>
@@ -299,6 +304,15 @@ const colspan = computed(() => 6)
             </template>
           </tbody>
         </table>
+      </div>
+      <!-- Pagination -->
+      <div v-if="sales.total > sales.per_page" class="px-6 py-4 border-t border-stone-200">
+        <Pagination
+          :current-page="sales.current_page"
+          :per-page="sales.per_page"
+          :total="sales.total"
+          @change="handlePageChange"
+        />
       </div>
     </div>
   </div>

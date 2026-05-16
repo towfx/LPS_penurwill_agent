@@ -14,7 +14,12 @@
       "Bash(git commit -m ' *)",
       "Skill(caveman:caveman-commit)",
       "Skill(caveman:caveman-commit:*)",
-      "Bash(git commit -m 'feat\\(admin\\): add sale simulation page + retire Sale::trackSale\\(\\) *)"
+      "Bash(git commit -m 'feat\\(admin\\): add sale simulation page + retire Sale::trackSale\\(\\) *)",
+      "Bash(grep -E \"\\\\.\\(vue|blade\\)$\")",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:brainstorming:*)",
+      "Bash(php -l app/Http/Controllers/AgentRegistrationController.php)",
+      "Bash(git stash *)"
     ],
     "additionalDirectories": [
       "/tmp"
