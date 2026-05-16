@@ -84,7 +84,8 @@ Route::middleware([
         Route::get('/agents/parents', [AgentController::class, 'parents'])->name('agents.parents');
         Route::get('/agent/hierarchy', [AgentController::class, 'hierarchy'])->name('agents.hierarchy');
 
-        // Sales — refund (commission reversal)
+        // Sales
+        Route::get('/sales', [App\Http\Controllers\Admin\SaleController::class, 'index'])->name('sales.list');
         Route::post('/sales/{sale}/refund', [App\Http\Controllers\Admin\SaleController::class, 'markAsRefunded'])
             ->name('sales.refund');
 
@@ -98,6 +99,14 @@ Route::middleware([
         // Commissions
         Route::get('/commissions/list', [App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('commissions.list');
         Route::get('/commission/detail', [App\Http\Controllers\Admin\CommissionController::class, 'detail'])->name('commission.detail');
+
+        // Commission rate preview (dry-run simulator)
+        Route::get('/commission-rate-preview', [App\Http\Controllers\Admin\CommissionRatePreviewController::class, 'index'])->name('commission-rate-preview');
+        Route::get('/commission-rate-preview/run', [App\Http\Controllers\Admin\CommissionRatePreviewController::class, 'run'])->name('commission-rate-preview.run');
+
+        // Sale Simulation — dry-run commission preview for a given agent + amount
+        Route::get('/sale-simulation', [App\Http\Controllers\Admin\SaleSimulationController::class, 'index'])->name('sale-simulation');
+        Route::get('/sale-simulation/run', [App\Http\Controllers\Admin\SaleSimulationController::class, 'run'])->name('sale-simulation.run');
 
         // Payouts
         Route::get('/payouts', [App\Http\Controllers\Admin\PayoutController::class, 'index'])->name('payouts.list');
