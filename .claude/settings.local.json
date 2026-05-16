@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(php artisan *)",
+      "Skill(laravel-tinker)",
+      "Skill(laravel-tinker:*)",
+      "Bash(xargs cat)",
+      "mcp__browsermcp__browser_navigate",
+      "Bash(composer dev *)",
+      "Bash(curl -s http://localhost:8000/)",
+      "Bash(curl -s -w \"\\\\nStatus: %{http_code}\\\\n\" http://localhost:8000/admin/commission-rate-preview)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Skill(caveman:caveman-commit)",
+      "Skill(caveman:caveman-commit:*)",
+      "Bash(git commit -m 'feat\\(admin\\): add sale simulation page + retire Sale::trackSale\\(\\) *)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
     ]
   }
 }

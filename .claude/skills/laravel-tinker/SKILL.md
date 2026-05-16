@@ -210,3 +210,10 @@ echo round((microtime(true) - \$start) * 1000, 2) . 'ms';
 | Model not found | Check namespace — always use full `App\Models\ClassName` |
 | Stale config | Run `php artisan config:clear` before tinker session |
 | Queue not dispatching | Ensure `QUEUE_CONNECTION=sync` in `.env` for instant execution in tinker |
+
+## Must do
+
+When this skill invoked preset me with full path:
+ - Contoller+Method with line number
+ - model used
+ - View files
