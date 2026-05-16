@@ -11,6 +11,9 @@ import Pagination from '../Design/Components/Pagination.vue'
 import FormField from '../Design/Components/FormField.vue'
 import Input from '../Design/Components/Input.vue'
 import { Copy, Check, Link2, Users, TrendingUp, Clock } from 'lucide-vue-next'
+import { useRoleNames } from '../../composables/useRoleNames.js'
+
+const { roleNames } = useRoleNames()
 
 defineOptions({ layout: AgentLayout })
 
@@ -94,7 +97,7 @@ const conversionRate = computed(() => {
     <PageHeader
       title="Referral"
       description="Your referral code, link, and visitor conversion stats."
-      :breadcrumbs="[{ label: 'Agent', href: '/agent/dashboard' }, { label: 'Referral' }]"
+      :breadcrumbs="[{ label: roleNames.agent, href: '/agent/dashboard' }, { label: 'Referral' }]"
     />
 
     <!-- Referral Code Card -->

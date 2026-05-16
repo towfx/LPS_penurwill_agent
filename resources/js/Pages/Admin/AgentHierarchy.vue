@@ -1,8 +1,8 @@
 <template>
   <div>
     <PageHeader
-      title="Agent Hierarchy"
-      :breadcrumbs="[{ label: 'Admin', href: '/admin/dashboard' }, { label: 'Agents', href: '/admin/agents/list' }, { label: 'Hierarchy' }]"
+      :title="`${roleNames.agent} Hierarchy`"
+      :breadcrumbs="breadcrumbs"
     >
       <template #actions>
         <div class="flex items-center space-x-2">
@@ -87,8 +87,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AdminLayout from '../Design/AdminLayout.vue'
+import { useRoleNames } from '../../composables/useRoleNames.js'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Button from '../Design/Components/Button.vue'
 import { Vue3OrgChart } from 'vue3-org-chart'
@@ -112,6 +113,13 @@ const props = defineProps({
 })
 
 console.log('Hierarchy Data:', props.hierarchyData)
+
+const { roleNames, roleNamesPlural } = useRoleNames()
+const breadcrumbs = computed(() => [
+  { label: 'Admin', href: '/admin/dashboard' },
+  { label: roleNamesPlural.value.agent, href: '/admin/agents/list' },
+  { label: 'Hierarchy' },
+])
 
 const vocApi = ref(null)
 

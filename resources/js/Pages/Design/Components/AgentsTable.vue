@@ -228,10 +228,10 @@ const urlParams = new URLSearchParams(window.location.search)
 const hasTypeFilter = computed(() => !!(urlParams.get('type') || urlParams.get('role')))
 const tableTitle = computed(() => {
   const typeParam = urlParams.get('type') || urlParams.get('role')
-  if (typeParam === 'business_partner') return 'Business Partners'
-  if (typeParam === 'agent_leader') return 'Leaders'
-  if (typeParam === 'agent') return 'Agents'
-  return 'Agents'
+  if (typeParam === 'business_partner') return `${roleNames.value.business_partner}s`
+  if (typeParam === 'agent_leader') return `${roleNames.value.agent_leader}s`
+  if (typeParam === 'agent') return `${roleNames.value.agent}s`
+  return `${roleNames.value.agent}s`
 })
 const roleFilter = ref(urlParams.get('type') || urlParams.get('role') || '')
 const sortByField = ref('id')

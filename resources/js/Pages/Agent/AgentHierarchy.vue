@@ -2,7 +2,7 @@
   <div>
     <PageHeader
       title="My Downline Hierarchy"
-      :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Hierarchy' }]"
+      :breadcrumbs="breadcrumbs"
     >
       <template #actions>
         <div class="flex items-center space-x-2">
@@ -86,8 +86,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AgentLayout from '../Design/AgentLayout.vue'
+import { useRoleNames } from '../../composables/useRoleNames.js'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Button from '../Design/Components/Button.vue'
 import { Vue3OrgChart } from 'vue3-org-chart'
@@ -109,6 +110,12 @@ defineProps({
     required: true
   }
 })
+
+const { roleNames } = useRoleNames()
+const breadcrumbs = computed(() => [
+  { label: roleNames.value.agent, href: '/agent/dashboard' },
+  { label: 'Hierarchy' },
+])
 
 const vocApi = ref(null)
 

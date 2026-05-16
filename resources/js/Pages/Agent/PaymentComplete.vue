@@ -5,6 +5,9 @@ import AgentLayout from '../Design/AgentLayout.vue'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Button from '../Design/Components/Button.vue'
 import { CheckCircle, XCircle, Clock, CreditCard } from 'lucide-vue-next'
+import { useRoleNames } from '../../composables/useRoleNames.js'
+
+const { roleNames } = useRoleNames()
 
 defineOptions({ layout: AgentLayout })
 
@@ -30,7 +33,7 @@ function retryPayment() {
   <div>
     <PageHeader
       title="Payment"
-      :breadcrumbs="[{ label: 'Agent', href: '/agent/dashboard' }, { label: 'Complete Payment' }]"
+      :breadcrumbs="[{ label: roleNames.agent, href: '/agent/dashboard' }, { label: 'Complete Payment' }]"
     />
 
     <div class="max-w-lg mx-auto">

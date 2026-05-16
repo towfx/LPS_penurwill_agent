@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\Agent;
 use App\Models\AgentNotification;
 use App\Models\FeePayment;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\AgentHierarchy;
 use App\Services\FeeService;
@@ -838,13 +839,20 @@ class AgentController extends Controller
     public function hierarchy()
     {
         $allAgents = Agent::where('status', 'active')->get();
+        $settings = SystemSetting::first();
+        $labels = [
+            'agent' => $settings->role_name_agent ?? 'Agent',
+            'agent_leader' => $settings->role_name_leader ?? 'Leader',
+            'business_partner' => $settings->role_name_business_partner ?? 'Business Partner',
+        ];
 
-        $data = $allAgents->map(function ($agent) {
+        $data = $allAgents->map(function ($agent) use ($labels) {
+            $role = $agent->agent_role ?? 'agent';
             return [
                 'id' => (string) $agent->id,
                 'parentId' => $agent->parent_agent_id ? (string) $agent->parent_agent_id : "",
                 'name' => $agent->name,
-                'title' => strtoupper(str_replace('_', ' ', $agent->agent_role ?? 'agent')),
+                'title' => strtoupper($labels[$role] ?? str_replace('_', ' ', $role)),
                 'imageUrl' => $agent->profile_image ? \Illuminate\Support\Facades\Storage::url($agent->profile_image) : null,
             ];
         });

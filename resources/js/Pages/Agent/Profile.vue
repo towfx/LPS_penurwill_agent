@@ -4,6 +4,9 @@ import { router } from '@inertiajs/vue3'
 import AgentLayout from '../Design/AgentLayout.vue'
 import PageHeader from '../Design/Components/PageHeader.vue'
 import Button from '../Design/Components/Button.vue'
+import { useRoleNames } from '../../composables/useRoleNames.js'
+
+const { roleNames } = useRoleNames()
 
 defineOptions({ layout: AgentLayout })
 
@@ -106,12 +109,12 @@ const getFileUrl = (field) => {
 <template>
   <div>
     <PageHeader
-      title="Agent Profile"
+      :title="`${roleNames.agent} Profile`"
       :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Profile' }]"
     >
       <template #actions>
         <Button variant="default" size="default" @click="goToEdit">
-          Edit Agent Profile
+          Edit {{ roleNames.agent }} Profile
         </Button>
       </template>
     </PageHeader>

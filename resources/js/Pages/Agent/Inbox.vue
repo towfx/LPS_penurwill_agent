@@ -8,6 +8,9 @@ import Badge from '../Design/Components/Badge.vue'
 import EmptyState from '../Design/Components/EmptyState.vue'
 import Pagination from '../Design/Components/Pagination.vue'
 import { Check, MailOpen } from 'lucide-vue-next'
+import { useRoleNames } from '../../composables/useRoleNames.js'
+
+const { roleNames } = useRoleNames()
 
 defineOptions({ layout: AgentLayout })
 
@@ -69,7 +72,7 @@ function typeEmoji(type) { return TYPE_EMOJI[type] || '🔔' }
     <PageHeader
       title="Inbox"
       description="Your notifications and important messages."
-      :breadcrumbs="[{ label: 'Agent', href: '/agent/dashboard' }, { label: 'Inbox' }]"
+      :breadcrumbs="[{ label: roleNames.agent, href: '/agent/dashboard' }, { label: 'Inbox' }]"
     >
       <template #actions>
         <Button

@@ -8,6 +8,9 @@ import Button from '../Design/Components/Button.vue'
 import Input from '../Design/Components/Input.vue'
 import Textarea from '../Design/Components/Textarea.vue'
 import FormField from '../Design/Components/FormField.vue'
+import { useRoleNames } from '../../composables/useRoleNames.js'
+
+const { roleNames } = useRoleNames()
 import Radio from '../Design/Components/Radio.vue'
 import FileInput from '../Design/Components/FileInput.vue'
 
@@ -228,7 +231,7 @@ const saveProfile = async () => {
 <template>
   <div>
     <PageHeader
-      title="Edit Agent Profile"
+      :title="`Edit ${roleNames.agent} Profile`"
       :breadcrumbs="[{ label: 'Dashboard', href: '/agent/dashboard' }, { label: 'Profile', href: '/agent/profile' }, { label: 'Edit Profile' }]"
     >
       <template #actions>

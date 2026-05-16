@@ -24,19 +24,21 @@ import AdminLayout from '../Design/AdminLayout.vue'
 import AgentsTable from '../Design/Components/AgentsTable.vue'
 import Button from '../Design/Components/Button.vue'
 import PageHeader from '../Design/Components/PageHeader.vue'
+import { useRoleNames } from '../../composables/useRoleNames.js'
 
 defineOptions({ layout: AdminLayout })
 
 const page = usePage()
+const { roleNamesPlural } = useRoleNames()
 
 const pageTitle = computed(() => {
   const params = new URLSearchParams(page.url.split('?')[1] || '')
   const typeParam = params.get('type') || params.get('role')
-  
-  if (typeParam === 'business_partner') return 'Business Partners List'
-  if (typeParam === 'agent_leader') return 'Leaders List'
-  if (typeParam === 'agent') return 'Agents List'
-  return 'Agents List'
+
+  if (typeParam === 'business_partner') return `${roleNamesPlural.value.business_partner} List`
+  if (typeParam === 'agent_leader') return `${roleNamesPlural.value.agent_leader} List`
+  if (typeParam === 'agent') return `${roleNamesPlural.value.agent} List`
+  return `${roleNamesPlural.value.agent} List`
 })
 
 const addAgent = () => {

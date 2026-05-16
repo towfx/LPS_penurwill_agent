@@ -92,7 +92,7 @@
             </div>
 
             <div v-if="referral.choice === 'no'" class="p-4 rounded-lg bg-stone-100 border border-stone-200 text-sm text-stone-700">
-              You'll be assigned to the default Business Partner as your upline.
+              You'll be assigned to the default {{ roleNames.business_partner }} as your upline.
             </div>
 
             <div class="flex justify-end pt-6">
@@ -123,7 +123,7 @@
                       <div v-if="pkg.choice === 'agent'" class="w-3 h-3 bg-gold rounded-full"></div>
                     </div>
                   </div>
-                  <h3 class="text-lg font-bold text-forest-dark mb-1">Agent / Agent Leader</h3>
+                  <h3 class="text-lg font-bold text-forest-dark mb-1">{{ roleNames.agent }} / {{ roleNames.agent_leader }}</h3>
                   <p class="text-sm text-stone-500 mb-4">Start as an agent, earn commissions on your sales</p>
                   <div class="text-2xl font-bold text-gold">{{ formatCurrency('RM', entryFeeAgent) }}</div>
                   <div class="text-xs text-stone-400 mt-1">One-time registration fee</div>
@@ -150,7 +150,7 @@
                       <div v-if="pkg.choice === 'business_partner'" class="w-3 h-3 bg-gold rounded-full"></div>
                     </div>
                   </div>
-                  <h3 class="text-lg font-bold text-forest-dark mb-1">Business Partner</h3>
+                  <h3 class="text-lg font-bold text-forest-dark mb-1">{{ roleNames.business_partner }}</h3>
                   <p class="text-sm text-stone-500 mb-4">Build and manage a team of agents</p>
                   <div class="text-2xl font-bold text-gold">{{ formatCurrency('RM', entryFeeBusinessPartner) }}</div>
                   <div class="text-xs text-stone-400 mt-1">One-time registration fee</div>
@@ -165,7 +165,7 @@
 
             <div v-if="pkg.choice === 'business_partner'" class="p-4 rounded-lg bg-accent-orange/10 border border-accent-orange/30 flex items-start gap-3">
               <AlertTriangle class="w-5 h-5 text-accent-orange flex-shrink-0 mt-0.5" />
-              <p class="text-sm text-stone-700">Business Partner package requires a <strong>Company profile</strong> in the next step.</p>
+              <p class="text-sm text-stone-700">{{ roleNames.business_partner }} package requires a <strong>Company profile</strong> in the next step.</p>
             </div>
 
             <div class="flex justify-between pt-6">
@@ -408,7 +408,7 @@
               <div class="flex justify-between items-center">
                 <div>
                   <p class="text-sm text-stone-500">Registration Package</p>
-                  <p class="font-semibold text-forest-dark">{{ pkg.choice === 'business_partner' ? 'Business Partner' : 'Agent / Agent Leader' }}</p>
+                  <p class="font-semibold text-forest-dark">{{ pkg.choice === 'business_partner' ? roleNames.business_partner : `${roleNames.agent} / ${roleNames.agent_leader}` }}</p>
                 </div>
                 <div class="text-right">
                   <p class="text-sm text-stone-500">Entry Fee</p>
@@ -585,6 +585,9 @@ import Input from './Design/Components/Input.vue'
 import FormField from './Design/Components/FormField.vue'
 import DialogModal from '@/Components/DialogModal.vue'
 import { formatCurrency } from '../lib/utils.js'
+import { useRoleNames } from '../composables/useRoleNames.js'
+
+const { roleNames } = useRoleNames()
 
 const props = defineProps({
   email: { type: String, default: '' },
