@@ -85,8 +85,17 @@ class HandleInertiaRequests extends Middleware
     {
         try {
             $user = $request->user();
-            if (! $user || ! $user->hasRole('agent')) {
+            if (! $user) {
                 return [];
+            }
+
+            if ($user->hasRole('admin')) {
+                $admin = \App\Models\Agent::find(1);
+                $unreadCount = $admin
+                    ? AgentNotification::forAgent($admin->id)->unread()->count()
+                    : 0;
+
+                return ['unread_inbox_count' => $unreadCount];
             }
 
             $agent = $user->agents()->first();

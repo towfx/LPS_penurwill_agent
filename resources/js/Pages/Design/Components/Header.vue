@@ -25,8 +25,8 @@
         <Link :href="notificationLink" class="relative inline-block">
           <Button variant="ghost" size="icon">
             <Bell size="20" />
-            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              3
+            <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {{ unreadCount > 99 ? '99+' : unreadCount }}
             </span>
           </Button>
         </Link>
@@ -116,6 +116,8 @@ const getDashboardText = computed(() => {
   if (isAgent.value) return 'Agent Dashboard'
   return 'Dashboard'
 })
+
+const unreadCount = computed(() => page.props.agentContext?.unread_inbox_count ?? 0)
 
 const notificationLink = computed(() => {
   if (isAdmin.value) return '/admin/inbox'
