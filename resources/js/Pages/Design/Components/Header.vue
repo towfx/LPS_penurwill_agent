@@ -22,12 +22,14 @@
       </div>
 
       <div class="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" class="relative" style="display: none;">
-          <Bell size="20" />
-          <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            3
-          </span>
-        </Button>
+        <Link :href="notificationLink" class="relative inline-block">
+          <Button variant="ghost" size="icon">
+            <Bell size="20" />
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              3
+            </span>
+          </Button>
+        </Link>
 
         <!-- <Button variant="secondary">
           <Plus size="16" class="mr-2" />
@@ -113,6 +115,12 @@ const getDashboardText = computed(() => {
   if (isAdmin.value) return 'Admin Dashboard'
   if (isAgent.value) return 'Agent Dashboard'
   return 'Dashboard'
+})
+
+const notificationLink = computed(() => {
+  if (isAdmin.value) return '/admin/inbox'
+  if (isAgent.value) return '/agent/inbox'
+  return '/inbox'
 })
 </script>
 

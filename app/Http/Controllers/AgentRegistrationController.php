@@ -511,9 +511,12 @@ class AgentRegistrationController extends Controller
         $companyAgent = Agent::find(1);
         $companyBank = $companyAgent?->bankAccount;
 
+        $package = ($agent?->agent_role === Agent::ROLE_BUSINESS_PARTNER) ? 'business_partner' : 'agent';
+
         return Inertia::render('Agent/PaymentComplete', [
             'agent' => $agent,
-            'status' => 'pending',
+            'status' => $request->get('status', 'pending'),
+            'package' => $package,
             'entryFeeAgent' => $settings?->entry_fee_agent ?? 100,
             'entryFeeBusinessPartner' => $settings?->entry_fee_business_partner ?? 3000,
             'companyBank' => $companyBank ? [
@@ -525,18 +528,83 @@ class AgentRegistrationController extends Controller
     }
 
     /**
-     * Authenticated agent — submit payment from dashboard.
+     * Authenticated agent — submit manual bank-transfer receipt.
      */
     public function submitPayment(Request $request)
+    {
+        $request->validate([
+            'receipt_file' => 'required|file|mimes:pdf,jpeg,jpg,png|max:5120',
+            'reference' => 'nullable|string|max:255',
+        ]);
+
+        $user = auth()->user();
+        $agent = $user?->agents()->first();
+
+        if (! $agent) {
+            return response()->json(['message' => 'Agent record not found.'], 404);
+        }
+
+        $file = $request->file('receipt_file');
+        $ext = $file->getClientOriginalExtension();
+        $filename = Str::random(40).'.'.$ext;
+        $path = "agents/{$agent->id}/receipts/{$filename}";
+        Storage::disk('local')->put($path, file_get_contents($file));
+
+        $agent->update([
+            'tc_accepted_at' => $agent->tc_accepted_at ?? now(),
+            'fee_payment_status' => Agent::FEE_STATUS_PENDING,
+        ]);
+
+        $feeService = app(FeeService::class);
+        FeePayment::create([
+            'agent_id' => $agent->id,
+            'fee_type' => FeePayment::TYPE_ENTRY,
+            'role' => $agent->agent_role ?? Agent::ROLE_AGENT,
+            'amount' => $feeService->getFeeAmountFor($agent->agent_role ?? Agent::ROLE_AGENT, FeePayment::TYPE_ENTRY),
+            'payment_method' => FeePayment::METHOD_BANK_TRANSFER,
+            'payment_reference' => $request->input('reference'),
+            'receipt_file' => $path,
+            'paid_at' => null,
+            'recorded_by' => null,
+        ]);
+
+        try {
+            ActivityLog::logCustom(
+                $user,
+                'manual_payment_submitted',
+                "Agent #{$agent->id} submitted bank transfer receipt",
+                $agent,
+            );
+        } catch (\Throwable) {
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Authenticated agent — start Stripe Checkout for entry fee.
+     */
+    public function initiateAgentStripe(Request $request)
     {
         $user = auth()->user();
         $agent = $user?->agents()->first();
 
         if (! $agent) {
-            return back()->withErrors(['error' => 'Agent record not found.']);
+            return response()->json(['error' => 'Agent record not found.'], 404);
         }
 
-        return back()->with('success', 'Payment request submitted. An administrator will confirm your payment.');
+        $agent->update(['tc_accepted_at' => $agent->tc_accepted_at ?? now()]);
+
+        $successUrl = url('/register-as-agent/payment/success?session_id={CHECKOUT_SESSION_ID}');
+        $cancelUrl = url('/register-as-agent/payment/cancelled');
+
+        $checkoutUrl = app(FeeService::class)->createCheckoutSession($agent, $successUrl, $cancelUrl);
+
+        if ($checkoutUrl) {
+            return response()->json(['url' => $checkoutUrl]);
+        }
+
+        return response()->json([]);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

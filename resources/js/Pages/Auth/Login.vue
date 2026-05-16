@@ -6,7 +6,6 @@ import Alert from '../Design/Components/Alert.vue';
 import { ref, onMounted } from 'vue';
 
 const props = defineProps({
-    canResetPassword: Boolean,
     status: String,
     email: String,
 });
@@ -129,7 +128,7 @@ const submit = () => {
               <input type="checkbox" v-model="form.remember" class="rounded border-stone-300 text-gold focus:ring-gold" />
               <span class="ml-2">Remember me</span>
             </label>
-            <Link v-if="canResetPassword" :href="route('password.request')" class="text-amber-700 hover:text-amber-900 text-sm font-medium underline-offset-2 hover:underline">
+            <Link :href="route('password.request')" class="text-amber-700 hover:text-amber-900 text-sm font-medium underline-offset-2 hover:underline">
               Forgot your password?
             </Link>
           </div>
@@ -138,6 +137,13 @@ const submit = () => {
             Log in
           </Button>
         </form>
+
+        <div class="text-center mt-6 border-t border-stone-200 pt-6">
+          <p class="text-sm text-stone-700 mb-3">Don't have an account?</p>
+          <Link :href="route('register-as-agent')" class="text-accent-green hover:text-accent-green/90 text-sm font-semibold underline-offset-2 hover:underline">
+            Register as an agent
+          </Link>
+        </div>
       </Card>
     </div>
   </div>
