@@ -587,7 +587,7 @@ import DialogModal from '@/Components/DialogModal.vue'
 import { formatCurrency } from '../lib/utils.js'
 import { useRoleNames } from '../composables/useRoleNames.js'
 
-const { roleNames } = useRoleNames()
+const { roleNames, roleNamesPlural } = useRoleNames()
 
 const props = defineProps({
   email: { type: String, default: '' },
