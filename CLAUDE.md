@@ -364,7 +364,7 @@ docker-compose -f docker-compose.prod.yml up -d
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **LPS_penurwill_agent** (4715 symbols, 8800 relationships, 245 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **LPS_penurwill_agent** (4717 symbols, 8795 relationships, 245 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -404,3 +404,7 @@ This project is indexed by GitNexus as **LPS_penurwill_agent** (4715 symbols, 88
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## UI Design
+
+When creating/updating .vue file component align design with `dev/docs/vue-components.md`

@@ -21,7 +21,14 @@
       "Bash(php -l app/Http/Controllers/AgentRegistrationController.php)",
       "Bash(git stash *)",
       "Bash(git -C /Users/datakraf/Next/lps_pu_agent status --short)",
-      "Bash(git commit -m 'refactor: send emails synchronously, remove queue infrastructure *)"
+      "Bash(git commit -m 'refactor: send emails synchronously, remove queue infrastructure *)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm lint *)",
+      "Bash(awk '/^\\\\//{f=$0} /error\\\\s+Parsing/{print f\": \"$0}')",
+      "Bash(awk '/^\\\\//{f=$0; next} /error/{print f\": \"$0}')",
+      "Bash(awk '/^\\\\//{f=$0; next} /\\\\s+error\\\\s+/{print f\": \"$0}')",
+      "Bash(awk '/^\\\\//{f=$0; next} / error  /{print f\": \"$0}')",
+      "Bash(echo \"EXIT=$?\")"
     ],
     "additionalDirectories": [
       "/tmp"
