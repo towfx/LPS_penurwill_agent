@@ -19,7 +19,9 @@
       "Skill(superpowers:brainstorming)",
       "Skill(superpowers:brainstorming:*)",
       "Bash(php -l app/Http/Controllers/AgentRegistrationController.php)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(git -C /Users/datakraf/Next/lps_pu_agent status --short)",
+      "Bash(git commit -m 'refactor: send emails synchronously, remove queue infrastructure *)"
     ],
     "additionalDirectories": [
       "/tmp"
