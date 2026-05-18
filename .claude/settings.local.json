@@ -28,7 +28,12 @@
       "Bash(awk '/^\\\\//{f=$0; next} /error/{print f\": \"$0}')",
       "Bash(awk '/^\\\\//{f=$0; next} /\\\\s+error\\\\s+/{print f\": \"$0}')",
       "Bash(awk '/^\\\\//{f=$0; next} / error  /{print f\": \"$0}')",
-      "Bash(echo \"EXIT=$?\")"
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(php -l config/packages.php)",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; require_once '\\\\''app/Models/Agent.php'\\\\''; $p = require '\\\\''config/packages.php'\\\\''; echo json_encode\\(array_keys\\($p\\)\\), PHP_EOL;')",
+      "Bash(pnpm exec *)",
+      "Bash(git check-ignore *)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "/tmp"
