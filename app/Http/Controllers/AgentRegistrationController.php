@@ -36,15 +36,13 @@ class AgentRegistrationController extends Controller
             }
         }
 
-        $settings = \App\Models\SystemSetting::first();
         $companyAgent = Agent::find(1);
         $companyBank = $companyAgent?->bankAccount;
 
         return Inertia::render('RegisterAsAgent', [
             'email' => $email,
             'invalidEmail' => $invalidEmail,
-            'entryFeeAgent' => $settings?->entry_fee_agent ?? 100,
-            'entryFeeBusinessPartner' => $settings?->entry_fee_business_partner ?? 3000,
+            'packages' => $this->buildPackagesPayload(),
             'companyBank' => $companyBank ? [
                 'bank_name' => $companyBank->bank_name,
                 'account_name' => $companyBank->account_name,
@@ -225,9 +223,8 @@ class AgentRegistrationController extends Controller
 
         DB::transaction(function () use ($email, $draft, $fileDraft) {
             $profileType = $draft['profile_type'] ?? 'individual';
-            $agentRole = ($draft['package'] ?? 'agent') === 'business_partner'
-                ? Agent::ROLE_BUSINESS_PARTNER
-                : Agent::ROLE_AGENT;
+            $pkg = $this->resolvePackage($draft['package'] ?? null);
+            $agentRole = $pkg['agent_role'];
 
             $userName = $profileType === 'individual'
                 ? ($draft['individual_name'] ?? $email)
@@ -240,7 +237,7 @@ class AgentRegistrationController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-            $user->assignRole($agentRole === Agent::ROLE_BUSINESS_PARTNER ? 'business_partner' : 'agent');
+            $user->assignRole($pkg['spatie_role']);
 
             ActivityLog::logCreate($user, $user, $user->toArray());
 
@@ -344,7 +341,7 @@ class AgentRegistrationController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'package' => 'required|in:agent,business_partner',
+            'package' => 'required|in:'.implode(',', array_keys(config('packages'))),
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -507,18 +504,16 @@ class AgentRegistrationController extends Controller
         $user = auth()->user();
         $agent = $user?->agents()->first();
 
-        $settings = \App\Models\SystemSetting::first();
         $companyAgent = Agent::find(1);
         $companyBank = $companyAgent?->bankAccount;
 
-        $package = ($agent?->agent_role === Agent::ROLE_BUSINESS_PARTNER) ? 'business_partner' : 'agent';
+        $package = $this->packageSlugForRole($agent?->agent_role);
 
         return Inertia::render('Agent/PaymentComplete', [
             'agent' => $agent,
             'status' => $request->get('status', 'pending'),
             'package' => $package,
-            'entryFeeAgent' => $settings?->entry_fee_agent ?? 100,
-            'entryFeeBusinessPartner' => $settings?->entry_fee_business_partner ?? 3000,
+            'packages' => $this->buildPackagesPayload(),
             'companyBank' => $companyBank ? [
                 'bank_name' => $companyBank->bank_name,
                 'account_name' => $companyBank->account_name,
@@ -624,6 +619,64 @@ class AgentRegistrationController extends Controller
         return Agent::where('agent_role', Agent::ROLE_BUSINESS_PARTNER)
             ->orderBy('id')
             ->first();
+    }
+
+    /**
+     * Resolve a package definition from config by slug, with safe fallback to 'agent'.
+     */
+    private function resolvePackage(?string $slug): array
+    {
+        $packages = config('packages', []);
+        if ($slug && isset($packages[$slug])) {
+            return $packages[$slug];
+        }
+
+        return $packages['agent'];
+    }
+
+    /**
+     * Reverse-map an agent_role value back to the package slug used by frontend.
+     */
+    private function packageSlugForRole(?string $agentRole): string
+    {
+        foreach (config('packages', []) as $slug => $pkg) {
+            if ($pkg['agent_role'] === $agentRole) {
+                return $slug;
+            }
+        }
+
+        return 'agent';
+    }
+
+    /**
+     * Build the packages array sent to the frontend, injecting current price
+     * for each package from SystemSetting based on its fee_setting_key.
+     */
+    private function buildPackagesPayload(): array
+    {
+        $settings = \App\Models\SystemSetting::first();
+        $defaultPrices = [
+            'agent' => 100,
+            'leader' => 100,
+            'business_partner' => 3000,
+        ];
+
+        return array_values(array_map(function (array $pkg) use ($settings, $defaultPrices) {
+            $key = $pkg['fee_setting_key'];
+            $column = "entry_fee_{$key}";
+            $price = $settings?->{$column} ?? ($defaultPrices[$key] ?? 0);
+
+            return [
+                'slug'          => $pkg['slug'],
+                'agent_role'    => $pkg['agent_role'],
+                'role_name_key' => $pkg['role_name_key'],
+                'profile_type'  => $pkg['profile_type'],
+                'description'   => $pkg['description'],
+                'features'      => $pkg['features'],
+                'icon'          => $pkg['icon'],
+                'price'         => (float) $price,
+            ];
+        }, config('packages', [])));
     }
 
     private function storeFile(\Illuminate\Http\UploadedFile $file, int $agentId): string

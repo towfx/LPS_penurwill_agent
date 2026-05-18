@@ -18,8 +18,7 @@ const props = defineProps({
   agent: { type: Object, default: null },
   status: { type: String, default: 'pending' }, // 'success' | 'cancelled' | 'pending' | 'submitted'
   package: { type: String, default: 'agent' },
-  entryFeeAgent: { type: Number, default: 100 },
-  entryFeeBusinessPartner: { type: Number, default: 3000 },
+  packages: { type: Array, default: () => [] },
   companyBank: { type: Object, default: null },
 })
 
@@ -30,14 +29,13 @@ const isCancelled = computed(() => localStatus.value === 'cancelled')
 const isSubmitted = computed(() => localStatus.value === 'submitted')
 const isPending = computed(() => localStatus.value === 'pending')
 
-const feeAmount = computed(() =>
-  props.package === 'business_partner' ? props.entryFeeBusinessPartner : props.entryFeeAgent
-)
-const packageLabel = computed(() =>
-  props.package === 'business_partner'
-    ? roleNames.value.business_partner
-    : `${roleNames.value.agent} / ${roleNames.value.agent_leader}`
-)
+const selectedPackage = computed(() => props.packages.find(p => p.slug === props.package) || null)
+const feeAmount = computed(() => selectedPackage.value?.price ?? 0)
+const packageLabel = computed(() => {
+  const pkg = selectedPackage.value
+  if (!pkg) return ''
+  return roleNames.value[pkg.role_name_key] || pkg.slug
+})
 
 const payment = ref({ method: 'stripe', receiptFile: null, reference: '' })
 const paymentErrors = ref({})

@@ -107,65 +107,39 @@
               <p class="text-stone-600">Choose the registration package that suits your needs</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Agent / Agent Leader -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <label
+                v-for="option in packages"
+                :key="option.slug"
                 class="relative cursor-pointer rounded-xl border-2 transition-all"
-                :class="pkg.choice === 'agent' ? 'border-gold bg-gold/5' : 'border-stone-200 hover:border-gold/50'"
+                :class="pkg.choice === option.slug ? 'border-gold bg-gold/5' : 'border-stone-200 hover:border-gold/50'"
               >
-                <input v-model="pkg.choice" type="radio" value="agent" class="sr-only" />
+                <input v-model="pkg.choice" type="radio" :value="option.slug" class="sr-only" />
                 <div class="p-6">
                   <div class="flex items-center justify-between mb-4">
-                    <div class="w-10 h-10 rounded-full bg-forest-light/20 flex items-center justify-center">
-                      <Users class="w-5 h-5 text-forest-light" />
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center" :class="option.slug === 'business_partner' ? 'bg-gold/20' : 'bg-forest-light/20'">
+                      <component :is="iconFor(option.icon)" class="w-5 h-5" :class="option.slug === 'business_partner' ? 'text-gold' : 'text-forest-light'" />
                     </div>
-                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="pkg.choice === 'agent' ? 'border-gold' : 'border-stone-300'">
-                      <div v-if="pkg.choice === 'agent'" class="w-3 h-3 bg-gold rounded-full"></div>
-                    </div>
-                  </div>
-                  <h3 class="text-lg font-bold text-forest-dark mb-1">{{ roleNames.agent }} / {{ roleNames.agent_leader }}</h3>
-                  <p class="text-sm text-stone-500 mb-4">Start as an {{ roleNames.agent.toLowerCase() }}, earn commissions on your sales</p>
-                  <div class="text-2xl font-bold text-gold">{{ formatCurrency('RM', entryFeeAgent) }}</div>
-                  <div class="text-xs text-stone-400 mt-1">One-time registration fee</div>
-                  <ul class="mt-4 space-y-1 text-sm text-stone-600">
-                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Individual or company profile</li>
-                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Earn own-sales commissions</li>
-                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Eligible for role upgrade to {{ roleNames.agent_leader }}</li>
-                  </ul>
-                </div>
-              </label>
-
-              <!-- Business Partner -->
-              <label
-                class="relative cursor-pointer rounded-xl border-2 transition-all"
-                :class="pkg.choice === 'business_partner' ? 'border-gold bg-gold/5' : 'border-stone-200 hover:border-gold/50'"
-              >
-                <input v-model="pkg.choice" type="radio" value="business_partner" class="sr-only" />
-                <div class="p-6">
-                  <div class="flex items-center justify-between mb-4">
-                    <div class="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center">
-                      <Building2 class="w-5 h-5 text-gold" />
-                    </div>
-                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="pkg.choice === 'business_partner' ? 'border-gold' : 'border-stone-300'">
-                      <div v-if="pkg.choice === 'business_partner'" class="w-3 h-3 bg-gold rounded-full"></div>
+                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center" :class="pkg.choice === option.slug ? 'border-gold' : 'border-stone-300'">
+                      <div v-if="pkg.choice === option.slug" class="w-3 h-3 bg-gold rounded-full"></div>
                     </div>
                   </div>
-                  <h3 class="text-lg font-bold text-forest-dark mb-1">{{ roleNames.business_partner }}</h3>
-                  <p class="text-sm text-stone-500 mb-4">Build and manage a team of {{ roleNamesPlural.agent.toLowerCase() }}</p>
-                  <div class="text-2xl font-bold text-gold">{{ formatCurrency('RM', entryFeeBusinessPartner) }}</div>
+                  <h3 class="text-lg font-bold text-forest-dark mb-1">{{ roleNames[option.role_name_key] }}</h3>
+                  <p class="text-sm text-stone-500 mb-4">{{ option.description }}</p>
+                  <div class="text-2xl font-bold text-gold">{{ formatCurrency('RM', option.price) }}</div>
                   <div class="text-xs text-stone-400 mt-1">One-time registration fee</div>
                   <ul class="mt-4 space-y-1 text-sm text-stone-600">
-                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Company profile required</li>
-                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Earn override commissions from team</li>
-                    <li class="flex items-center gap-2"><CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> Full network management tools</li>
+                    <li v-for="feature in option.features" :key="feature" class="flex items-center gap-2">
+                      <CheckCircle class="w-4 h-4 text-accent-green flex-shrink-0" /> {{ feature }}
+                    </li>
                   </ul>
                 </div>
               </label>
             </div>
 
-            <div v-if="pkg.choice === 'business_partner'" class="p-4 rounded-lg bg-accent-orange/10 border border-accent-orange/30 flex items-start gap-3">
+            <div v-if="selectedPackage?.profile_type === 'company'" class="p-4 rounded-lg bg-accent-orange/10 border border-accent-orange/30 flex items-start gap-3">
               <AlertTriangle class="w-5 h-5 text-accent-orange flex-shrink-0 mt-0.5" />
-              <p class="text-sm text-stone-700">{{ roleNames.business_partner }} package requires a <strong>Company profile</strong> in the next step.</p>
+              <p class="text-sm text-stone-700">{{ roleNames[selectedPackage.role_name_key] }} package requires a <strong>Company profile</strong> in the next step.</p>
             </div>
 
             <div class="flex justify-between pt-6">
@@ -185,9 +159,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label
                 class="relative cursor-pointer rounded-lg border-2 transition-all p-4"
-                :class="[profile.type === 'individual' ? 'border-gold bg-gold/5' : 'border-stone-200', pkg.choice === 'business_partner' ? 'opacity-50 cursor-not-allowed' : 'hover:border-gold/50']"
+                :class="[profile.type === 'individual' ? 'border-gold bg-gold/5' : 'border-stone-200', selectedPackage?.profile_type === 'company' ? 'opacity-50 cursor-not-allowed' : 'hover:border-gold/50']"
               >
-                <input v-model="profile.type" type="radio" value="individual" class="sr-only" :disabled="pkg.choice === 'business_partner'" />
+                <input v-model="profile.type" type="radio" value="individual" class="sr-only" :disabled="selectedPackage?.profile_type === 'company'" />
                 <div class="flex items-center gap-3">
                   <User class="w-5 h-5 text-forest-light" />
                   <div><div class="font-medium text-forest-dark">Individual</div><div class="text-xs text-stone-500">Personal registration</div></div>
@@ -408,11 +382,11 @@
               <div class="flex justify-between items-center">
                 <div>
                   <p class="text-sm text-stone-500">Registration Package</p>
-                  <p class="font-semibold text-forest-dark">{{ pkg.choice === 'business_partner' ? roleNames.business_partner : `${roleNames.agent} / ${roleNames.agent_leader}` }}</p>
+                  <p class="font-semibold text-forest-dark">{{ selectedPackage ? roleNames[selectedPackage.role_name_key] : '' }}</p>
                 </div>
                 <div class="text-right">
                   <p class="text-sm text-stone-500">Entry Fee</p>
-                  <p class="text-2xl font-bold text-gold">{{ formatCurrency('RM', pkg.choice === 'business_partner' ? entryFeeBusinessPartner : entryFeeAgent) }}</p>
+                  <p class="text-2xl font-bold text-gold">{{ formatCurrency('RM', selectedPackage?.price ?? 0) }}</p>
                 </div>
               </div>
             </div>
@@ -593,10 +567,12 @@ const props = defineProps({
   email: { type: String, default: '' },
   invalidEmail: { type: Boolean, default: false },
   errors: { type: Object, default: () => ({}) },
-  entryFeeAgent: { type: [Number, String], default: 100 },
-  entryFeeBusinessPartner: { type: [Number, String], default: 3000 },
+  packages: { type: Array, default: () => [] },
   companyBank: { type: Object, default: null },
 })
+
+const iconMap = { Users, Building2 }
+const iconFor = (name) => iconMap[name] || Users
 
 const currentStep = ref(0)
 const showInvalidEmailDialog = ref(false)
@@ -645,6 +621,7 @@ const canProceedFromStep1 = computed(() => {
 
 // ── Step 2 ──
 const pkg = ref({ choice: '' })
+const selectedPackage = computed(() => props.packages.find(p => p.slug === pkg.value.choice) || null)
 
 // ── Step 3 ──
 const profile = ref({
@@ -1013,10 +990,10 @@ const getStepLabelClasses = (index) => {
   return 'text-stone-400'
 }
 
-// BP forces company profile
+// Package may force company profile (per config)
 import { watch } from 'vue'
-watch(() => pkg.value.choice, (val) => {
-  if (val === 'business_partner') profile.value.type = 'company'
+watch(() => pkg.value.choice, () => {
+  if (selectedPackage.value?.profile_type === 'company') profile.value.type = 'company'
 })
 
 const handleDialogClose = () => { router.visit('/') }
