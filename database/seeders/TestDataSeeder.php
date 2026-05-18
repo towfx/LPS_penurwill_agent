@@ -6,12 +6,16 @@ use App\Models\Agent;
 use App\Models\BankAccount;
 use App\Models\Referral;
 use App\Models\Sale;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\TrackingService;
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -48,6 +52,8 @@ class TestDataSeeder extends Seeder
     public function run(): void
     {
         $this->faker = Faker::create();
+
+        $this->wipeTransactionalData();
 
         /** @var array<string, Agent> $created  key = short name, value = Agent model */
         $created = [];
@@ -148,6 +154,170 @@ class TestDataSeeder extends Seeder
                 'passw123',
             ])->values()->toArray()
         );
+
+        $this->runCommissionScenarios($created);
+    }
+
+    /**
+     * Wipe transactional rows before reseeding so the dataset is deterministic.
+     * Truncates movement data and agent-scoped tables, then deletes all agents
+     * except the canonical default BP at id=1. Users, system_settings, roles,
+     * permissions, and activity logs are preserved.
+     */
+    private function wipeTransactionalData(): void
+    {
+        $truncateTables = [
+            'payout_items',
+            'payouts',
+            'commissions',
+            'sales',
+            'referrals',
+            'agent_visits',
+            'fee_payments',
+            'agent_notifications',
+            'agent_commission_rates',
+            'bank_accounts',
+            'referral_codes',
+            'agents_users',
+        ];
+
+        $this->command->info('Wiping transactional + agent-scoped data: ' . implode(', ', $truncateTables));
+        $this->command->info('Deleting agents (preserving id=1)…');
+
+        Schema::disableForeignKeyConstraints();
+        foreach ($truncateTables as $table) {
+            if (Schema::hasTable($table)) {
+                DB::table($table)->truncate();
+            }
+        }
+        if (Schema::hasTable('agents')) {
+            DB::table('agents')->where('id', '!=', 1)->delete();
+        }
+        Schema::enableForeignKeyConstraints();
+    }
+
+    /**
+     * After the bulk historical sales, flip SystemSetting through 3 scenarios and
+     * generate one extra sale per agent under each scenario. Sale description
+     * carries the scenario label so the row is identifiable in the UI / DB.
+     * Original setting values are captured up front and restored at the end.
+     *
+     * Scenarios:
+     *   1) agent fixed RM3, leader fixed RM2, BP fixed RM1
+     *   2) agent fixed RM3, leader fixed RM2, BP percentage 1.00%
+     *   3) agent percentage 10%, leader fixed RM2, BP percentage 1.00%
+     *
+     * @param  array<string, Agent>  $agents
+     */
+    private function runCommissionScenarios(array $agents): void
+    {
+        $settings = SystemSetting::first();
+        if (! $settings) {
+            $this->command->warn('No SystemSetting row found — skipping commission scenarios.');
+            return;
+        }
+
+        $touched = [
+            'agent_own_sales',
+            'agent_leader_override_agent',
+            'business_partner_override_agent',
+        ];
+
+        // Snapshot current values so we can flip back at the end.
+        $baseline = [];
+        foreach ($touched as $key) {
+            $baseline["{$key}_percentage"]   = $settings->{"{$key}_percentage"};
+            $baseline["{$key}_fixed_amount"] = $settings->{"{$key}_fixed_amount"};
+            $baseline["{$key}_calc_type"]    = $settings->{"{$key}_calc_type"};
+        }
+
+        $scenarios = [
+            [
+                'label'  => 'Scenario 1: agent fixed RM3, leader fixed RM2, BP fixed RM1',
+                'config' => [
+                    'agent_own_sales'                 => ['calc' => 'fixed',      'pct' => 0,  'fixed' => 3.00],
+                    'agent_leader_override_agent'     => ['calc' => 'fixed',      'pct' => 0,  'fixed' => 2.00],
+                    'business_partner_override_agent' => ['calc' => 'fixed',      'pct' => 0,  'fixed' => 1.00],
+                ],
+            ],
+            [
+                'label'  => 'Scenario 2: agent fixed RM3, leader fixed RM2, BP percentage 1.00%',
+                'config' => [
+                    'agent_own_sales'                 => ['calc' => 'fixed',      'pct' => 0,    'fixed' => 3.00],
+                    'agent_leader_override_agent'     => ['calc' => 'fixed',      'pct' => 0,    'fixed' => 2.00],
+                    'business_partner_override_agent' => ['calc' => 'percentage', 'pct' => 1.00, 'fixed' => 0],
+                ],
+            ],
+            [
+                'label'  => 'Scenario 3: agent percentage 10%, leader fixed RM2, BP percentage 1.00%',
+                'config' => [
+                    'agent_own_sales'                 => ['calc' => 'percentage', 'pct' => 10.00, 'fixed' => 0],
+                    'agent_leader_override_agent'     => ['calc' => 'fixed',      'pct' => 0,     'fixed' => 2.00],
+                    'business_partner_override_agent' => ['calc' => 'percentage', 'pct' => 1.00,  'fixed' => 0],
+                ],
+            ],
+        ];
+
+        foreach ($scenarios as $idx => $scenario) {
+            $num = $idx + 1;
+            $this->command->newLine();
+            $this->command->info("=== {$scenario['label']} ===");
+
+            $this->applyScenario($settings, $scenario['config']);
+            Artisan::call('config:clear');
+            \Illuminate\Support\Facades\Cache::forget(\App\Services\CommissionConfig::CACHE_KEY);
+
+            $scenarioAgentKeys = ['A1', 'A2', 'A3', 'A4'];
+            foreach ($scenarioAgentKeys as $key) {
+                $agent = $agents[$key] ?? null;
+                if (! $agent || ! $agent->referralCode) {
+                    continue;
+                }
+
+                try {
+                    $request = new Request();
+                    $request->server->set('REMOTE_ADDR', $this->faker->ipv4);
+                    $request->headers->set('User-Agent', $this->faker->userAgent);
+
+                    app(TrackingService::class)->trackSale([
+                        'referral_code'  => $agent->referralCode->code,
+                        'customer_name'  => $this->faker->name,
+                        'customer_email' => 'scenario' . $num . '-' . strtolower($key) . '@test.com',
+                        'sale_amount'    => $this->faker->randomElement([100, 200, 300]),
+                        'sale_date'      => now()->toDateString(),
+                        'product_name'   => $scenario['label'],
+                        'invoice_number' => 'SCN' . $num . '-' . strtoupper($key) . '-' . now()->format('YmdHis'),
+                    ], $request);
+                } catch (\Exception $e) {
+                    $this->command->warn("  {$key}: scenario {$num} sale failed — " . $e->getMessage());
+                }
+            }
+
+            $this->command->info("  Scenario {$num}: one sale generated for " . implode(', ', $scenarioAgentKeys) . '.');
+        }
+
+        // Flip back to baseline values.
+        $this->command->newLine();
+        $this->command->info('Restoring baseline commission settings…');
+        $settings->fill($baseline)->save();
+        Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Cache::forget(\App\Services\CommissionConfig::CACHE_KEY);
+        $this->command->info('Baseline restored.');
+    }
+
+    /**
+     * Apply a scenario config to the SystemSetting row (does not save baseline).
+     *
+     * @param  array<string, array{calc: string, pct: float, fixed: float}>  $config
+     */
+    private function applyScenario(SystemSetting $settings, array $config): void
+    {
+        foreach ($config as $key => $row) {
+            $settings->{"{$key}_calc_type"}    = $row['calc'];
+            $settings->{"{$key}_percentage"}   = $row['pct'];
+            $settings->{"{$key}_fixed_amount"} = $row['fixed'];
+        }
+        $settings->save();
     }
 
     private function makeAgent(string $key, array $spec, ?Agent $parent): Agent
