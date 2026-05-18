@@ -109,9 +109,9 @@ class CommissionCalculator
     /**
      * Compute a commission amount.
      *
-     * - calc_type=percentage:  saleAmount * percentage/100
-     * - calc_type=fixed:       fixed amount (ignores percentage)
-     * - both > 0 (additive fallback, QNA-01): saleAmount * percentage/100 + fixed
+     * Either/or semantics (QNA-01 revision 2026-05-18):
+     * - calc_type=percentage:  saleAmount * percentage/100 (fixed ignored)
+     * - calc_type=fixed:       fixed amount (percentage ignored)
      */
     public function calculate(float $saleAmount, float $percentage, float $fixed = 0.0, string $calcType = self::CALC_PERCENTAGE): float
     {
@@ -119,11 +119,6 @@ class CommissionCalculator
             return round($fixed, 2);
         }
 
-        $base = ($saleAmount * $percentage) / 100.0;
-        if ($fixed > 0 && $percentage > 0) {
-            return round($base + $fixed, 2);
-        }
-
-        return round($base, 2);
+        return round(($saleAmount * $percentage) / 100.0, 2);
     }
 }

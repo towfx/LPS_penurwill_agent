@@ -10,7 +10,11 @@
 
 **Context**: Decision 8 picked "Fixed + Percentage Combination" e.g. `RM50 + 2%`. The spec text says "multiple commission tiers supported" but doesn't say how the values combine.
 
-**Decision**: **Additive** — `commission = (sale × percentage/100) + fixed`. If a value is unused, set it to 0; UI hides it. Both contribute to a single `Commission.amount`.
+**Decision (revised 2026-05-18)**: **Either/or — `commission_calc_type` selects the path.**
+- `calc_type = 'percentage'` → `commission = sale × percentage / 100` (fixed ignored).
+- `calc_type = 'fixed'` → `commission = fixed` (percentage and sale ignored).
+
+Both columns remain stored for audit / round-trip when toggling. The unused column is conventionally set to 0 on save. **No additive blending** — earlier additive variant (`base + fixed` when both > 0) is removed from `CommissionCalculator::calculate`.
 
 ---
 
@@ -56,7 +60,7 @@
 
 ## QNA-07 — `commission_rate` legacy column on `commissions` table
 
-**Context**: `commissions` table has both `commission_rate` and `applied_rate` (decimal, percentage). With combined fixed+pct (QNA-01) the legacy `commission_rate` is ambiguous.
+**Context**: `commissions` table has both `commission_rate` and `applied_rate` (decimal, percentage). With either/or fixed-or-pct (QNA-01) the legacy `commission_rate` is ambiguous.
 
 **Decision**: Keep `applied_rate` as percentage, add `applied_fixed_amount`, drop the redundant `commission_rate` column. Each commission row records exactly what % and what RM was applied for a clean audit trail.
 
@@ -154,7 +158,7 @@
 
 **Context**: Decision 14 adds `commission_calc_type` (percentage/fixed). Alternative: derive from column values at runtime.
 
-**Decision**: **Store `commission_calc_type` explicitly** — one enum column. Clear, queryable, prevents ambiguity in the additive case (both rate and fixed_amount non-zero). Avoids scattering derivation logic across calculators, reports, and UI.
+**Decision**: **Store `commission_calc_type` explicitly** — one enum column. Clear, queryable, removes any guesswork when both columns happen to be non-zero (calculator simply follows the enum and ignores the unused column per QNA-01 either/or rule). Avoids scattering derivation logic across calculators, reports, and UI.
 
 ---
 
@@ -170,7 +174,7 @@
 
 | # | Topic | Decision |
 |---|---|---|
-| 01 | Fixed+pct combination | Additive |
+| 01 | Fixed+pct combination | Either/or (revised 2026-05-18; was Additive) |
 | 02 | Partner removal timing | Two-step PR |
 | 03 | Default BP fallback | Seed canonical BP agent |
 | 04 | Required parent? | Optional |

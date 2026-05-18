@@ -25,11 +25,19 @@ class CommissionCalculatorTest extends TestCase
         $this->assertSame(25.00, $calc->calculate(1000, 5.0, 25.0, 'fixed'));
     }
 
-    public function test_calculate_percentage_plus_fixed_additive(): void
+    public function test_calculate_percentage_ignores_fixed(): void
     {
         $calc = new CommissionCalculator();
-        // 1000 * 5% + 25 = 75
-        $this->assertSame(75.00, $calc->calculate(1000, 5.0, 25.0, 'percentage'));
+        // Either/or (QNA-01 revised 2026-05-18): percentage path ignores fixed.
+        // 1000 * 5% = 50; the 25 fixed argument is dropped.
+        $this->assertSame(50.00, $calc->calculate(1000, 5.0, 25.0, 'percentage'));
+    }
+
+    public function test_calculate_fixed_ignores_percentage(): void
+    {
+        $calc = new CommissionCalculator();
+        // Fixed path returns fixed only, ignoring percentage and sale amount.
+        $this->assertSame(25.00, $calc->calculate(1000, 5.0, 25.0, 'fixed'));
     }
 
     public function test_get_applicable_rate_uses_agent_custom_rate(): void

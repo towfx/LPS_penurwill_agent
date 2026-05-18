@@ -254,7 +254,7 @@ Schema::dropIfExists('partners');
   - `wouldCreateCycle(Agent $child, Agent $newParent): bool`
 - [x] [app/Services/CommissionCalculator.php](app/Services/CommissionCalculator.php)
   - `getApplicableRate(Agent, string $kind)` — resolves with Decision 7 updated priority: `AgentCommissionRate` (matched by kind) → `SystemSetting` (role-based). **ReferralCode is no longer in the calculation chain** (Decision 7 update). Returns `['percentage' => x, 'fixed_amount' => y, 'calc_type' => '…', 'source' => '…']`.
-  - `calculate(saleAmount, percentage, fixed, calcType)` — when `calcType='percentage'`: `saleAmount * percentage/100`; when `calcType='fixed'`: returns fixed amount directly; additive fallback when both >0 (Decision 8 / QNA-01).
+  - `calculate(saleAmount, percentage, fixed, calcType)` — when `calcType='percentage'`: `saleAmount * percentage/100` (fixed ignored); when `calcType='fixed'`: returns fixed amount directly (percentage ignored). Either/or — no additive blending (QNA-01 revised 2026-05-18).
 - [x] [app/Services/CommissionGenerator.php](app/Services/CommissionGenerator.php) — full implementation:
   - `generateForSale(Sale $sale): Collection<Commission>` wrapped in `DB::transaction`.
   - Persists `commission_calc_type`, `source_sale_amount`, `beneficiary_role` on each Commission row.

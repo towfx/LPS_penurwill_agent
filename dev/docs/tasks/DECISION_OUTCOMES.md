@@ -668,7 +668,7 @@ getApplicableRate(Agent $agent, string $kind):
 
 **Decision**: Introduce `commission_calc_type` (enum: `percentage`, `fixed`) on `system_settings`, `commissions`, and `agent_commission_rates`. Reserve `commission_category` for hierarchy role.
 
-**UX vs Architecture**: CRD intends either/or UX. Architecture stays additive (both rate and fixed_amount stored). When `commission_calc_type = 'percentage'` → set `commission_fixed_amount = 0`. When `commission_calc_type = 'fixed'` → set rate = 0. UI exposes as choice; additive system from Decision 8 / QNA-01 intact.
+**UX vs Architecture**: CRD intends either/or UX, and as of 2026-05-18 the calculator matches that intent — strictly either/or, no additive blending. Both `rate` and `fixed_amount` columns remain stored (for audit + toggle round-trip), but `CommissionCalculator::calculate` follows `commission_calc_type` and ignores the unused column. When `commission_calc_type = 'percentage'` → set `commission_fixed_amount = 0`. When `commission_calc_type = 'fixed'` → set rate = 0. The earlier additive variant from the original Decision 8 / QNA-01 has been retired (see QNA-01 revision).
 
 **Status**: LOCKED ✅
 
