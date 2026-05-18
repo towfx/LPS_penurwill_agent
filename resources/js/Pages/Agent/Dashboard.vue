@@ -39,6 +39,13 @@ const commissionBreakdown = computed(() => {
 
 const subordinatesCount = computed(() => page.props.subordinatesCount ?? 0)
 
+const agentRole = computed(() => agent.value?.agent_role)
+const isLeader = computed(() => agentRole.value === 'agent_leader')
+const isBusinessPartner = computed(() => agentRole.value === 'business_partner')
+const showOverrideAgent = computed(() => isLeader.value || isBusinessPartner.value)
+const showOverrideLeader = computed(() => isBusinessPartner.value)
+const showSubordinates = computed(() => isLeader.value || isBusinessPartner.value)
+
 const payoutProgress = computed(() => {
   const minimum = Number(
     page.props.minPayoutAmount
@@ -95,6 +102,7 @@ const lifecycle = computed(() => {
 const agentContext = computed(() => page.props.agentContext || {})
 const agentStatus = computed(() => agentContext.value.agent_status || agent.value?.status)
 const feePaymentStatus = computed(() => agentContext.value.fee_payment_status || agent.value?.fee_payment_status)
+const hasPendingManualFeePayment = computed(() => !!agent.value?.has_pending_manual_fee_payment)
 
 const salesLabels = computed(() => Object.keys(salesByDay.value).map(day => {
   const date = new Date(day)
@@ -180,10 +188,23 @@ function getStatusVariant(status) {
     >
       <AlertTriangle class="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-700" />
       <div class="flex-1">
-        <p class="font-semibold text-blue-900">Registration fee payment pending</p>
-        <p class="text-sm text-blue-800 mt-1">Complete your payment to activate full account access.</p>
+        <template v-if="hasPendingManualFeePayment">
+          <p class="font-semibold text-blue-900">Registration Pending Approval</p>
+          <p class="text-sm text-blue-800 mt-1">
+            We've received your bank transfer details. Please allow 1-2 business days for our team to verify your payment and activate your account. You'll be notified once approval is complete.
+          </p>
+        </template>
+        <template v-else>
+          <p class="font-semibold text-blue-900">Registration fee payment pending</p>
+          <p class="text-sm text-blue-800 mt-1">Complete your payment to activate full account access.</p>
+        </template>
       </div>
-      <Button variant="default" size="sm" @click="() => router.visit('/agent/payment/complete')">
+      <Button
+        v-if="!hasPendingManualFeePayment"
+        variant="default"
+        size="sm"
+        @click="() => router.visit('/agent/payment/complete')"
+      >
         Complete Payment
       </Button>
     </div>
@@ -245,16 +266,19 @@ function getStatusVariant(status) {
         icon="DollarSign"
       />
       <StatsCard
+        v-if="showOverrideAgent"
         :title="`Override (${roleNames.agent})`"
         :value="formatCurrency('RM', commissionBreakdown.override_agent)"
         icon="TrendingUp"
       />
       <StatsCard
+        v-if="showOverrideLeader"
         :title="`Override (${roleNames.agent_leader})`"
         :value="formatCurrency('RM', commissionBreakdown.override_leader)"
         icon="TrendingUp"
       />
       <StatsCard
+        v-if="showSubordinates"
         title="Direct Subordinates"
         :value="String(subordinatesCount)"
         icon="Users"

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Partner;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\Commission;
+use App\Models\FeePayment;
 use App\Models\Payout;
 use App\Models\Referral;
 use App\Models\Sale;
@@ -174,11 +175,17 @@ class DashboardController extends Controller
             ->where('status', 'pending')
             ->sum('amount');
 
+        $hasPendingManualFeePayment = FeePayment::forAgent($agentId)
+            ->where('payment_method', FeePayment::METHOD_BANK_TRANSFER)
+            ->where('status', FeePayment::STATUS_PENDING)
+            ->exists();
+
         return Inertia::render('Partner/Dashboard', [
             'agent' => [
                 'status' => $agent->status,
                 'agent_role' => $agent->agent_role,
                 'fee_payment_status' => $agent->fee_payment_status,
+                'has_pending_manual_fee_payment' => $hasPendingManualFeePayment,
                 'registered_at' => $agent->registered_at?->toDateString(),
                 'expires_at' => $agent->expires_at?->toDateString(),
                 'renewal_due_at' => $agent->renewal_due_at?->toDateString(),
