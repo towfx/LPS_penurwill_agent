@@ -125,6 +125,12 @@ Route::middleware([
         Route::get('/system-settings/update', [App\Http\Controllers\Admin\SystemSettingController::class, 'edit'])->name('system-settings.edit');
         Route::put('/system-settings/update', [App\Http\Controllers\Admin\SystemSettingController::class, 'update'])->name('system-settings.update');
 
+        // Email Templates
+        Route::get('/email-templates', [App\Http\Controllers\Admin\TemplateEmailController::class, 'index'])->name('email-templates.index');
+        Route::get('/email-templates/{id}/edit', [App\Http\Controllers\Admin\TemplateEmailController::class, 'edit'])->name('email-templates.edit');
+        Route::put('/email-templates/{id}/update', [App\Http\Controllers\Admin\TemplateEmailController::class, 'update'])->name('email-templates.update');
+        Route::post('/email-templates/{id}/preview', [App\Http\Controllers\Admin\TemplateEmailController::class, 'preview'])->name('email-templates.preview');
+
         // Partners
         Route::get('/partners/list', [App\Http\Controllers\Admin\PartnerController::class, 'index'])->name('partners.list');
         Route::get('/partners/add', [App\Http\Controllers\Admin\PartnerController::class, 'create'])->name('partners.add');

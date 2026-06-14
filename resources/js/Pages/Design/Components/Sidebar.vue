@@ -75,6 +75,7 @@ import {
   AlertCircle,
   Briefcase,
   Award,
+  Mail,
 } from 'lucide-vue-next'
 import Badge from './Badge.vue'
 import { computed } from 'vue'
@@ -132,6 +133,7 @@ const defaultAdminMenus = computed(() => [
   { icon: Receipt, label: 'Fee Payments', href: '/admin/fee-payments' },
   { icon: AlertCircle, label: 'Pending Renewals', href: '/admin/fee-payments-pending' },
   { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
+  { icon: Mail, label: 'Email Templates', href: '/admin/email-templates' },
 ])
 
 const defaultAgentMenus = computed(() => {
