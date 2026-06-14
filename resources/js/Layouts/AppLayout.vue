@@ -284,6 +284,12 @@ const logout = () => {
             <main>
                 <slot />
             </main>
+
+            <footer class="bg-forest-dark py-4 border-t border-forest-light/20">
+                <div class="container mx-auto px-4 text-center">
+                    <p class="text-xs text-cream/70">{{ $page.props.appFooter }}</p>
+                </div>
+            </footer>
         </div>
     </div>
 </template>

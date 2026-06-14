@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -15,9 +16,17 @@ class GetStartedController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $user = User::where('email', $request->email)->first();
+        $email = strtolower(trim($request->email));
+        $user = User::where('email', $email)->first();
 
         if (! $user) {
+            $agentExists = Agent::where('individual_email', $email)->exists()
+                || Agent::where('company_email_address', $email)->exists();
+
+            if ($agentExists) {
+                return response()->json(['status' => 'login']);
+            }
+
             return response()->json(['status' => 'new']);
         }
 

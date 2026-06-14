@@ -15,6 +15,12 @@
           <p class="text-lg text-stone-600">Complete your registration to join our network</p>
         </div>
 
+        <!-- Email already registered banner -->
+        <div v-if="props.emailAlreadyExists" class="mb-6 p-4 rounded-lg bg-accent-red/10 border border-accent-red flex items-start gap-3">
+          <AlertCircle class="w-5 h-5 text-accent-red flex-shrink-0 mt-0.5" />
+          <p class="text-sm font-medium text-accent-red">The email address has been used, please proceed to login or in case password has not being setup proceed to reset password</p>
+        </div>
+
         <!-- Progress Steps -->
         <div class="mb-8">
           <div class="flex items-center justify-center flex-wrap gap-y-3">
@@ -266,19 +272,9 @@
             </div>
 
             <!-- Email pre-check warning -->
-            <div v-if="emailCheckResult === 'exists'" class="p-4 rounded-lg bg-accent-red/10 border border-accent-red flex items-start gap-3">
+            <div v-if="emailCheckResult === 'exists' || emailCheckResult === 'needs_reset'" class="p-4 rounded-lg bg-accent-red/10 border border-accent-red flex items-start gap-3">
               <AlertCircle class="w-5 h-5 text-accent-red flex-shrink-0 mt-0.5" />
-              <div>
-                <p class="text-sm font-medium text-accent-red">This email is already registered.</p>
-                <a href="/login" class="text-sm text-accent-blue underline">Log in to your account →</a>
-              </div>
-            </div>
-            <div v-if="emailCheckResult === 'needs_reset'" class="p-4 rounded-lg bg-yellow-50 border border-yellow-300 flex items-start gap-3">
-              <AlertTriangle class="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p class="text-sm font-medium text-yellow-800">This email requires a password reset first.</p>
-                <a href="/forgot-password" class="text-sm text-accent-blue underline">Reset password →</a>
-              </div>
+              <p class="text-sm font-medium text-accent-red">The email address has been used, please proceed to login or in case password has not being setup proceed to reset password</p>
             </div>
 
             <!-- Login Credentials -->
@@ -542,6 +538,12 @@
         <Button @click="handleDialogClose">OK</Button>
       </template>
     </DialogModal>
+
+    <footer class="bg-forest-dark py-4 border-t border-forest-light/20 mt-8">
+      <div class="container mx-auto px-4 text-center">
+        <p class="text-xs text-cream/70">{{ $page.props.appFooter }}</p>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -566,6 +568,7 @@ const { roleNames, roleNamesPlural } = useRoleNames()
 const props = defineProps({
   email: { type: String, default: '' },
   invalidEmail: { type: Boolean, default: false },
+  emailAlreadyExists: { type: Boolean, default: false },
   errors: { type: Object, default: () => ({}) },
   packages: { type: Array, default: () => [] },
   companyBank: { type: Object, default: null },

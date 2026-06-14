@@ -147,12 +147,10 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-forest-dark py-8 border-t border-forest-light/20">
+    <footer class="bg-forest-dark py-4 border-t border-forest-light/20">
       <div class="container mx-auto px-4">
         <div class="text-center">
-          <p class="text-sm text-cream">
-            © 2025 Penurwill Online Will Writing System. All rights reserved.
-          </p>
+          <p class="text-xs text-cream/70">{{ $page.props.appFooter }}</p>
         </div>
       </div>
     </footer>

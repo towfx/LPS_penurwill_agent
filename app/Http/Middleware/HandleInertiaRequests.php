@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => session('success'),
                 'error' => session('error'),
             ],
+            'appFooter' => config('app.footer_text'),
             'systemSettings' => fn () => $this->systemSettings(),
             'agentContext' => fn () => $this->agentContext($request),
         ]);

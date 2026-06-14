@@ -244,6 +244,46 @@ class TrackingService
             throw new \Exception('Agent not found or inactive', 404);
         }
 
+        // Deduplicate by invoice_number when provided
+        if (! empty($validatedData['invoice_number'])) {
+            $existing = Sale::where('agent_id', $agent->id)
+                ->where('invoice_number', $validatedData['invoice_number'])
+                ->first();
+
+            if ($existing) {
+                $systemUser = SystemUser::resolve();
+                if ($systemUser) {
+                    ActivityLog::logCustom(
+                        $systemUser,
+                        'duplicate_sale_skipped',
+                        "Duplicate sale skipped for invoice {$validatedData['invoice_number']}",
+                        $existing,
+                    );
+                }
+
+                $primaryCommission = $existing->commissions->firstWhere('commission_type', 'own_sales')
+                    ?? $existing->commissions->first();
+
+                return [
+                    'success' => true,
+                    'message' => 'Sale already tracked',
+                    'data' => [
+                        'sale_id' => $existing->id,
+                        'commission_id' => $primaryCommission?->id,
+                        'commission_ids' => $existing->commissions->pluck('id')->all(),
+                        'agent_name' => $agent->name,
+                        'customer_name' => $validatedData['customer_name'],
+                        'sale_amount' => $existing->amount,
+                        'commission_amount' => $primaryCommission?->amount,
+                        'commission_percentage' => $primaryCommission?->commission_rate,
+                        'commission_total' => $existing->commissions->sum('amount'),
+                        'status' => $existing->commissions->first()?->status ?? 'pending',
+                        'tracked_at' => $existing->created_at,
+                    ],
+                ];
+            }
+        }
+
         DB::beginTransaction();
 
         try {

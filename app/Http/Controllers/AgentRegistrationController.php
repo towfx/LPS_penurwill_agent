@@ -28,11 +28,17 @@ class AgentRegistrationController extends Controller
     {
         $email = $request->get('email', '');
         $invalidEmail = false;
+        $emailAlreadyExists = false;
 
         if (! empty($email)) {
             $validator = Validator::make(['email' => $email], ['email' => 'required|email']);
             if ($validator->fails()) {
                 $invalidEmail = true;
+            } else {
+                $normalized = strtolower(trim($email));
+                $emailAlreadyExists = User::where('email', $normalized)->exists()
+                    || Agent::where('individual_email', $normalized)->exists()
+                    || Agent::where('company_email_address', $normalized)->exists();
             }
         }
 
@@ -42,6 +48,7 @@ class AgentRegistrationController extends Controller
         return Inertia::render('RegisterAsAgent', [
             'email' => $email,
             'invalidEmail' => $invalidEmail,
+            'emailAlreadyExists' => $emailAlreadyExists,
             'packages' => $this->buildPackagesPayload(),
             'companyBank' => $companyBank ? [
                 'bank_name' => $companyBank->bank_name,
