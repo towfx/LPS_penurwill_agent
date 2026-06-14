@@ -33,7 +33,7 @@ class RegistrationVerificationTest extends TestCase
             'code' => '123456',
         ]);
 
-        $response->assertSessionHasErrors('code');
+        $response->assertStatus(422);
     }
 
     /** @test */
@@ -61,7 +61,7 @@ class RegistrationVerificationTest extends TestCase
         Mail::fake();
 
         $response = $this->post('/register-as-agent/resend-code', ['email' => 'fresh@example.com']);
-        $response->assertRedirect();
+        $response->assertOk();
 
         $this->assertDatabaseHas('registration_verifications', ['email' => 'fresh@example.com']);
     }
@@ -87,7 +87,7 @@ class RegistrationVerificationTest extends TestCase
         }
 
         $response = $this->post('/register-as-agent/resend-code', ['email' => $email]);
-        $response->assertSessionHasErrors('email');
+        $response->assertStatus(422);
     }
 
     /** @test */

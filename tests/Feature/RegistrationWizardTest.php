@@ -43,8 +43,7 @@ class RegistrationWizardTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) =>
             $page->component('RegisterAsAgent')
-                 ->has('entryFeeAgent')
-                 ->has('entryFeeBusinessPartner')
+                 ->has('packages')
         );
     }
 
@@ -97,7 +96,7 @@ class RegistrationWizardTest extends TestCase
         Mail::fake();
 
         $response = $this->post('/register-as-agent/resend-code', ['email' => 'test@example.com']);
-        $response->assertRedirect();
+        $response->assertOk();
 
         $this->assertDatabaseHas('registration_verifications', [
             'email' => 'test@example.com',
@@ -132,7 +131,7 @@ class RegistrationWizardTest extends TestCase
             'code' => '123456',
         ]);
 
-        $response->assertRedirect();
+        $response->assertOk();
     }
 
     /** @test */
@@ -150,7 +149,7 @@ class RegistrationWizardTest extends TestCase
             'code' => '000000',
         ]);
 
-        $response->assertSessionHasErrors('code');
+        $response->assertStatus(422);
     }
 
     /** @test */
@@ -168,6 +167,6 @@ class RegistrationWizardTest extends TestCase
             'code' => '111111',
         ]);
 
-        $response->assertSessionHasErrors('code');
+        $response->assertStatus(422);
     }
 }
