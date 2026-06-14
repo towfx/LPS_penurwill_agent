@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>New Agent Registered</title>
+    <title>{{ $template->getFilledTitle() }}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Geist', 'Figtree', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; background-color: #eae1d0;">
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #eae1d0; padding: 20px 0;">
@@ -14,20 +14,20 @@
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #7a9b7d; padding: 30px; text-align: center;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">New Agent Registered</h1>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">{{ $template->getFilledTitle() }}</h1>
                         </td>
                     </tr>
                     
                     <!-- Content -->
                     <tr>
                         <td style="padding: 40px 30px;">
-                            <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                                @if($agent->partner)
-                                    A new agent has been registered under {{ $agent->partner->company_name }}.
+                            <div style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                                @if(isset($agent) && $agent->partner)
+                                    {!! $template->getFilled('body_with_partner') !!}
                                 @else
-                                    A new agent has been registered.
+                                    {!! $template->getFilled('body_no_partner') !!}
                                 @endif
-                            </p>
+                            </div>
                             
                             <!-- Agent Details Card -->
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
@@ -37,23 +37,27 @@
                                             <tr>
                                                 <td style="padding: 8px 0;">
                                                     <strong style="color: #162d25; font-size: 14px;">Agent Name:</strong>
-                                                    <span style="color: #374151; font-size: 14px; margin-left: 10px;">{{ $agent->name }}</span>
+                                                    <span style="color: #374151; font-size: 14px; margin-left: 10px;">{{ $agent->name ?? '[AGENT_NAME]' }}</span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 8px 0;">
                                                     <strong style="color: #162d25; font-size: 14px;">Profile Type:</strong>
-                                                    <span style="color: #374151; font-size: 14px; margin-left: 10px;">{{ ucfirst($agent->profile_type) }}</span>
+                                                    <span style="color: #374151; font-size: 14px; margin-left: 10px;">{{ isset($agent) ? ucfirst($agent->profile_type) : '[PROFILE_TYPE]' }}</span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 8px 0;">
                                                     <strong style="color: #162d25; font-size: 14px;">Phone:</strong>
                                                     <span style="color: #374151; font-size: 14px; margin-left: 10px;">
-                                                        @if($agent->profile_type === 'individual')
-                                                            {{ $agent->individual_phone ?? 'N/A' }}
+                                                        @if(isset($agent))
+                                                            @if($agent->profile_type === 'individual')
+                                                                {{ $agent->individual_phone ?? 'N/A' }}
+                                                            @else
+                                                                {{ $agent->company_phone ?? 'N/A' }}
+                                                            @endif
                                                         @else
-                                                            {{ $agent->company_phone ?? 'N/A' }}
+                                                            [AGENT_PHONE]
                                                         @endif
                                                     </span>
                                                 </td>
@@ -62,10 +66,14 @@
                                                 <td style="padding: 8px 0;">
                                                     <strong style="color: #162d25; font-size: 14px;">Email:</strong>
                                                     <span style="color: #374151; font-size: 14px; margin-left: 10px;">
-                                                        @if($agent->profile_type === 'individual')
-                                                            {{ $agent->individual_email ?? 'N/A' }}
+                                                        @if(isset($agent))
+                                                            @if($agent->profile_type === 'individual')
+                                                                {{ $agent->individual_email ?? 'N/A' }}
+                                                            @else
+                                                                {{ $agent->company_email_address ?? 'N/A' }}
+                                                            @endif
                                                         @else
-                                                            {{ $agent->company_email_address ?? 'N/A' }}
+                                                            [AGENT_EMAIL]
                                                         @endif
                                                     </span>
                                                 </td>
@@ -75,9 +83,9 @@
                                 </tr>
                             </table>
                             
-                            <p style="margin: 20px 0 0 0; color: #374151; font-size: 14px; line-height: 1.6;">
-                                Please login to {{ config('app.name') }} to view more details about this agent.
-                            </p>
+                            <div style="margin: 20px 0 0 0; color: #374151; font-size: 14px; line-height: 1.6;">
+                                {!! $template->getFilled('footer_message') !!}
+                            </div>
                         </td>
                     </tr>
                     

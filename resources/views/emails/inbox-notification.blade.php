@@ -3,57 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $notification->subject }}</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{{ $template->getFilledTitle() }}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#eae1d0;font-family:Arial,sans-serif;">
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#eae1d0;padding:40px 20px;">
-    <tr>
-        <td align="center">
-            <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="background-color:#ffffff;border-radius:8px;overflow:hidden;max-width:600px;width:100%;">
-
-                {{-- Header --}}
-                <tr>
-                    <td style="background-color:#162d25;padding:24px 32px;">
-                        <p style="margin:0;color:#bc9c5f;font-size:18px;font-weight:bold;letter-spacing:0.5px;">
-                            {{ config('app.name') }}
-                        </p>
-                    </td>
-                </tr>
-
-                {{-- Body --}}
-                <tr>
-                    <td style="padding:32px;">
-                        <h2 style="margin:0 0 16px;color:#162d25;font-size:20px;">
-                            {{ $notification->subject }}
-                        </h2>
-                        <p style="margin:0 0 24px;color:#374151;font-size:15px;line-height:1.6;">
-                            {{ $notification->body }}
-                        </p>
-                        <table role="presentation" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="border-radius:6px;background-color:#162d25;">
-                                    <a href="{{ config('app.url') }}/agent/inbox"
-                                       style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:bold;text-decoration:none;border-radius:6px;">
-                                        View in Inbox
-                                    </a>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-
-                {{-- Footer --}}
-                <tr>
-                    <td style="padding:20px 32px;border-top:1px solid #e5e7eb;">
-                        <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.5;">
-                            This is an automated notification from {{ config('app.name') }}. Please do not reply to this email.
-                        </p>
-                    </td>
-                </tr>
-
-            </table>
-        </td>
-    </tr>
-</table>
+<body style="margin: 0; padding: 0; font-family: 'Geist', 'Figtree', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; background-color: #eae1d0;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #eae1d0; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #7a9b7d; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">{{ $template->getFilledTitle() }}</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <div style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                                {!! $template->getFilled('body_main') !!}
+                            </div>
+                            
+                            <!-- Action Button -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{ config('app.url') }}/agent/inbox" style="display: inline-block; background-color: #bc9c5f; color: #162d25; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                                            {!! $template->getFilled('button_label') !!}
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                                This is an automated notification. Please do not reply to this email.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
