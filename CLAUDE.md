@@ -407,4 +407,4 @@ This project is indexed by GitNexus as **LPS_penurwill_agent** (4717 symbols, 87
 
 ## UI Design
 
-When creating/updating .vue file component align design with `dev/docs/vue-components.md`
+When creating/updating .vue file component align design with `dev/docs/general/vue-components.md`
