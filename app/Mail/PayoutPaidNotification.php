@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Payout;
+use App\Models\TemplateEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,13 +14,24 @@ class PayoutPaidNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public TemplateEmail $template;
+
     /**
      * Create a new message instance.
      */
     public function __construct(
         public Payout $payout
     ) {
-        //
+        $formattedAmount = number_format($this->payout->amount, 2);
+
+        $vars = [
+            'PAYOUT_ID' => $this->payout->id,
+            'PAYOUT_AMOUNT' => $formattedAmount,
+            'PAYOUT_PAID_AT' => $this->payout->paid_at ? $this->payout->paid_at->format('d M Y, h:i A') : 'N/A',
+            'CONFIG_APP_NAME' => config('app.name'),
+        ];
+
+        $this->template = TemplateEmail::render('payout-paid-notification', $vars);
     }
 
     /**
@@ -27,10 +39,8 @@ class PayoutPaidNotification extends Mailable
      */
     public function envelope(): Envelope
     {
-        $formattedAmount = number_format($this->payout->amount, 2);
-
         return new Envelope(
-            subject: "Payout Processed - RM {$formattedAmount}",
+            subject: $this->template->getFilledTitle(),
         );
     }
 

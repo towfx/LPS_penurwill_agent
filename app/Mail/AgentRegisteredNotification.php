@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Agent;
+use App\Models\TemplateEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,13 +14,21 @@ class AgentRegisteredNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public TemplateEmail $template;
+
     /**
      * Create a new message instance.
      */
     public function __construct(
         public Agent $agent
     ) {
-        //
+        $vars = [
+            'AGENT_NAME' => $this->agent->name,
+            'PARTNER_COMPANY_NAME' => $this->agent->partner ? $this->agent->partner->company_name : 'N/A',
+            'CONFIG_APP_NAME' => config('app.name'),
+        ];
+
+        $this->template = TemplateEmail::render('agent-registered-notification', $vars);
     }
 
     /**
@@ -27,10 +36,8 @@ class AgentRegisteredNotification extends Mailable
      */
     public function envelope(): Envelope
     {
-        $agentName = $this->agent->name;
-
         return new Envelope(
-            subject: "New Agent Registered - {$agentName}",
+            subject: $this->template->getFilledTitle(),
         );
     }
 

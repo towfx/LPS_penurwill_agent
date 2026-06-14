@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Payout;
+use App\Models\TemplateEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,13 +14,22 @@ class PayoutRequestNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public TemplateEmail $template;
+
     /**
      * Create a new message instance.
      */
     public function __construct(
         public Payout $payout
     ) {
-        //
+        $vars = [
+            'PAYOUT_ID' => $this->payout->id,
+            'AGENT_NAME' => $this->payout->agent->name,
+            'PAYOUT_AMOUNT' => number_format((float) $this->payout->amount, 2),
+            'CONFIG_APP_NAME' => config('app.name'),
+        ];
+
+        $this->template = TemplateEmail::render('payout-request-notification', $vars);
     }
 
     /**
@@ -27,10 +37,8 @@ class PayoutRequestNotification extends Mailable
      */
     public function envelope(): Envelope
     {
-        $agentName = $this->payout->agent->name;
-
         return new Envelope(
-            subject: "New Payout Request - {$agentName}",
+            subject: $this->template->getFilledTitle(),
         );
     }
 

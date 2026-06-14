@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Agent;
+use App\Models\TemplateEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,12 +14,23 @@ class AgentRenewalReminderNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Agent $agent) {}
+    public TemplateEmail $template;
+
+    public function __construct(public Agent $agent) {
+        $vars = [
+            'AGENT_NAME' => $this->agent->name,
+            'EXPIRES_AT' => $this->agent->expires_at ? $this->agent->expires_at->toDateString() : 'N/A',
+            'CONFIG_APP_NAME' => config('app.name'),
+            'CONFIG_APP_URL' => config('app.url'),
+        ];
+
+        $this->template = TemplateEmail::render('agent-renewal-reminder', $vars);
+    }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Penurwill membership renewal is coming up',
+            subject: $this->template->getFilledTitle(),
         );
     }
 
@@ -26,10 +38,6 @@ class AgentRenewalReminderNotification extends Mailable
     {
         return new Content(
             view: 'emails.agent-renewal-reminder',
-            with: [
-                'agentName' => $this->agent->name,
-                'expiresAt' => $this->agent->expires_at?->toDateString(),
-            ],
         );
     }
 

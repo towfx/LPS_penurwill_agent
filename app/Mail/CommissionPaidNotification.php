@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Commission;
+use App\Models\TemplateEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,12 +14,23 @@ class CommissionPaidNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Commission $commission) {}
+    public TemplateEmail $template;
+
+    public function __construct(public Commission $commission) {
+        $vars = [
+            'COMMISSION_AMOUNT' => number_format((float) $this->commission->amount, 2),
+            'PAID_AT' => $this->commission->paid_at ? $this->commission->paid_at->toDateTimeString() : 'N/A',
+            'CONFIG_APP_NAME' => config('app.name'),
+            'CONFIG_APP_URL' => config('app.url'),
+        ];
+
+        $this->template = TemplateEmail::render('commission-paid', $vars);
+    }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your commission has been paid',
+            subject: $this->template->getFilledTitle(),
         );
     }
 
@@ -26,10 +38,6 @@ class CommissionPaidNotification extends Mailable
     {
         return new Content(
             view: 'emails.commission-paid',
-            with: [
-                'amount' => (float) $this->commission->amount,
-                'paidAt' => $this->commission->paid_at?->toDateTimeString(),
-            ],
         );
     }
 
