@@ -9,8 +9,15 @@
         <Header @toggle="toggleSidebar" />
 
         <!-- Main Content -->
-        <main class="flex-1 p-4 sm:p-6 overflow-y-auto">
-          <slot />
+        <main class="flex-1 overflow-y-auto flex flex-col">
+          <div class="flex-1 p-4 sm:p-6">
+            <slot />
+          </div>
+          <footer class="py-4 border-t border-stone-200 mt-auto shrink-0 bg-cream">
+            <div class="container mx-auto px-4 text-center">
+              <p class="text-xs text-stone-500">{{ $page.props.appFooter }}</p>
+            </div>
+          </footer>
         </main>
       </div>
     </div>

@@ -28,7 +28,7 @@ return [
 
     'penurwill-website-url' => env('PENURWILL_WEBSITE_URL', 'https://penurwill.com'),
 
-    'footer_text' => 'Penurwill powered by Vdurya Management service Sdn Bhd (200701028225 [786247-D])',
+    'footer_text' => 'Pen`urwill powered by Vdurya Management Service Sdn Bhd (200701028225 [786247-D])',
 
     /*
     |--------------------------------------------------------------------------

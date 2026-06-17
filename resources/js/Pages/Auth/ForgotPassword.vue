@@ -19,9 +19,10 @@ const submit = () => {
 
 <template>
     <Head title="Forgot Password" />
-    <div class="min-h-screen flex items-center justify-center bg-cream font-sans py-8 px-4">
-        <div class="w-full max-w-md">
-            <Card className="p-8 sm:p-10 flex flex-col items-center shadow-lg">
+    <div class="min-h-screen flex flex-col bg-cream font-sans">
+        <div class="flex-1 flex items-center justify-center py-8 px-4">
+            <div class="w-full max-w-md">
+                <Card className="p-8 sm:p-10 flex flex-col items-center shadow-lg">
                 <div class="mb-6 flex flex-col items-center">
                     <Link href="/">
                         <svg class="w-16 h-16 mb-2" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,7 +74,13 @@ const submit = () => {
                     </div>
                 </form>
             </Card>
+            </div>
         </div>
+        <footer class="py-4 border-t border-stone-200">
+            <div class="container mx-auto px-4 text-center">
+                <p class="text-xs text-stone-500">{{ $page.props.appFooter }}</p>
+            </div>
+        </footer>
     </div>
 </template>
 
